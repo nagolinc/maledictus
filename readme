@@ -1,0 +1,20 @@
+this is a high level document describing the goals of this project
+
+DO NOT MAKE AI EDITS TO THIS FILE
+
+Maledictus is a replacement for nagini
+ and does static type-checking
+
+It needs to fill in the missing bits of nagini including:
+ *js code
+ *slices
+ *callable-valued dataclasses
+
+
+In addition, we should change it from scala to rust
+
+requirements:
+ *feature complete drop-in replacement for nagini
+  (passes all nagini unit tests)
+ *type system correctness formally proven (in lean)
+ * static type analysis of systems containing both python and javascript

@@ -17,6 +17,11 @@ provider signature and exit effects, composes exceptional exits through real han
 consumer/provider hashes. A bare `Callable` annotation is never accepted as proof of provider
 identity or totality. Multiple bound callbacks may compose through single-assignment typed
 primitive locals; callback values themselves cannot be aliased, stored, mutated, or returned.
+Operation records, outcomes, locals, and callable signatures admit `float` alongside `int`, `bool`,
+and `str`. The closed total float subset includes literals, unary signs, addition, subtraction,
+multiplication, and comparisons. Division and other potentially exceptional or unmodeled numeric
+operations remain refused. Same-type primitive local reassignment is accepted, including values
+updated on one branch; type-changing reassignment and callable rebinding remain refused.
 Dagcert must require that fragment in
 the returned file result; a generic `proved` status or a different fragment is not interchangeable.
 Dagcert selects it with `--proof-backend maledictus`, `--proof-backend-executable`, and
@@ -30,8 +35,9 @@ On Windows, the `gh-release` Z3 build is dynamically dependent on `libz3.dll`; i
 Cargo output without that DLL fails before Maledictus can emit a diagnostic. Build a callable
 standalone directory with
 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-windows.ps1`. It places
-`maledictus.exe`, the pinned Z3 runtime, the pinned TypeScript compiler/bridge, and a SHA-256
-manifest of every packaged file together under `dist/windows-x86_64` by default. Node remains an
+`maledictus.exe`, the pinned Z3 runtime, the pinned TypeScript compiler/bridge, a captured
+`capabilities.json`, and a SHA-256 manifest of every packaged file together under
+`.cache/release/windows-x86_64` by default. Node remains an
 explicit hashed runtime dependency for TypeScript and checkJs JavaScript proofs. Dagcert must select the packaged executable and bind its reported
 executable/kernel identities; it must not search Cargo build directories or mutate `PATH` during
 verification.

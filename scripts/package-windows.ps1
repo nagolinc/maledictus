@@ -2,7 +2,7 @@ param(
     [ValidateSet("debug", "release")]
     [string]$Profile = "release",
     [string]$CargoPath = "cargo",
-    [string]$Destination = "dist/windows-x86_64",
+    [string]$Destination = ".cache/release/windows-x86_64",
     [string]$PythonPath = "python",
     [string]$PythonVersion = "3.12.10",
     [string]$NaginiSource = ".upstream/nagini/src"
@@ -278,6 +278,21 @@ Copy-Item -Path "node_modules/typescript/*" -Destination $typescriptCompiler -Re
 Assert-MaledictusPackageInputsUnchanged `
     -Inputs $packageInputs `
     -ExpectedSnapshot $initialPackageInputSnapshot
+
+$capabilitiesJson = (& $packagedExecutable capabilities | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) {
+    throw "packaged verifier capability discovery failed with exit code $LASTEXITCODE"
+}
+$capabilities = $capabilitiesJson | ConvertFrom-Json -ErrorAction Stop
+if ($capabilities.schema -cne "maledictus-capabilities/v1" -or
+    $capabilities.verifier -cne "maledictus") {
+    throw "packaged verifier returned unexpected capabilities"
+}
+[System.IO.File]::WriteAllText(
+    (Join-Path $Destination "capabilities.json"),
+    "$capabilitiesJson`n",
+    [System.Text.UTF8Encoding]::new($false)
+)
 
 $destinationRoot = (Resolve-Path -LiteralPath $Destination).Path.TrimEnd("\") + "\"
 $manifest = [ordered]@{

@@ -60,7 +60,6 @@ if (!sourceFile) {
 const diagnostics = ts.getPreEmitDiagnostics(program);
 if (diagnostics.length > 0) {
   const diagnostic = diagnostics[0];
-  const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
   let line = null;
   let column = null;
   if (diagnostic.file && diagnostic.start !== undefined) {
@@ -68,10 +67,19 @@ if (diagnostics.length > 0) {
     line = position.line + 1;
     column = position.character + 1;
   }
+  const message = diagnostics.map(item => {
+    const text = ts.flattenDiagnosticMessageText(item.messageText, "\n");
+    if (!item.file || item.start === undefined) {
+      return `TS${item.code}: ${text}`;
+    }
+    const position = item.file.getLineAndCharacterOfPosition(item.start);
+    return `${item.file.fileName}:${position.line + 1}:${position.character + 1}: ` +
+      `TS${item.code}: ${text}`;
+  }).join("\n");
   process.stdout.write(JSON.stringify({
     status: "refused",
     code: `${diagnosticPrefix}.strict-typecheck`,
-    message: `TS${diagnostic.code}: ${message}`,
+    message,
     line,
     column,
   }));

@@ -2871,6 +2871,38 @@ fn verifier_proves_real_dagcert_operation_module() {
 }
 
 #[test]
+fn verifier_proves_dagcert_probability_float_operations() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("probabilities.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    combine: float\n    mutation: float\n    automatic: bool\n    new: float\n\n@dataclass(frozen=True)\nclass Configured:\n    combine: float\n    mutation: float\n    new: float\n\n@dataclass(frozen=True)\nclass Invalid:\n    reason: str\n\n@operation\ndef configure(request: Request) -> Configured | Invalid:\n    combine = request.combine\n    mutation = request.mutation\n    new = request.new\n    if request.automatic:\n        mutation = 1.0 - combine - new\n    if combine != combine or mutation != mutation or new != new:\n        return Invalid('NaN')\n    if combine < 0.0 or mutation < 0.0 or new < 0.0:\n        return Invalid('negative')\n    total = combine + mutation + new\n    difference = total - 1.0\n    if difference < -0.000000001 or difference > 0.000000001:\n        return Invalid('sum')\n    return Configured(combine, mutation, new)\n",
+    )
+    .unwrap();
+    let request = ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![SourceFile {
+            path: "probabilities.py".to_owned(),
+            language: "python".to_owned(),
+            symbols: vec!["configure".to_owned()],
+        }],
+        external_contract_overlays: Vec::new(),
+        python_callable_bindings: Vec::new(),
+        cross_language_bindings: Vec::new(),
+    };
+
+    let response = maledictus::verify(&request);
+    assert!(matches!(response.status, ProofStatus::Proved));
+    assert_eq!(
+        response.files[0].fragment.as_deref(),
+        Some("dagcert-closed-typed-operations/v3")
+    );
+    assert!(response.diagnostics.is_empty());
+}
+
+#[test]
 fn verifier_refuses_partial_expression_inside_dagcert_operation() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(

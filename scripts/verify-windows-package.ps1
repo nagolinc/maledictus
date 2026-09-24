@@ -1,5 +1,5 @@
 param(
-    [string]$Destination = "dist/windows-x86_64",
+    [string]$Destination = ".cache/release/windows-x86_64",
     [string]$ExamplesRoot = "examples",
     [string]$NaginiSource = ".upstream/nagini/src"
 )
@@ -205,7 +205,7 @@ foreach ($entry in $entries) {
         @($relativePath.Split("/") | Where-Object { $_ -in @("", ".", "..") }).Count -ne 0) {
         throw "unsafe package manifest path: $relativePath"
     }
-    if ($relativePath -notin @("maledictus.exe", "libz3.dll", "typescript/frontend.cjs") -and
+    if ($relativePath -notin @("maledictus.exe", "libz3.dll", "capabilities.json", "typescript/frontend.cjs") -and
         -not $relativePath.StartsWith("python-typecheck/", [System.StringComparison]::Ordinal) -and
         -not $relativePath.StartsWith("typescript/compiler/", [System.StringComparison]::Ordinal)) {
         throw "unexpected file in Windows package manifest: $relativePath"
@@ -235,6 +235,7 @@ foreach ($entry in $entries) {
 foreach ($requiredPath in @(
     "maledictus.exe",
     "libz3.dll",
+    "capabilities.json",
     "python-typecheck/python.exe",
     "python-typecheck/python312.zip",
     "python-typecheck/mypy-1.5.ini",
@@ -302,6 +303,16 @@ $typescriptCompilerBundleHash = Get-ManifestContentBundleHash `
     -Root $destinationPath
 
 $executable = Join-Path $destinationPath "maledictus.exe"
+$packagedCapabilities = (Get-Content -LiteralPath (Join-Path $destinationPath "capabilities.json") -Raw).Trim()
+$capabilities = $packagedCapabilities | ConvertFrom-Json -ErrorAction Stop
+if ($capabilities.schema -cne "maledictus-capabilities/v1" -or
+    $capabilities.verifier -cne "maledictus") {
+    throw "packaged verifier capabilities have an unexpected schema or verifier"
+}
+$actualCapabilities = (& $executable capabilities | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or $actualCapabilities -cne $packagedCapabilities) {
+    throw "packaged capabilities do not match the executable"
+}
 $requests = @(Get-ChildItem -LiteralPath $examplesPath -File -Filter "*.request.json" | Sort-Object Name)
 if ($requests.Count -eq 0) {
     throw "no checked-in example requests found below $ExamplesRoot"

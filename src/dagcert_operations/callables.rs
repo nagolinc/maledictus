@@ -10,6 +10,7 @@ use super::OperationFailure;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CallablePrimitiveType {
     Int,
+    Float,
     Bool,
     Str,
 }
@@ -40,6 +41,7 @@ pub struct SourceCallableProvider {
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum ProviderValueType {
     Int,
+    Float,
     Bool,
     Str,
 }
@@ -174,6 +176,7 @@ fn primitive_annotation(annotation: &ast::Expr) -> Result<CallablePrimitiveType,
     };
     match name.id.as_str() {
         "int" => Ok(CallablePrimitiveType::Int),
+        "float" => Ok(CallablePrimitiveType::Float),
         "bool" => Ok(CallablePrimitiveType::Bool),
         "str" => Ok(CallablePrimitiveType::Str),
         _ => located_failure(
@@ -190,6 +193,7 @@ fn primitive_annotation(annotation: &ast::Expr) -> Result<CallablePrimitiveType,
 fn provider_type(value_type: &CallablePrimitiveType) -> ProviderValueType {
     match value_type {
         CallablePrimitiveType::Int => ProviderValueType::Int,
+        CallablePrimitiveType::Float => ProviderValueType::Float,
         CallablePrimitiveType::Bool => ProviderValueType::Bool,
         CallablePrimitiveType::Str => ProviderValueType::Str,
     }
@@ -300,6 +304,7 @@ fn infer_expression(
         }
         ast::Expr::Constant(constant) => match constant.value {
             ast::Constant::Int(_) => Ok(ProviderValueType::Int),
+            ast::Constant::Float(_) => Ok(ProviderValueType::Float),
             ast::Constant::Bool(_) => Ok(ProviderValueType::Bool),
             ast::Constant::Str(_) => Ok(ProviderValueType::Str),
             _ => unsupported_expression(expression),
@@ -310,8 +315,10 @@ fn infer_expression(
                 ast::UnaryOp::Not if operand == ProviderValueType::Bool => {
                     Ok(ProviderValueType::Bool)
                 }
-                ast::UnaryOp::UAdd | ast::UnaryOp::USub if operand == ProviderValueType::Int => {
-                    Ok(ProviderValueType::Int)
+                ast::UnaryOp::UAdd | ast::UnaryOp::USub
+                    if matches!(operand, ProviderValueType::Int | ProviderValueType::Float) =>
+                {
+                    Ok(operand)
                 }
                 _ => unsupported_expression(expression),
             }
@@ -322,14 +329,20 @@ fn infer_expression(
             match operation.op {
                 ast::Operator::Add
                     if left == right
-                        && matches!(left, ProviderValueType::Int | ProviderValueType::Str) =>
+                        && matches!(
+                            left,
+                            ProviderValueType::Int
+                                | ProviderValueType::Float
+                                | ProviderValueType::Str
+                        ) =>
                 {
                     Ok(left)
                 }
                 ast::Operator::Sub | ast::Operator::Mult
-                    if left == ProviderValueType::Int && right == ProviderValueType::Int =>
+                    if left == right
+                        && matches!(left, ProviderValueType::Int | ProviderValueType::Float) =>
                 {
-                    Ok(ProviderValueType::Int)
+                    Ok(left)
                 }
                 _ => located_failure(
                     "frontend.python.dagcert.callable-provider-partial-operator",
@@ -353,7 +366,10 @@ fn infer_expression(
             match comparison.ops[0] {
                 ast::CmpOp::Eq | ast::CmpOp::NotEq => Ok(ProviderValueType::Bool),
                 ast::CmpOp::Lt | ast::CmpOp::LtE | ast::CmpOp::Gt | ast::CmpOp::GtE
-                    if matches!(left, ProviderValueType::Int | ProviderValueType::Str) =>
+                    if matches!(
+                        left,
+                        ProviderValueType::Int | ProviderValueType::Float | ProviderValueType::Str
+                    ) =>
                 {
                     Ok(ProviderValueType::Bool)
                 }

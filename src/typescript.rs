@@ -2180,11 +2180,16 @@ mod tests {
         let path = directory.path().join("invalid.ts");
         fs::write(
             &path,
-            "function invalid(value: number): string { return value; }\n",
+            concat!(
+                "function invalid(value: number): string { return value; }\n",
+                "function implicit(value): number { return value; }\n",
+            ),
         )
         .unwrap();
         let error = verify_closed_module(&path, &[]).unwrap_err();
         assert_eq!(error.code, "frontend.typescript.strict-typecheck");
+        assert!(error.message.contains("TS2322"), "{error:#?}");
+        assert!(error.message.contains("TS7006"), "{error:#?}");
     }
 
     #[test]

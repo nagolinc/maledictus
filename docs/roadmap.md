@@ -1188,7 +1188,8 @@ unclassified direct dependencies, and stale generated output.
 The application-facing source fragment is now `dagcert-closed-typed-operations/v3`: imported
 `@operation` functions over frozen dataclass inputs and finite frozen-dataclass outcome unions, with
 both `|` and explicitly imported `typing.Union[...]` syntax, total primitive field expressions,
-primitive-only f-string interpolation, and path-complete `if` returns. Dagcert now has explicit
+primitive-only f-string interpolation, same-type primitive local reassignment, closed total `float`
+arithmetic and comparisons, and path-complete `if` returns. Dagcert now has explicit
 alternate-backend selection, independently checks the executable SHA-256, validates the returned
 verifier/kernel/frontend identities plus exact source/file/symbol bindings, stores the complete
 response in the certificate, and recomputes it during verification. Nagini remains the default and

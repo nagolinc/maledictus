@@ -2127,6 +2127,7 @@ fn callable_primitive_from_sort(
 ) -> Result<dagcert_operations::CallablePrimitiveType, Diagnostic> {
     match sort {
         vc::Sort::Int => Ok(dagcert_operations::CallablePrimitiveType::Int),
+        vc::Sort::Float => Ok(dagcert_operations::CallablePrimitiveType::Float),
         vc::Sort::Bool => Ok(dagcert_operations::CallablePrimitiveType::Bool),
         vc::Sort::String => Ok(dagcert_operations::CallablePrimitiveType::Str),
         _ => Err(Diagnostic::error(

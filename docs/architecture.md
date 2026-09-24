@@ -140,8 +140,10 @@ input and a finite record-outcome union written with either `|` or an explicitly
 `typing.Union`, and proves straight-line or `if`-branched direct outcome construction from total
 primitive field expressions. Version 2 also accepts primitive-only f-string interpolation without
 format specifications or conversions; record formatting and other user-defined dispatch refuse.
-Partial arithmetic such as integer division, arbitrary calls, mutation, helpers, and reachable
-missing returns refuse.
+The primitive surface includes `float` records, outcomes, locals, and total literals, unary signs,
+addition, subtraction, multiplication, and comparisons. Partial arithmetic such as integer or
+float division, arbitrary calls, helpers, and reachable missing returns refuse. Same-type primitive
+local reassignment is accepted; type-changing reassignment refuses.
 
 Version 3 adds callable-valued frozen input fields through an explicit hash-bound provenance edge.
 The field's `typing.Callable[[...], ...]` annotation supplies its signature but is never evidence of
@@ -154,9 +156,10 @@ mismatched fields, unknown providers, uncaught exits, callback alias or mutation
 generic/variadic/async providers, and unmodeled provider statements fail closed. The response binds
 both endpoint hashes and the exact operation/input/field/provider edge. This is the actual
 production source shape Dagcert binds, not a second handwritten effect summary. Multiple concrete
-dependencies may run sequentially; each primitive result may be stored once in a typed immutable
-local and passed to later callbacks or outcomes. Reassignment, callable-valued locals, and
-inconsistent branch/handler local environments refuse.
+dependencies may run sequentially; each primitive result may be stored in a typed local and passed
+to later callbacks or outcomes. Same-type primitive reassignment is allowed, while callable-valued
+locals, callable rebinding, type-changing reassignment, and inconsistent branch/handler local
+environments refuse.
 
 The second fragment, `scalar-nagini-contracts/v44`, lowers path-sensitive
 `int`/`bool`/`str`/`None` functions, recursively typed fixed `Tuple[...]` values, and homogeneous

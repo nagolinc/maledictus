@@ -18,3 +18,17 @@ The evidence parser's fail-closed behavior is exercised by:
 ```powershell
 ./tests/release_completion_gate.Tests.ps1
 ```
+
+## Fast complete test suite
+
+The repository contains many separate integration-test binaries. Standard `cargo test
+--all-targets` executes those binaries serially and remains valid, but is unnecessarily slow for a
+complete local or CI run. Install the pinned `cargo-nextest` 0.9.145 release and run:
+
+```powershell
+cargo nextest run --all-targets --no-fail-fast
+cargo test --doc
+```
+
+Nextest changes only test scheduling: it runs the same Rust test inventory concurrently across
+binaries. CI installs the same pinned release before executing this command.

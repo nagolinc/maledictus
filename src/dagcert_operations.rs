@@ -8,6 +8,7 @@ use rustpython_parser::{Parse, ast};
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum ValueType {
     Int,
+    Float,
     Bool,
     Str,
     Record(String),
@@ -407,6 +408,7 @@ fn annotation_type(
     };
     match name.id.as_str() {
         "int" => Ok(ValueType::Int),
+        "float" => Ok(ValueType::Float),
         "bool" => Ok(ValueType::Bool),
         "str" => Ok(ValueType::Str),
         record if class_names.contains(record) => Ok(ValueType::Record(record.to_owned())),
@@ -890,12 +892,10 @@ fn bind_operation_local(
     records: &BTreeMap<String, RecordShape>,
     locals: &mut BTreeMap<String, ValueType>,
 ) -> Result<(), OperationFailure> {
-    if name == input_name || records.contains_key(name) || locals.contains_key(name) {
+    if name == input_name || records.contains_key(name) {
         return failure(
             "frontend.python.dagcert.local-binding-shadowed-or-mutated",
-            format!(
-                "operation local {name:?} shadows a source binding or is assigned more than once"
-            ),
+            format!("operation local {name:?} shadows a source binding"),
         );
     }
     if matches!(value_type, ValueType::Callable(_)) {
@@ -903,6 +903,17 @@ fn bind_operation_local(
             "frontend.python.dagcert.callable-alias-unsupported",
             "callable fields cannot be copied, stored, or rebound inside an operation",
         );
+    }
+    if let Some(existing) = locals.get(name) {
+        if existing != &value_type {
+            return failure(
+                "frontend.python.dagcert.local-reassignment-type-mismatch",
+                format!(
+                    "operation local {name:?} was {existing:?} and cannot be reassigned {value_type:?}"
+                ),
+            );
+        }
+        return Ok(());
     }
     locals.insert(name.to_owned(), value_type);
     Ok(())
@@ -918,6 +929,7 @@ fn operation_local_annotation(annotation: &ast::Expr) -> Result<ValueType, Opera
     };
     match name.id.as_str() {
         "int" => Ok(ValueType::Int),
+        "float" => Ok(ValueType::Float),
         "bool" => Ok(ValueType::Bool),
         "str" => Ok(ValueType::Str),
         _ => located_failure(
@@ -1201,6 +1213,7 @@ fn signature_from_contract(contract: &CallableContract) -> CallableSignature {
 fn value_type_from_primitive(value_type: &CallablePrimitiveType) -> ValueType {
     match value_type {
         CallablePrimitiveType::Int => ValueType::Int,
+        CallablePrimitiveType::Float => ValueType::Float,
         CallablePrimitiveType::Bool => ValueType::Bool,
         CallablePrimitiveType::Str => ValueType::Str,
     }
@@ -1265,6 +1278,7 @@ fn infer_expression(
         }
         ast::Expr::Constant(value) => match value.value {
             ast::Constant::Int(_) => Ok(ValueType::Int),
+            ast::Constant::Float(_) => Ok(ValueType::Float),
             ast::Constant::Bool(_) => Ok(ValueType::Bool),
             ast::Constant::Str(_) => Ok(ValueType::Str),
             _ => unsupported_expression(expression),
@@ -1300,8 +1314,10 @@ fn infer_expression(
             )?;
             match operation.op {
                 ast::UnaryOp::Not if operand == ValueType::Bool => Ok(ValueType::Bool),
-                ast::UnaryOp::UAdd | ast::UnaryOp::USub if operand == ValueType::Int => {
-                    Ok(ValueType::Int)
+                ast::UnaryOp::UAdd | ast::UnaryOp::USub
+                    if matches!(operand, ValueType::Int | ValueType::Float) =>
+                {
+                    Ok(operand)
                 }
                 _ => unsupported_expression(expression),
             }
@@ -1313,14 +1329,15 @@ fn infer_expression(
                 infer_expression(&operation.right, input_name, input_record, records, locals)?;
             match operation.op {
                 ast::Operator::Add
-                    if left == right && matches!(left, ValueType::Int | ValueType::Str) =>
+                    if left == right
+                        && matches!(left, ValueType::Int | ValueType::Float | ValueType::Str) =>
                 {
                     Ok(left)
                 }
                 ast::Operator::Sub | ast::Operator::Mult
-                    if left == ValueType::Int && right == ValueType::Int =>
+                    if left == right && matches!(left, ValueType::Int | ValueType::Float) =>
                 {
-                    Ok(ValueType::Int)
+                    Ok(left)
                 }
                 _ => located_failure(
                     "frontend.python.dagcert.partial-or-unsupported-operator",
@@ -1353,7 +1370,7 @@ fn infer_expression(
             match comparison.ops[0] {
                 ast::CmpOp::Eq | ast::CmpOp::NotEq => Ok(ValueType::Bool),
                 ast::CmpOp::Lt | ast::CmpOp::LtE | ast::CmpOp::Gt | ast::CmpOp::GtE
-                    if matches!(left, ValueType::Int | ValueType::Str) =>
+                    if matches!(left, ValueType::Int | ValueType::Float | ValueType::Str) =>
                 {
                     Ok(ValueType::Bool)
                 }
@@ -1416,7 +1433,10 @@ fn infer_expression(
                                     records,
                                     locals,
                                 )?,
-                                ValueType::Int | ValueType::Bool | ValueType::Str
+                                ValueType::Int
+                                    | ValueType::Float
+                                    | ValueType::Bool
+                                    | ValueType::Str
                             ) => {}
                     _ => return unsupported_expression(value),
                 }
@@ -1465,6 +1485,45 @@ mod tests {
     fn proves_real_dagcert_operation_shape() {
         let result = verify_operation_module(APP, "app.py", &["work".to_owned()]).unwrap();
         assert_eq!(result.operations, ["work"]);
+    }
+
+    #[test]
+    fn proves_total_probability_float_operations() {
+        let source = "from dataclasses import dataclass\nfrom typing import Union\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass ChanceRequest:\n    combine: float\n    mutation: float\n    automatic: bool\n    new: float\n\n@dataclass(frozen=True)\nclass Chances:\n    combine: float\n    mutation: float\n    new: float\n\n@dataclass(frozen=True)\nclass Invalid:\n    reason: str\n\n@operation\ndef validate(request: ChanceRequest) -> Union[Chances, Invalid]:\n    combine = request.combine\n    mutation = request.mutation\n    new = request.new\n    if request.automatic:\n        mutation = 1.0 - combine - new\n    if combine != combine or mutation != mutation or new != new:\n        return Invalid('chance must not be NaN')\n    if combine < 0.0 or mutation < 0.0 or new < 0.0:\n        return Invalid('chance must be nonnegative')\n    total = combine + mutation + new\n    difference = total - 1.0\n    if difference < -0.000000001 or difference > 0.000000001:\n        return Invalid('chances must sum to one')\n    return Chances(combine, mutation, new)\n";
+        let result =
+            verify_operation_module(source, "probabilities.py", &["validate".to_owned()]).unwrap();
+        assert_eq!(result.operations, ["validate"]);
+    }
+
+    #[test]
+    fn refuses_partial_float_division() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    numerator: float\n    denominator: float\n\n@dataclass(frozen=True)\nclass Completed:\n    value: float\n\n@operation\ndef divide(request: Request) -> Completed:\n    return Completed(request.numerator / request.denominator)\n";
+        let error =
+            verify_operation_module(source, "division.py", &["divide".to_owned()]).unwrap_err();
+        assert_eq!(
+            error.code,
+            "frontend.python.dagcert.partial-or-unsupported-operator"
+        );
+    }
+
+    #[test]
+    fn refuses_type_changing_primitive_reassignment() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    value: float\n\n@dataclass(frozen=True)\nclass Completed:\n    value: float\n\n@operation\ndef change_type(request: Request) -> Completed:\n    value = request.value\n    value = 1\n    return Completed(value)\n";
+        let error = verify_operation_module(source, "reassignment.py", &["change_type".to_owned()])
+            .unwrap_err();
+        assert_eq!(
+            error.code,
+            "frontend.python.dagcert.local-reassignment-type-mismatch"
+        );
+    }
+
+    #[test]
+    fn proves_total_float_source_callback() {
+        let provider = "def clamp(value: float) -> float:\n    if value < 0.0:\n        return 0.0\n    return value\n";
+        let contract = analyze_source_callable(provider, "provider.py", "clamp").unwrap();
+        assert_eq!(contract.parameters, [CallablePrimitiveType::Float]);
+        assert_eq!(contract.return_type, CallablePrimitiveType::Float);
+        assert!(contract.raised_exceptions.is_empty());
     }
 
     #[test]

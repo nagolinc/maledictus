@@ -17,9 +17,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest@0.9.145
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --all-features -- -D warnings
-      - run: cargo test --all-targets
+      - run: cargo nextest run --all-targets --no-fail-fast
+      - run: cargo test --doc
       - run: cargo fmt --manifest-path formal/coverage-tool/Cargo.toml --check
       - run: cargo clippy --manifest-path formal/coverage-tool/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --manifest-path formal/coverage-tool/Cargo.toml
@@ -76,3 +80,9 @@ jobs:
         run: ./scripts/package-windows.ps1 -Profile release
       - shell: pwsh
         run: ./scripts/verify-windows-package.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: maledictus-windows-x86_64
+          path: .cache/release/windows-x86_64/
+          if-no-files-found: error
+          include-hidden-files: true

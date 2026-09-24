@@ -21,6 +21,7 @@ function Get-MaledictusPackageInputs {
         [pscustomobject]@{ Label = "build.rs"; Path = (Join-Path $root "build.rs"); Required = $false },
         [pscustomobject]@{ Label = ".cargo"; Path = (Join-Path $root ".cargo"); Required = $false },
         [pscustomobject]@{ Label = "src"; Path = (Join-Path $root "src"); Required = $true },
+        [pscustomobject]@{ Label = "formal/extraction/call-binding-full/extraction.json"; Path = (Join-Path $root "formal/extraction/call-binding-full/extraction.json"); Required = $true },
         [pscustomobject]@{ Label = "package-lock.json"; Path = (Join-Path $root "package-lock.json"); Required = $true },
         [pscustomobject]@{ Label = "python_typecheck"; Path = (Join-Path $root "python_typecheck"); Required = $true },
         [pscustomobject]@{ Label = "typescript/frontend.cjs"; Path = (Join-Path $root "typescript/frontend.cjs"); Required = $true },

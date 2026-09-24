@@ -144,6 +144,9 @@ The primitive surface includes `float` records, outcomes, locals, and total lite
 addition, subtraction, multiplication, and comparisons. Partial arithmetic such as integer or
 float division, arbitrary calls, helpers, and reachable missing returns refuse. Same-type primitive
 local reassignment is accepted; type-changing reassignment refuses.
+Homogeneous immutable primitive tuples written as `tuple[T, ...]` are valid record fields and
+outcome values. The operation checker admits total, element-type-checked membership comparisons and
+refuses heterogeneous or mutable collection shapes.
 
 Version 3 adds callable-valued frozen input fields through an explicit hash-bound provenance edge.
 The field's `typing.Callable[[...], ...]` annotation supplies its signature but is never evidence of

@@ -2903,6 +2903,38 @@ fn verifier_proves_dagcert_probability_float_operations() {
 }
 
 #[test]
+fn verifier_proves_dagcert_history_selection_over_variadic_tuple() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("history.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass HistoryChoice:\n    ok: bool\n    image_key: str\n    candidate_keys: tuple[str, ...]\n    previous_key: str\n\n@dataclass(frozen=True)\nclass Selected:\n    image_key: str\n\n@dataclass(frozen=True)\nclass Rejected:\n    reason: str\n\n@operation\ndef classify(request: HistoryChoice) -> Selected | Rejected:\n    if not request.ok:\n        return Rejected('provider failed')\n    if request.image_key not in request.candidate_keys:\n        return Rejected('outside candidates')\n    if request.previous_key != '' and request.image_key == request.previous_key:\n        return Rejected('repeated')\n    return Selected(request.image_key)\n",
+    )
+    .unwrap();
+    let request = ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![SourceFile {
+            path: "history.py".to_owned(),
+            language: "python".to_owned(),
+            symbols: vec!["classify".to_owned()],
+        }],
+        external_contract_overlays: Vec::new(),
+        python_callable_bindings: Vec::new(),
+        cross_language_bindings: Vec::new(),
+    };
+
+    let response = maledictus::verify(&request);
+    assert!(matches!(response.status, ProofStatus::Proved));
+    assert_eq!(
+        response.files[0].fragment.as_deref(),
+        Some("dagcert-closed-typed-operations/v3")
+    );
+    assert!(response.diagnostics.is_empty());
+}
+
+#[test]
 fn verifier_refuses_partial_expression_inside_dagcert_operation() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(

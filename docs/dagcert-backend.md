@@ -22,6 +22,9 @@ and `str`. The closed total float subset includes literals, unary signs, additio
 multiplication, and comparisons. Division and other potentially exceptional or unmodeled numeric
 operations remain refused. Same-type primitive local reassignment is accepted, including values
 updated on one branch; type-changing reassignment and callable rebinding remain refused.
+Frozen input and outcome records may also contain homogeneous immutable primitive tuples such as
+`tuple[str, ...]`. Equality and type-checked `in`/`not in` membership are total; mutable sequences,
+heterogeneous tuple annotations, and element-type mismatches remain refused.
 Dagcert must require that fragment in
 the returned file result; a generic `proved` status or a different fragment is not interchangeable.
 Dagcert selects it with `--proof-backend maledictus`, `--proof-backend-executable`, and

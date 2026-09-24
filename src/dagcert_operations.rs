@@ -11,6 +11,7 @@ enum ValueType {
     Float,
     Bool,
     Str,
+    VariadicTuple(Box<ValueType>),
     Record(String),
     Callable(CallableSignature),
 }
@@ -395,10 +396,15 @@ fn annotation_type(
     class_names: &BTreeSet<String>,
     callable_names: &BTreeSet<String>,
 ) -> Result<ValueType, OperationFailure> {
-    if let ast::Expr::Subscript(subscript) = annotation
-        && matches!(subscript.value.as_ref(), ast::Expr::Name(name) if callable_names.contains(name.id.as_str()))
-    {
-        return callable_annotation_type(&subscript.slice, class_names, callable_names);
+    if let ast::Expr::Subscript(subscript) = annotation {
+        if matches!(subscript.value.as_ref(), ast::Expr::Name(name) if callable_names.contains(name.id.as_str()))
+        {
+            return callable_annotation_type(&subscript.slice, class_names, callable_names);
+        }
+        if matches!(subscript.value.as_ref(), ast::Expr::Name(name) if name.id.as_str() == "tuple")
+        {
+            return variadic_tuple_annotation_type(&subscript.slice, class_names, callable_names);
+        }
     }
     let ast::Expr::Name(name) = annotation else {
         return failure(
@@ -417,6 +423,41 @@ fn annotation_type(
             format!("unsupported Dagcert operation type {other:?}"),
         ),
     }
+}
+
+fn variadic_tuple_annotation_type(
+    slice: &ast::Expr,
+    class_names: &BTreeSet<String>,
+    callable_names: &BTreeSet<String>,
+) -> Result<ValueType, OperationFailure> {
+    let ast::Expr::Tuple(parts) = slice else {
+        return failure(
+            "frontend.python.dagcert.tuple-type-unsupported",
+            "tuple annotations require one homogeneous element type followed by ellipsis",
+        );
+    };
+    if parts.elts.len() != 2
+        || !matches!(
+            &parts.elts[1],
+            ast::Expr::Constant(value) if matches!(value.value, ast::Constant::Ellipsis)
+        )
+    {
+        return failure(
+            "frontend.python.dagcert.tuple-type-unsupported",
+            "Dagcert operations currently admit homogeneous variadic tuples such as tuple[str, ...]",
+        );
+    }
+    let element = annotation_type(&parts.elts[0], class_names, callable_names)?;
+    if !matches!(
+        element,
+        ValueType::Int | ValueType::Float | ValueType::Bool | ValueType::Str
+    ) {
+        return failure(
+            "frontend.python.dagcert.tuple-element-type-unsupported",
+            "variadic tuple elements must be primitive immutable values",
+        );
+    }
+    Ok(ValueType::VariadicTuple(Box::new(element)))
 }
 
 fn callable_annotation_type(
@@ -1361,6 +1402,16 @@ fn infer_expression(
                 records,
                 locals,
             )?;
+            if matches!(comparison.ops[0], ast::CmpOp::In | ast::CmpOp::NotIn) {
+                return match right {
+                    ValueType::VariadicTuple(element) if left == *element => Ok(ValueType::Bool),
+                    ValueType::VariadicTuple(element) => failure(
+                        "frontend.python.dagcert.membership-type-mismatch",
+                        format!("tuple membership value has type {left:?}, expected {element:?}"),
+                    ),
+                    _ => unsupported_expression(expression),
+                };
+            }
             if left != right {
                 return failure(
                     "frontend.python.dagcert.comparison-type-mismatch",
@@ -1493,6 +1544,29 @@ mod tests {
         let result =
             verify_operation_module(source, "probabilities.py", &["validate".to_owned()]).unwrap();
         assert_eq!(result.operations, ["validate"]);
+    }
+
+    #[test]
+    fn proves_history_selection_with_variadic_string_tuple_membership() {
+        let source = "from dataclasses import dataclass\nfrom typing import Union\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass HistoryImageChoice:\n    ok: bool\n    image_key: str\n    candidate_keys: tuple[str, ...]\n    previous_key: str\n    error_type: str\n    message: str\n\n@dataclass(frozen=True)\nclass SeenImageSelected:\n    image_key: str\n\n@dataclass(frozen=True)\nclass SeenImageSelectionFailed:\n    error_type: str\n    message: str\n\n@operation\ndef classify_seen_image_choice(request: HistoryImageChoice) -> Union[SeenImageSelected, SeenImageSelectionFailed]:\n    if not request.ok:\n        return SeenImageSelectionFailed(request.error_type, request.message)\n    if request.image_key == '':\n        return SeenImageSelectionFailed('ValueError', 'empty')\n    if request.image_key not in request.candidate_keys:\n        return SeenImageSelectionFailed('ValueError', 'outside candidates')\n    if request.previous_key != '' and request.image_key == request.previous_key:\n        return SeenImageSelectionFailed('ValueError', 'repeated')\n    return SeenImageSelected(request.image_key)\n";
+        let result = verify_operation_module(
+            source,
+            "history.py",
+            &["classify_seen_image_choice".to_owned()],
+        )
+        .unwrap();
+        assert_eq!(result.operations, ["classify_seen_image_choice"]);
+    }
+
+    #[test]
+    fn refuses_variadic_tuple_membership_with_wrong_element_type() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    candidate_keys: tuple[str, ...]\n    candidate: int\n\n@dataclass(frozen=True)\nclass Completed:\n    present: bool\n\n@operation\ndef check(request: Request) -> Completed:\n    return Completed(request.candidate in request.candidate_keys)\n";
+        let error =
+            verify_operation_module(source, "history.py", &["check".to_owned()]).unwrap_err();
+        assert_eq!(
+            error.code,
+            "frontend.python.dagcert.membership-type-mismatch"
+        );
     }
 
     #[test]

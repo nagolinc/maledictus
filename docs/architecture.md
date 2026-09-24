@@ -147,6 +147,9 @@ local reassignment is accepted; type-changing reassignment refuses.
 Homogeneous immutable primitive tuples written as `tuple[T, ...]` are valid record fields and
 outcome values. The operation checker admits total, element-type-checked membership comparisons and
 refuses heterogeneous or mutable collection shapes.
+The same closed record surface carries immutable `bytes` values and recognizes total emptiness
+checks for built-in strings and bytes. Exact source-owned frozen-record construction and recursive
+field projection are admitted without treating arbitrary constructors or attribute hooks as total.
 
 Version 3 adds callable-valued frozen input fields through an explicit hash-bound provenance edge.
 The field's `typing.Callable[[...], ...]` annotation supplies its signature but is never evidence of

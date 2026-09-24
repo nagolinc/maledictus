@@ -9,8 +9,8 @@
   "root": {
     "symbol": "maledictus::verify_internal",
     "invocation": "verify_internal(request, issuance=true)",
-    "source_tree_sha256": "8d169c2c43e2fcfce4d4c70a2bde08dba3545c0b8e1d8cb04cfe98d87b485479",
-    "callgraph_sha256": "c251a946ff2863c9ee6589d8e659f002917251976abfdea0c40bf7e71e1843fd",
+    "source_tree_sha256": "d124ee2fc42795d1c466d0a807b38f62b8273d4c70859cc06f50bc178eb83cf7",
+    "callgraph_sha256": "e74932cf01fbf480932435d1efcd689b7e0bc5929f774fbb76fa0c933c39470c",
     "composition_proved": false
   },
   "reachability": {
@@ -11860,6 +11860,28 @@
   },
   "source_nodes": [
     {
+      "id": "0013a1c77165725504742484c08bde1f003da6f45b6c80eff809689a466cb9e8",
+      "symbol": "maledictus::dagcert_operations::caught_exception_names",
+      "name": "caught_exception_names",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1271,
+      "line_end": 1290,
+      "source_sha256": "ee07053d03f5cd6efff0527eff1c3e6e0ee287bf2177369b1d6bd4edefea0f07",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "as_str",
+        "clone",
+        "cloned",
+        "collect",
+        "exception_is_subtype_of",
+        "filter",
+        "iter",
+        "located_failure"
+      ]
+    },
+    {
       "id": "003c1848261e27a5db9c8c8d3d480d0016cee41bf76fb941f55bff38b4da0870",
       "symbol": "maledictus::python_heap_contracts::<ImportedHeapContractModule>::source_predicate_names",
       "name": "source_predicate_names",
@@ -12492,22 +12514,6 @@
       ]
     },
     {
-      "id": "043e93c8a1038cc2ef05dbb423c3fd73877bf85a2507680e7f4e596c17fc76a0",
-      "symbol": "maledictus::dagcert_operations::merge_branch_locals",
-      "name": "merge_branch_locals",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 984,
-      "line_end": 1010,
-      "source_sha256": "3fedf4043c52d7d26a88fc4e996a79f03e29f76964282da896e7bb9c3c07ddb0",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "clone_from",
-        "failure"
-      ]
-    },
-    {
       "id": "044c69adbd1a464923388396505c4d4ef4b594577b70ead3a04c98cfa194962a",
       "symbol": "maledictus::python_obligation_leaks::instantiate_call_level_identity",
       "name": "instantiate_call_level_identity",
@@ -12660,6 +12666,22 @@
         "collect",
         "iter",
         "map"
+      ]
+    },
+    {
+      "id": "053d356e331d7f6b0463afff2e96a2610784ecfd686501d4e6cf97c0831cf80b",
+      "symbol": "maledictus::dagcert_operations::operation_local_annotation",
+      "name": "operation_local_annotation",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 965,
+      "line_end": 985,
+      "source_sha256": "61c856d107a533cbcf324e1f101e0216d7aafb8006ebfad9245d07ffb0b89aa4",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "as_str",
+        "located_failure"
       ]
     },
     {
@@ -13938,6 +13960,26 @@
         "rsplit_once",
         "try_from",
         "unwrap_or"
+      ]
+    },
+    {
+      "id": "0be65fb31e12bccca60e11ce18c2571e7a2e13753238b31a41ac1d4131394a62",
+      "symbol": "maledictus::dagcert_operations::callable_annotation_type",
+      "name": "callable_annotation_type",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 465,
+      "line_end": 510,
+      "source_sha256": "b13a3ddde874f7c149f949ea1176e9512421dd7dd45929888c819e8e6c33d463",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Callable",
+        "Ok",
+        "annotation_type",
+        "failure",
+        "len",
+        "new",
+        "push"
       ]
     },
     {
@@ -16397,18 +16439,6 @@
       ]
     },
     {
-      "id": "17917f4a8fc3d65fea523f32ff044a7b4012833b175bd9d4c8f633f8b520a930",
-      "symbol": "maledictus::dagcert_operations::is_modeled_builtin_exception_name",
-      "name": "is_modeled_builtin_exception_name",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1050,
-      "line_end": 1067,
-      "source_sha256": "ec1fa6eb89eee14fe3a04ca2888640d930f70729a8c003a44f861e738108c572",
-      "basis": "unproved",
-      "proof": null,
-      "calls": []
-    },
-    {
       "id": "17bea2587e507fa8726181dcfd8e1c0d0d1ddccaddc37f137de8a0065a2132a1",
       "symbol": "maledictus::python_contracts::verify_contract_module",
       "name": "verify_contract_module",
@@ -17307,6 +17337,20 @@
       ]
     },
     {
+      "id": "1bb44d46395fb661c9c33876d119ed75be40a4ae18f4eb8bc93c106209c6ab61",
+      "symbol": "maledictus::dagcert_operations::verify_operation_module",
+      "name": "verify_operation_module",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 64,
+      "line_end": 70,
+      "source_sha256": "c4830c0e15223cbf423dd66f33aaf9faa4bc3d0403d9188b4442bb43ef9e2334",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "verify_operation_module_with_bindings"
+      ]
+    },
+    {
       "id": "1bbfd71f30436c06c48e61c182d49a30b7dd61c52616071ca4120018c6ef9cbd",
       "symbol": "maledictus::python::analyze_module",
       "name": "analyze_module",
@@ -17373,48 +17417,6 @@
         "rsplit_once",
         "try_from",
         "unwrap_or"
-      ]
-    },
-    {
-      "id": "1bf72baec2fce60e943a9f43b177e48ae073fb0507023d8a449d9b1f53a7286c",
-      "symbol": "maledictus::dagcert_operations::verify_operation_module_with_bindings",
-      "name": "verify_operation_module_with_bindings",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 71,
-      "line_end": 202,
-      "source_sha256": "649d93598ee9e2071a07a682d90d76fc6c7bdfa8aafe7a39e2faf3f846d1fe1e",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "allowed_import",
-        "any",
-        "as_ref",
-        "as_str",
-        "chain",
-        "collect",
-        "contains",
-        "declaration_name",
-        "enumerate",
-        "failure",
-        "filter",
-        "filter_map",
-        "find_map",
-        "imported_markers",
-        "insert",
-        "is_docstring",
-        "is_empty",
-        "is_modeled_builtin_exception_name",
-        "iter",
-        "len",
-        "map",
-        "map_err",
-        "new",
-        "parse",
-        "parse_record",
-        "push",
-        "to_string",
-        "verify_operation"
       ]
     },
     {
@@ -18331,20 +18333,6 @@
       ]
     },
     {
-      "id": "1ff360a1fde76ee2b95c58bd5cec968a5028317c59f94a259d98c9eb2cd91e21",
-      "symbol": "maledictus::dagcert_operations::verify_operation_module",
-      "name": "verify_operation_module",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 63,
-      "line_end": 69,
-      "source_sha256": "c4830c0e15223cbf423dd66f33aaf9faa4bc3d0403d9188b4442bb43ef9e2334",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "verify_operation_module_with_bindings"
-      ]
-    },
-    {
       "id": "20048c397bafcf3fff652b267c21b9c8bf82851c75abe1771a823cea64b83551",
       "symbol": "maledictus::python_heap_contracts::take_heap_pending_exit",
       "name": "take_heap_pending_exit",
@@ -18786,6 +18774,45 @@
         "iter",
         "map",
         "method_default_term"
+      ]
+    },
+    {
+      "id": "2314215cf4930cec53e6ef86178c13f24872a4adcb5173ed6f0b6b0c1eebc19a",
+      "symbol": "maledictus::dagcert_operations::verify_statements",
+      "name": "verify_statements",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 735,
+      "line_end": 929,
+      "source_sha256": "bf6937925b101d2ddf5e2d8d7f79278a464d822c9eb4cd1b5a4f18012d13cf97",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "as_deref",
+        "as_ref",
+        "as_slice",
+        "as_str",
+        "bind_operation_local",
+        "caught_exception_names",
+        "clone",
+        "default",
+        "enumerate",
+        "extend",
+        "failure",
+        "infer_operation_expression",
+        "is_docstring",
+        "is_empty",
+        "is_some",
+        "iter",
+        "located_failure",
+        "merge_branch_locals",
+        "merge_continuing_locals",
+        "new",
+        "operation_local_annotation",
+        "push",
+        "remove",
+        "verify_outcome_constructor",
+        "verify_statements"
       ]
     },
     {
@@ -19605,6 +19632,24 @@
       ]
     },
     {
+      "id": "26bc33be553928e74088b10302337fe3c4391953ceaad1a9b745485035adee24",
+      "symbol": "maledictus::dagcert_operations::frozen_dataclass",
+      "name": "frozen_dataclass",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 365,
+      "line_end": 393,
+      "source_sha256": "43565f56d556e5a39352fd28ccf4691bf5644a5a6af52f18c618d2779a36c0a9",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "as_ref",
+        "as_str",
+        "contains",
+        "is_empty",
+        "map"
+      ]
+    },
+    {
       "id": "26c4a3001cd84865cebf934197ca335f06e582d6d1f5042d0983b5dcc8b4deea",
       "symbol": "maledictus::python_heap_contracts::build_heap_module_function_summaries",
       "name": "build_heap_module_function_summaries",
@@ -19734,6 +19779,34 @@
         "nominal_expression_provenance",
         "to_string",
         "unwrap_or"
+      ]
+    },
+    {
+      "id": "2737d9c08610836f97f84113c6dd8119167da4c0953b0117d0fb21f57d9b85d5",
+      "symbol": "maledictus::dagcert_operations::parse_record",
+      "name": "parse_record",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 307,
+      "line_end": 363,
+      "source_sha256": "c21c25e127fe3457a15e88853a65cb34e2df5ce44c19980662c78f33734496e2",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "annotation_type",
+        "as_ref",
+        "enumerate",
+        "failure",
+        "frozen_dataclass",
+        "insert",
+        "is_docstring",
+        "is_empty",
+        "is_some",
+        "iter",
+        "len",
+        "new",
+        "push",
+        "to_string"
       ]
     },
     {
@@ -20997,18 +21070,6 @@
       ]
     },
     {
-      "id": "2ee9a38eb2d7830e34470e28c783336504f1593eebac2e1e1fc44eed5aa1ab58",
-      "symbol": "maledictus::dagcert_operations::exception_is_subtype_of",
-      "name": "exception_is_subtype_of",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1284,
-      "line_end": 1300,
-      "source_sha256": "d59fd5b69158bcce716c150899f5f56fd90db8de0437246101f63749331487b4",
-      "basis": "unproved",
-      "proof": null,
-      "calls": []
-    },
-    {
       "id": "2f05daf55f9535492b81db3c06a601e2feda0a8b1aadcaf2eb3e9922c6678828",
       "symbol": "maledictus::python_contracts::contains_zero_step_range",
       "name": "contains_zero_step_range",
@@ -21030,34 +21091,6 @@
       ]
     },
     {
-      "id": "2f3dd00bcbb76fed1c8a3b84d59ecf0c6414a8d5e655f79d9362df78b3a264a0",
-      "symbol": "maledictus::dagcert_operations::parse_record",
-      "name": "parse_record",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 306,
-      "line_end": 362,
-      "source_sha256": "c21c25e127fe3457a15e88853a65cb34e2df5ce44c19980662c78f33734496e2",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "annotation_type",
-        "as_ref",
-        "enumerate",
-        "failure",
-        "frozen_dataclass",
-        "insert",
-        "is_docstring",
-        "is_empty",
-        "is_some",
-        "iter",
-        "len",
-        "new",
-        "push",
-        "to_string"
-      ]
-    },
-    {
       "id": "2f6b6153e84099e50f75cf6d8c7c184783f8dc13f7e1145d3afc1698783aca32",
       "symbol": "maledictus::python_heap_contracts::typed_integer_forall",
       "name": "typed_integer_forall",
@@ -21074,30 +21107,6 @@
         "is_empty",
         "is_some",
         "len"
-      ]
-    },
-    {
-      "id": "2fa9bc20ab495a901948a2741daaee84091bb56fcb07bc0891023379051860c5",
-      "symbol": "maledictus::dagcert_operations::validate_operation_callable_bindings",
-      "name": "validate_operation_callable_bindings",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 626,
-      "line_end": 696,
-      "source_sha256": "4a9d2d520f40b90417cafe0abe755fdfb276fecab4f9e5a20ea59742feb9ceb2",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "Some",
-        "any",
-        "as_slice",
-        "collect",
-        "failure",
-        "filter",
-        "filter_map",
-        "is_empty",
-        "iter",
-        "signature_from_contract"
       ]
     },
     {
@@ -21708,38 +21717,6 @@
       "proof": null,
       "calls": [
         "heap_binding_error"
-      ]
-    },
-    {
-      "id": "33e38fa2b7079bce6713c7248a99dd739ffec7fa0b7415db48f98894b5030b6e",
-      "symbol": "maledictus::dagcert_operations::infer_operation_expression",
-      "name": "infer_operation_expression",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1129,
-      "line_end": 1241,
-      "source_sha256": "1fb0027e6a10b60d16ce42ffa028e8f8ab5fa93d59f30d080edf191c1d370b5a",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "as_ref",
-        "as_slice",
-        "as_str",
-        "clone",
-        "collect",
-        "enumerate",
-        "filter",
-        "find",
-        "infer_expression",
-        "is_empty",
-        "iter",
-        "len",
-        "located_failure",
-        "map",
-        "new",
-        "signature_from_contract",
-        "unsupported_expression",
-        "zip"
       ]
     },
     {
@@ -22620,6 +22597,25 @@
       ]
     },
     {
+      "id": "38d0e60db045173aac4bc6df083987808af9eb0cfd586d38e769808e1f0e4298",
+      "symbol": "maledictus::dagcert_operations::variadic_tuple_annotation_type",
+      "name": "variadic_tuple_annotation_type",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 430,
+      "line_end": 463,
+      "source_sha256": "abec721cbd6792e99a7bcd9c65e1e33b138b2fcc79ec83aea6909763913268ab",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "VariadicTuple",
+        "annotation_type",
+        "failure",
+        "len",
+        "new"
+      ]
+    },
+    {
       "id": "38e60796320e6831a63f7ab627eed24ad7be8999e439899aaf94be7c970dbe9e",
       "symbol": "maledictus::python_heap_contracts::direct_predicate_contract_name",
       "name": "direct_predicate_contract_name",
@@ -23285,38 +23281,6 @@
         "statement_unconditional_read_names",
         "to_owned",
         "with_capacity"
-      ]
-    },
-    {
-      "id": "3d96ba37b5a7e532517fff83b47bf23dd97b3dfe92ca9773a81568a55699a58f",
-      "symbol": "maledictus::dagcert_operations::infer_expression",
-      "name": "infer_expression",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1302,
-      "line_end": 1499,
-      "source_sha256": "2a6dc06d6930f21a2faebc86c3fc207273ff996746480a9a85adeb060e992067",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "Some",
-        "as_ref",
-        "as_str",
-        "clone",
-        "cloned",
-        "failure",
-        "find",
-        "get",
-        "infer_expression",
-        "into",
-        "is_none",
-        "iter",
-        "len",
-        "located_failure",
-        "map",
-        "ok_or_else",
-        "start",
-        "unsupported_expression"
       ]
     },
     {
@@ -26332,6 +26296,29 @@
       ]
     },
     {
+      "id": "4b91045603cde453a6c5f629d1bbc1113c2b4f3c717910208d4d1f6312d6ea93",
+      "symbol": "maledictus::dagcert_operations::imported_markers",
+      "name": "imported_markers",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 205,
+      "line_end": 275,
+      "source_sha256": "da5da465cfd7f6a81933fef1b8548c9e07b698410b5aef77e4f33f685cccb7e0",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "as_ref",
+        "as_str",
+        "failure",
+        "insert",
+        "is_empty",
+        "map",
+        "map_or",
+        "new",
+        "to_owned"
+      ]
+    },
+    {
       "id": "4bacfce0031436f3a7edde5317f647c0903885a07afb44373d94a41dc68bc91e",
       "symbol": "maledictus::python_int_enum::lower_comparison",
       "name": "lower_comparison",
@@ -26513,45 +26500,6 @@
       "calls": [
         "all",
         "iter"
-      ]
-    },
-    {
-      "id": "4c929292fe0683ed3250fb66f1dc286d184b4f66dd347655045f20d97e02542e",
-      "symbol": "maledictus::dagcert_operations::verify_statements",
-      "name": "verify_statements",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 733,
-      "line_end": 927,
-      "source_sha256": "bf6937925b101d2ddf5e2d8d7f79278a464d822c9eb4cd1b5a4f18012d13cf97",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "as_deref",
-        "as_ref",
-        "as_slice",
-        "as_str",
-        "bind_operation_local",
-        "caught_exception_names",
-        "clone",
-        "default",
-        "enumerate",
-        "extend",
-        "failure",
-        "infer_operation_expression",
-        "is_docstring",
-        "is_empty",
-        "is_some",
-        "iter",
-        "located_failure",
-        "merge_branch_locals",
-        "merge_continuing_locals",
-        "new",
-        "operation_local_annotation",
-        "push",
-        "remove",
-        "verify_outcome_constructor",
-        "verify_statements"
       ]
     },
     {
@@ -28238,20 +28186,6 @@
       ]
     },
     {
-      "id": "564a791e4f9b8da83bc6fa1d10fb1a5cfbde51982ec615f91c20b2033ba0f33d",
-      "symbol": "maledictus::dagcert_operations::unsupported_expression",
-      "name": "unsupported_expression",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1501,
-      "line_end": 1507,
-      "source_sha256": "c7350e43b54d04c94bb8a1ff13476e35252fdfc3c352a690af3e94b4b58ac881",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "located_failure"
-      ]
-    },
-    {
       "id": "56847d28b3a33e001e2ff7e97c7b291cfbeff5de16ff072319719006fb7ab61f",
       "symbol": "maledictus::python_contracts::is_immutable_collection_value_sort",
       "name": "is_immutable_collection_value_sort",
@@ -28589,6 +28523,18 @@
         "read",
         "to_owned"
       ]
+    },
+    {
+      "id": "582e0490e0925859c788c81bdf3c14cea2d9b2701f620bf9a3c071d2950f589a",
+      "symbol": "maledictus::dagcert_operations::is_modeled_builtin_exception_name",
+      "name": "is_modeled_builtin_exception_name",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1053,
+      "line_end": 1070,
+      "source_sha256": "ec1fa6eb89eee14fe3a04ca2888640d930f70729a8c003a44f861e738108c572",
+      "basis": "unproved",
+      "proof": null,
+      "calls": []
     },
     {
       "id": "583d0a61c0d858c424f6bb49bb88431773339c711584b04859855505eb01cb96",
@@ -29573,24 +29519,6 @@
       ]
     },
     {
-      "id": "5e26637cc328c3e560763606eace3efa868fc7d0a5badc58996f6dd862db7141",
-      "symbol": "maledictus::dagcert_operations::frozen_dataclass",
-      "name": "frozen_dataclass",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 364,
-      "line_end": 392,
-      "source_sha256": "43565f56d556e5a39352fd28ccf4691bf5644a5a6af52f18c618d2779a36c0a9",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "as_ref",
-        "as_str",
-        "contains",
-        "is_empty",
-        "map"
-      ]
-    },
-    {
       "id": "5e57505512c8b744c556c91de032c1e9c6a075047f6edf7d7623c26da0045fcf",
       "symbol": "maledictus::conformance::<PinnedHeapSourceResolver>::resolve_module",
       "name": "resolve_module",
@@ -29723,21 +29651,6 @@
         "to_owned",
         "try_from",
         "unique"
-      ]
-    },
-    {
-      "id": "5f2f4e3e84f5cbb425b651aa6363fb02c3f43563bf3ef8e921c3baa7ba4507c5",
-      "symbol": "maledictus::dagcert_operations::declaration_name",
-      "name": "declaration_name",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1041,
-      "line_end": 1048,
-      "source_sha256": "6bd91e2054bfee918e0ae2f1c130e9fb2707ab2ccbe008d13d7e5e49c2b56d00",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Some",
-        "as_str"
       ]
     },
     {
@@ -30489,25 +30402,6 @@
         "as_str",
         "contains",
         "expression_is_algebraic"
-      ]
-    },
-    {
-      "id": "63547b6af9603342bfed610afac1723a567b804cab7042ff4f6dea40024f62ee",
-      "symbol": "maledictus::dagcert_operations::merge_continuing_locals",
-      "name": "merge_continuing_locals",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1012,
-      "line_end": 1030,
-      "source_sha256": "73ab5396af06bd36382ba8e03163ef3be651af030d531566c727a5ac5d544767",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "all",
-        "clone_from",
-        "failure",
-        "first",
-        "iter"
       ]
     },
     {
@@ -31710,18 +31604,6 @@
       ]
     },
     {
-      "id": "6aa83e22dfa31edfbc3ddd1f0b8f668033de98d68eb16f21c8ec9493c8169bcc",
-      "symbol": "maledictus::dagcert_operations::is_docstring",
-      "name": "is_docstring",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1032,
-      "line_end": 1039,
-      "source_sha256": "2513ba117d6bdda6a01289885f40d39b2a0cda686cd117d5f6028e0298ab2c46",
-      "basis": "unproved",
-      "proof": null,
-      "calls": []
-    },
-    {
       "id": "6aae2a98509ac5e2cd0f49989e77e9e9d2e921923ae5b954b390e09eea92b5cd",
       "symbol": "maledictus::python_thread_wellformedness::sif::resolve_source_constructor",
       "name": "resolve_source_constructor",
@@ -31982,18 +31864,6 @@
         "try_from",
         "unwrap_or"
       ]
-    },
-    {
-      "id": "6bfb1a2e347f90b32d778f60a189d0ee866edfc466df0e851f7502358f068adc",
-      "symbol": "maledictus::dagcert_operations::value_type_from_primitive",
-      "name": "value_type_from_primitive",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1254,
-      "line_end": 1261,
-      "source_sha256": "40bfd8ab922e0bead9550a83c4abc3cf74c544288d6db6b7b46f67bbedebb343",
-      "basis": "unproved",
-      "proof": null,
-      "calls": []
     },
     {
       "id": "6c000cf9cae6992d1bffb82aad98f000e50b0022126d1e2fd74ca604968d9c23",
@@ -32677,6 +32547,38 @@
       ]
     },
     {
+      "id": "6f8bd21fae39c7dcd32b0a1cfeb9d06924bd2709cfafc3db76a710ba10f07cf5",
+      "symbol": "maledictus::dagcert_operations::infer_operation_expression",
+      "name": "infer_operation_expression",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1132,
+      "line_end": 1249,
+      "source_sha256": "884173b75742d88fde4183aee943b4c2b6b394120b905c2daadc81dad2f1a9bf",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "as_ref",
+        "as_slice",
+        "as_str",
+        "clone",
+        "collect",
+        "enumerate",
+        "filter",
+        "find",
+        "infer_expression",
+        "is_empty",
+        "iter",
+        "len",
+        "located_failure",
+        "map",
+        "new",
+        "signature_from_contract",
+        "unsupported_expression",
+        "zip"
+      ]
+    },
+    {
       "id": "6f8df16065c8fe7355c2f7ccb4051beccd78337f879bc17ae158b6df6e82e351",
       "symbol": "maledictus::python_heap_contracts::bind_constructor_predicate_pure_receivers",
       "name": "bind_constructor_predicate_pure_receivers",
@@ -32773,6 +32675,51 @@
         "invalid_code",
         "map",
         "or_else"
+      ]
+    },
+    {
+      "id": "6fd13e9f06ee55e524e0236459c63d8f15899c11ce65b793171d4205881662da",
+      "symbol": "maledictus::dagcert_operations::verify_outcome_constructor",
+      "name": "verify_outcome_constructor",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1072,
+      "line_end": 1130,
+      "source_sha256": "f4e5f9435702ca402f739593291f766d829b19700fd72e5eed42beb49885f5a8",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "as_ref",
+        "as_str",
+        "contains",
+        "extend",
+        "failure",
+        "infer_operation_expression",
+        "is_empty",
+        "iter",
+        "len",
+        "new",
+        "zip"
+      ]
+    },
+    {
+      "id": "6fd15915c376e2870fda1fefeaad461afdee5cea86d387cf3f6d07bb17703a49",
+      "symbol": "maledictus::dagcert_operations::allowed_import",
+      "name": "allowed_import",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 277,
+      "line_end": 305,
+      "source_sha256": "c90977572543506646d0b1effe495ee9089725ed93747caa57c4a37de304b4d7",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "all",
+        "as_ref",
+        "as_str",
+        "is_none",
+        "is_some_and",
+        "iter",
+        "map"
       ]
     },
     {
@@ -33897,6 +33844,21 @@
       "calls": []
     },
     {
+      "id": "74f39809a647b27bd8aa7702328579b5570a3ee01607fd5803d46e0d4167a56a",
+      "symbol": "maledictus::dagcert_operations::declaration_name",
+      "name": "declaration_name",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1044,
+      "line_end": 1051,
+      "source_sha256": "6bd91e2054bfee918e0ae2f1c130e9fb2707ab2ccbe008d13d7e5e49c2b56d00",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Some",
+        "as_str"
+      ]
+    },
+    {
       "id": "74f4df4217845462ba45adf26698b48e1b80c99d2434b6a6cf37ba0a491e7664",
       "symbol": "maledictus::conformance::<PinnedHeapSourceResolver>::resolve_located_module",
       "name": "resolve_located_module",
@@ -34211,22 +34173,6 @@
         "visit_class_methods",
         "visit_stmt_async_function_def",
         "visit_stmt_function_def"
-      ]
-    },
-    {
-      "id": "76bd6421cd685d6e766f65b25d2ab3040cb8a05af7f482db358da83665c52686",
-      "symbol": "maledictus::dagcert_operations::flatten_union",
-      "name": "flatten_union",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 698,
-      "line_end": 722,
-      "source_sha256": "982622aaaebb0a48651ca7e68dbe3e6bc217abedb58d3c9ba7aff1d1022fd942",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "as_ref",
-        "flatten_union",
-        "push"
       ]
     },
     {
@@ -37217,28 +37163,6 @@
       "calls": []
     },
     {
-      "id": "865aab4c57b36f58a6c1ea2c8c018bbe96f60f72ec38ff4abb12b72d070aab7e",
-      "symbol": "maledictus::dagcert_operations::caught_exception_names",
-      "name": "caught_exception_names",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1263,
-      "line_end": 1282,
-      "source_sha256": "ee07053d03f5cd6efff0527eff1c3e6e0ee287bf2177369b1d6bd4edefea0f07",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "as_str",
-        "clone",
-        "cloned",
-        "collect",
-        "exception_is_subtype_of",
-        "filter",
-        "iter",
-        "located_failure"
-      ]
-    },
-    {
       "id": "865da225734912d5c29debdf8cd6eafa804642968281448515688ec855aa76e9",
       "symbol": "maledictus::python_heap_contracts::verify_heap_module_selection_with_imports_for_conformance",
       "name": "verify_heap_module_selection_with_imports_for_conformance",
@@ -38745,6 +38669,24 @@
       ]
     },
     {
+      "id": "8eaae2b1047cc21feb340044e716ab1d0d6b41cd0df41e189f85cd6e0d3d3ffb",
+      "symbol": "maledictus::dagcert_operations::signature_from_contract",
+      "name": "signature_from_contract",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1251,
+      "line_end": 1260,
+      "source_sha256": "4cff0822669fc3275e6df3f3cddbd95eb78c78685829ba24338a2a16f04c752f",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "collect",
+        "iter",
+        "map",
+        "new",
+        "value_type_from_primitive"
+      ]
+    },
+    {
       "id": "8ee646c6d0872184f2d68002bf1f4629993ee3a1f4e82841ebafdfe8cc4747a9",
       "symbol": "maledictus::conformance::scan_annotations",
       "name": "scan_annotations",
@@ -38761,26 +38703,6 @@
         "map_err",
         "matches",
         "read_to_string"
-      ]
-    },
-    {
-      "id": "8eea2051246a63516d4e26ed5830c2a2233dbbe41f41cc1cd6a6dc1d002e592c",
-      "symbol": "maledictus::dagcert_operations::allowed_import",
-      "name": "allowed_import",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 276,
-      "line_end": 304,
-      "source_sha256": "c90977572543506646d0b1effe495ee9089725ed93747caa57c4a37de304b4d7",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "all",
-        "as_ref",
-        "as_str",
-        "is_none",
-        "is_some_and",
-        "iter",
-        "map"
       ]
     },
     {
@@ -39318,26 +39240,6 @@
         "to_owned",
         "to_string",
         "try_from"
-      ]
-    },
-    {
-      "id": "922e66ca992e6378de5539843bf2780d54ef88cc07bacaa2675d2cd1e1d4cdf2",
-      "symbol": "maledictus::dagcert_operations::callable_annotation_type",
-      "name": "callable_annotation_type",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 463,
-      "line_end": 508,
-      "source_sha256": "b13a3ddde874f7c149f949ea1176e9512421dd7dd45929888c819e8e6c33d463",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Callable",
-        "Ok",
-        "annotation_type",
-        "failure",
-        "len",
-        "new",
-        "push"
       ]
     },
     {
@@ -41466,6 +41368,43 @@
       "calls": []
     },
     {
+      "id": "9c64b2b15600b2a21a0d5a20d86d0344e30549cbed3f9df06101c356d246bbe7",
+      "symbol": "maledictus::dagcert_operations::infer_expression",
+      "name": "infer_expression",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1310,
+      "line_end": 1547,
+      "source_sha256": "0892caf47e6197003d63a256bd465d2b24ac8ff7ca60521e4881f1c4d4b7d836",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "Record",
+        "Some",
+        "as_ref",
+        "as_str",
+        "clone",
+        "cloned",
+        "failure",
+        "find",
+        "get",
+        "infer_expression",
+        "into",
+        "is_empty",
+        "is_none",
+        "iter",
+        "len",
+        "located_failure",
+        "map",
+        "ok_or_else",
+        "start",
+        "to_owned",
+        "to_string",
+        "unsupported_expression",
+        "zip"
+      ]
+    },
+    {
       "id": "9c952e477ca914c3278b60e77e3b25c09ec903732cb54dfe80f3849fc86ce64e",
       "symbol": "maledictus::python_io_wellformedness::<PropertyArgumentNameCollector>::visit_expr_name",
       "name": "visit_expr_name",
@@ -41477,21 +41416,6 @@
       "proof": null,
       "calls": [
         "push"
-      ]
-    },
-    {
-      "id": "9c95e152eec89f0e527e374de93f6c10224f30f60118744d9be8b0e8d41f0be2",
-      "symbol": "maledictus::dagcert_operations::failure",
-      "name": "failure",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1521,
-      "line_end": 1527,
-      "source_sha256": "cc60102b35d8452667150499cacfb68e2ad1ffc65f64ef475777ce4f83296e74",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "into"
       ]
     },
     {
@@ -42217,6 +42141,22 @@
       ]
     },
     {
+      "id": "a14785e2cced7381f14c41ddc1b48e8a238be822817d007b464ae85475b0531d",
+      "symbol": "maledictus::dagcert_operations::merge_branch_locals",
+      "name": "merge_branch_locals",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 987,
+      "line_end": 1013,
+      "source_sha256": "3fedf4043c52d7d26a88fc4e996a79f03e29f76964282da896e7bb9c3c07ddb0",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "clone_from",
+        "failure"
+      ]
+    },
+    {
       "id": "a14c3e13ebb6caac71886e558c19f2535a672c468794a256f9d4e5c48a926f77",
       "symbol": "maledictus::conformance::validate_conformance_typechecker_identity",
       "name": "validate_conformance_typechecker_identity",
@@ -42886,25 +42826,6 @@
         "parse_cast_target",
         "push",
         "start"
-      ]
-    },
-    {
-      "id": "a4c0288d5e01208d7619065c769163f0ce7d809619d8a83db08f56afae756649",
-      "symbol": "maledictus::dagcert_operations::variadic_tuple_annotation_type",
-      "name": "variadic_tuple_annotation_type",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 428,
-      "line_end": 461,
-      "source_sha256": "93ec54994c1a7746553b07413c7e028ffa787a5bdaf82d891d195e01f03069e6",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "VariadicTuple",
-        "annotation_type",
-        "failure",
-        "len",
-        "new"
       ]
     },
     {
@@ -43765,6 +43686,21 @@
         "reference_field_type",
         "sort",
         "to_owned"
+      ]
+    },
+    {
+      "id": "a8c7aff1801c1c9d4fc6605a29e52f8cd03d4ce0bbaecb1acac149b782aebed5",
+      "symbol": "maledictus::dagcert_operations::failure",
+      "name": "failure",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1569,
+      "line_end": 1575,
+      "source_sha256": "cc60102b35d8452667150499cacfb68e2ad1ffc65f64ef475777ce4f83296e74",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "into"
       ]
     },
     {
@@ -44633,6 +44569,48 @@
       ]
     },
     {
+      "id": "ad5b7d2cd0e694009aa74bf1e94ed365b21fd9ba53947a332c3f1dc229e59442",
+      "symbol": "maledictus::dagcert_operations::verify_operation_module_with_bindings",
+      "name": "verify_operation_module_with_bindings",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 72,
+      "line_end": 203,
+      "source_sha256": "649d93598ee9e2071a07a682d90d76fc6c7bdfa8aafe7a39e2faf3f846d1fe1e",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "allowed_import",
+        "any",
+        "as_ref",
+        "as_str",
+        "chain",
+        "collect",
+        "contains",
+        "declaration_name",
+        "enumerate",
+        "failure",
+        "filter",
+        "filter_map",
+        "find_map",
+        "imported_markers",
+        "insert",
+        "is_docstring",
+        "is_empty",
+        "is_modeled_builtin_exception_name",
+        "iter",
+        "len",
+        "map",
+        "map_err",
+        "new",
+        "parse",
+        "parse_record",
+        "push",
+        "to_string",
+        "verify_operation"
+      ]
+    },
+    {
       "id": "ad5d7a3e440bac6fa7fc6c0758623408d96930545dcbbabbe8ffedbd739b53e5",
       "symbol": "maledictus::python_thread_wellformedness::bindings::target_bound_names",
       "name": "target_bound_names",
@@ -45020,6 +44998,25 @@
       "calls": [
         "Some",
         "into"
+      ]
+    },
+    {
+      "id": "aeb93e96cadb1ab320e63ad268276beba3b500d2a718f83dbd7eeff91676eaad",
+      "symbol": "maledictus::dagcert_operations::merge_continuing_locals",
+      "name": "merge_continuing_locals",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1015,
+      "line_end": 1033,
+      "source_sha256": "73ab5396af06bd36382ba8e03163ef3be651af030d531566c727a5ac5d544767",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "all",
+        "clone_from",
+        "failure",
+        "first",
+        "iter"
       ]
     },
     {
@@ -46903,25 +46900,6 @@
       ]
     },
     {
-      "id": "bab9e1031ed0f1691ac0e64f46488e2400c66f051fdd11d7b1b12763dd50946b",
-      "symbol": "maledictus::dagcert_operations::bind_operation_local",
-      "name": "bind_operation_local",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 929,
-      "line_end": 961,
-      "source_sha256": "3475a70482080e47554f85fc7ecc7ed5e222fbead0d1920bcb1f84c77e1d3bdd",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "contains_key",
-        "failure",
-        "get",
-        "insert",
-        "to_owned"
-      ]
-    },
-    {
       "id": "bade2d3f8c75247a00b314a1838010ab1012e3e6dac9e7c1e26bec31d96cf56a",
       "symbol": "maledictus::python_contracts::dynamic_tuple_index_value",
       "name": "dynamic_tuple_index_value",
@@ -47085,6 +47063,27 @@
       ]
     },
     {
+      "id": "bc042dbc3456f0f993aecd4ffcede8c86c3cee115ddf3a3e1c2badd214ca575b",
+      "symbol": "maledictus::dagcert_operations::annotation_type",
+      "name": "annotation_type",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 395,
+      "line_end": 428,
+      "source_sha256": "ec7a89f34bade271824e3cc9a938bc84da8abe2b4fe46a52f6a5461c8413176a",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "Record",
+        "as_str",
+        "callable_annotation_type",
+        "contains",
+        "failure",
+        "to_owned",
+        "variadic_tuple_annotation_type"
+      ]
+    },
+    {
       "id": "bc0dee67b30209e4bf91fa1691cf403d19b636a8910aca652c9916d25946a2eb",
       "symbol": "maledictus::python_type_algebra_contracts::isinstance_term",
       "name": "isinstance_term",
@@ -47191,6 +47190,30 @@
       "calls": [
         "Some",
         "verify_heap_module_internal"
+      ]
+    },
+    {
+      "id": "bc771933e2d03302c99e8b9ec74db6b7396899e584221306d58d256d5a8baf4b",
+      "symbol": "maledictus::dagcert_operations::validate_operation_callable_bindings",
+      "name": "validate_operation_callable_bindings",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 628,
+      "line_end": 698,
+      "source_sha256": "4a9d2d520f40b90417cafe0abe755fdfb276fecab4f9e5a20ea59742feb9ceb2",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "Some",
+        "any",
+        "as_slice",
+        "collect",
+        "failure",
+        "filter",
+        "filter_map",
+        "is_empty",
+        "iter",
+        "signature_from_contract"
       ]
     },
     {
@@ -47537,6 +47560,25 @@
         "fold_expr",
         "lower_contextual_expression",
         "new"
+      ]
+    },
+    {
+      "id": "be8c330ce982efff2421396e69e75652e51c75a70ed6116510d754154ce6cf99",
+      "symbol": "maledictus::dagcert_operations::bind_operation_local",
+      "name": "bind_operation_local",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 931,
+      "line_end": 963,
+      "source_sha256": "3475a70482080e47554f85fc7ecc7ed5e222fbead0d1920bcb1f84c77e1d3bdd",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "contains_key",
+        "failure",
+        "get",
+        "insert",
+        "to_owned"
       ]
     },
     {
@@ -47890,6 +47932,20 @@
       ]
     },
     {
+      "id": "c218a31f05fe001975a78a1ec7654a5cac2aefc44764ad22e07645f03caf892e",
+      "symbol": "maledictus::dagcert_operations::unsupported_expression",
+      "name": "unsupported_expression",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1549,
+      "line_end": 1555,
+      "source_sha256": "c7350e43b54d04c94bb8a1ff13476e35252fdfc3c352a690af3e94b4b58ac881",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "located_failure"
+      ]
+    },
+    {
       "id": "c248be968ba9500a1acbae844cac1556c9a890889d1a79bd3bb6e454699bc654",
       "symbol": "maledictus::python_contract_positions::is_zero_argument_class_factory",
       "name": "is_zero_argument_class_factory",
@@ -48157,6 +48213,24 @@
         "split_heap_condition_state",
         "start",
         "to_owned"
+      ]
+    },
+    {
+      "id": "c3dc1819ae9bddca7fe5b48d947635046dbf3060184cacb6cf4d2386b37210a5",
+      "symbol": "maledictus::dagcert_operations::located_failure",
+      "name": "located_failure",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1557,
+      "line_end": 1567,
+      "source_sha256": "e95d72539a678bbc5ce565a2a5a518124531c5a1430d71727428077bf99b2446",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Some",
+        "into",
+        "range",
+        "start"
       ]
     },
     {
@@ -49326,6 +49400,22 @@
       ]
     },
     {
+      "id": "c9af6633d60913c314317ba670b33475a69bf953aaef72bb59b5bd4dcea85df7",
+      "symbol": "maledictus::dagcert_operations::flatten_union",
+      "name": "flatten_union",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 700,
+      "line_end": 724,
+      "source_sha256": "982622aaaebb0a48651ca7e68dbe3e6bc217abedb58d3c9ba7aff1d1022fd942",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "as_ref",
+        "flatten_union",
+        "push"
+      ]
+    },
+    {
       "id": "c9db14e4161a917b1a8455f09a25b254e0a186bb9385c4a17b0f33dfe5ac0482",
       "symbol": "maledictus::python_verifier_intrinsics::require_function",
       "name": "require_function",
@@ -49431,24 +49521,6 @@
       ]
     },
     {
-      "id": "ca463ea2b4bd7492971678c34aaea0a8935f802a109c2e3c1d2bfa1cf938d8c6",
-      "symbol": "maledictus::dagcert_operations::located_failure",
-      "name": "located_failure",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1509,
-      "line_end": 1519,
-      "source_sha256": "e95d72539a678bbc5ce565a2a5a518124531c5a1430d71727428077bf99b2446",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Some",
-        "into",
-        "range",
-        "start"
-      ]
-    },
-    {
       "id": "ca80876cfe610eb2903a3136c1f9ca3f2c319772cf5e84efb4c8d2a1bdaa16e6",
       "symbol": "maledictus::python_sif_contracts::source_summary_parameters",
       "name": "source_summary_parameters",
@@ -49542,6 +49614,18 @@
       "line_start": 2924,
       "line_end": 2935,
       "source_sha256": "f1578ace9a110d510acbc969204392829703b8ab6acd09018486fe67d17bbc88",
+      "basis": "unproved",
+      "proof": null,
+      "calls": []
+    },
+    {
+      "id": "caff0f4b8aa6c1cc98c5d0fd706525de38640deb931a9e6de1759d909530e666",
+      "symbol": "maledictus::dagcert_operations::is_docstring",
+      "name": "is_docstring",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1035,
+      "line_end": 1042,
+      "source_sha256": "2513ba117d6bdda6a01289885f40d39b2a0cda686cd117d5f6028e0298ab2c46",
       "basis": "unproved",
       "proof": null,
       "calls": []
@@ -51763,6 +51847,39 @@
       ]
     },
     {
+      "id": "d5c6b21369a4d4a8ab21b5aae9b9e2a35bee230d235a458d6e11d89a95e3f12f",
+      "symbol": "maledictus::dagcert_operations::verify_operation",
+      "name": "verify_operation",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 512,
+      "line_end": 626,
+      "source_sha256": "1f9bc67b853b78d59d099c7824f7e0bac5a3b01b190cabdfeab025ce5ff47f36",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "Some",
+        "annotation_type",
+        "as_deref",
+        "as_str",
+        "cloned",
+        "collect",
+        "failure",
+        "flatten_union",
+        "insert",
+        "into",
+        "is_empty",
+        "is_some",
+        "keys",
+        "len",
+        "new",
+        "ok_or_else",
+        "start",
+        "validate_operation_callable_bindings",
+        "verify_statements"
+      ]
+    },
+    {
       "id": "d5dad8e9a3358715df8a4a83e2cbdca79793b4927ec23f7b75b3a08bca925763",
       "symbol": "maledictus::python_contracts::coerce_to_sort",
       "name": "coerce_to_sort",
@@ -52575,39 +52692,6 @@
       ]
     },
     {
-      "id": "db612c311ff20e4bea83f13195c5025dde2841fa30aa091f967a8604e301903d",
-      "symbol": "maledictus::dagcert_operations::verify_operation",
-      "name": "verify_operation",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 510,
-      "line_end": 624,
-      "source_sha256": "1f9bc67b853b78d59d099c7824f7e0bac5a3b01b190cabdfeab025ce5ff47f36",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "Some",
-        "annotation_type",
-        "as_deref",
-        "as_str",
-        "cloned",
-        "collect",
-        "failure",
-        "flatten_union",
-        "insert",
-        "into",
-        "is_empty",
-        "is_some",
-        "keys",
-        "len",
-        "new",
-        "ok_or_else",
-        "start",
-        "validate_operation_callable_bindings",
-        "verify_statements"
-      ]
-    },
-    {
       "id": "db848ee81269931e3df0ee4804940b585d50aabfd0e4825531ed70edab2f8f3d",
       "symbol": "maledictus::python_heap_contracts::ensure_contextual_conjunct_reference_types",
       "name": "ensure_contextual_conjunct_reference_types",
@@ -53196,29 +53280,16 @@
       ]
     },
     {
-      "id": "dfcddf65f319365e1cf0795da67b66898596da91782feb699fe39ffb6d4aae9f",
-      "symbol": "maledictus::dagcert_operations::verify_outcome_constructor",
-      "name": "verify_outcome_constructor",
+      "id": "dfb6fb6e787a03abddff8270ac90c5d3c72ad6e61ca02c9aa6b761ce863d2dd9",
+      "symbol": "maledictus::dagcert_operations::exception_is_subtype_of",
+      "name": "exception_is_subtype_of",
       "file": "src/dagcert_operations.rs",
-      "line_start": 1069,
-      "line_end": 1127,
-      "source_sha256": "f4e5f9435702ca402f739593291f766d829b19700fd72e5eed42beb49885f5a8",
+      "line_start": 1292,
+      "line_end": 1308,
+      "source_sha256": "d59fd5b69158bcce716c150899f5f56fd90db8de0437246101f63749331487b4",
       "basis": "unproved",
       "proof": null,
-      "calls": [
-        "Ok",
-        "as_ref",
-        "as_str",
-        "contains",
-        "extend",
-        "failure",
-        "infer_operation_expression",
-        "is_empty",
-        "iter",
-        "len",
-        "new",
-        "zip"
-      ]
+      "calls": []
     },
     {
       "id": "dfdd82280a74ad500fe0ae5730e7b1c37a255de40f07519884a58055d42795d6",
@@ -53303,6 +53374,18 @@
         "insert",
         "to_owned"
       ]
+    },
+    {
+      "id": "e04220fbac14804b2698101499ea696d6edd1e5227405df2ce9fe474df0751dc",
+      "symbol": "maledictus::dagcert_operations::value_type_from_primitive",
+      "name": "value_type_from_primitive",
+      "file": "src/dagcert_operations.rs",
+      "line_start": 1262,
+      "line_end": 1269,
+      "source_sha256": "40bfd8ab922e0bead9550a83c4abc3cf74c544288d6db6b7b46f67bbedebb343",
+      "basis": "unproved",
+      "proof": null,
+      "calls": []
     },
     {
       "id": "e065db446ca69137d50bee7571cb54f8a71e2bae63be7d1d1bbeffc72ba3085b",
@@ -53507,22 +53590,6 @@
       ]
     },
     {
-      "id": "e197b8a87b3f1fcb468547f4b2a4af5444437dd1fe56c4849db6ec70e7f0483d",
-      "symbol": "maledictus::dagcert_operations::operation_local_annotation",
-      "name": "operation_local_annotation",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 963,
-      "line_end": 982,
-      "source_sha256": "824b002ecb679febb5a702784e4c0cdc4623ede2b8585235b6f1027914311f1c",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "as_str",
-        "located_failure"
-      ]
-    },
-    {
       "id": "e1afc7684ce340041b88f495a0e247e32947b946a917b1fe7881047aed1fd5bc",
       "symbol": "maledictus::python_heap_contracts::heap_effect_argument_is_plain",
       "name": "heap_effect_argument_is_plain",
@@ -53621,27 +53688,6 @@
         "to_str",
         "validate_cached_fixture",
         "validate_contract_positions_with_profile"
-      ]
-    },
-    {
-      "id": "e23bc290448ca67a4edf9dbc5f8793df86c8d61dc15d292d16aefa79bd5a5467",
-      "symbol": "maledictus::dagcert_operations::annotation_type",
-      "name": "annotation_type",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 394,
-      "line_end": 426,
-      "source_sha256": "cf568d40be0476bec7b0b63947ebe547bce26338ab0a236af24d1dda9fca7e80",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "Record",
-        "as_str",
-        "callable_annotation_type",
-        "contains",
-        "failure",
-        "to_owned",
-        "variadic_tuple_annotation_type"
       ]
     },
     {
@@ -54746,29 +54792,6 @@
       ]
     },
     {
-      "id": "e692f1e47f966878211754029206b11f3e5f4820fe7fd53fb50d41f68e9e6323",
-      "symbol": "maledictus::dagcert_operations::imported_markers",
-      "name": "imported_markers",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 204,
-      "line_end": 274,
-      "source_sha256": "da5da465cfd7f6a81933fef1b8548c9e07b698410b5aef77e4f33f685cccb7e0",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "as_ref",
-        "as_str",
-        "failure",
-        "insert",
-        "is_empty",
-        "map",
-        "map_or",
-        "new",
-        "to_owned"
-      ]
-    },
-    {
       "id": "e6a11eb2bbb0e57a584e4f27348b15d6b09057dc9e3150f1e4468adaa62e4193",
       "symbol": "maledictus::python_contract_positions::statement_dead_code",
       "name": "statement_dead_code",
@@ -55170,24 +55193,6 @@
         "nominal_name_is_subtype",
         "source_constructor_call",
         "then_some"
-      ]
-    },
-    {
-      "id": "e872ab1dad632058df2b38c6ce687b50500443eacd866cea8099cb53dcfe7f72",
-      "symbol": "maledictus::dagcert_operations::signature_from_contract",
-      "name": "signature_from_contract",
-      "file": "src/dagcert_operations.rs",
-      "line_start": 1243,
-      "line_end": 1252,
-      "source_sha256": "4cff0822669fc3275e6df3f3cddbd95eb78c78685829ba24338a2a16f04c752f",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "collect",
-        "iter",
-        "map",
-        "new",
-        "value_type_from_primitive"
       ]
     },
     {

@@ -11,6 +11,7 @@ enum ValueType {
     Float,
     Bool,
     Str,
+    Bytes,
     VariadicTuple(Box<ValueType>),
     Record(String),
     Callable(CallableSignature),
@@ -417,6 +418,7 @@ fn annotation_type(
         "float" => Ok(ValueType::Float),
         "bool" => Ok(ValueType::Bool),
         "str" => Ok(ValueType::Str),
+        "bytes" => Ok(ValueType::Bytes),
         record if class_names.contains(record) => Ok(ValueType::Record(record.to_owned())),
         other => failure(
             "frontend.python.dagcert.type-unsupported",
@@ -450,7 +452,7 @@ fn variadic_tuple_annotation_type(
     let element = annotation_type(&parts.elts[0], class_names, callable_names)?;
     if !matches!(
         element,
-        ValueType::Int | ValueType::Float | ValueType::Bool | ValueType::Str
+        ValueType::Int | ValueType::Float | ValueType::Bool | ValueType::Str | ValueType::Bytes
     ) {
         return failure(
             "frontend.python.dagcert.tuple-element-type-unsupported",
@@ -973,6 +975,7 @@ fn operation_local_annotation(annotation: &ast::Expr) -> Result<ValueType, Opera
         "float" => Ok(ValueType::Float),
         "bool" => Ok(ValueType::Bool),
         "str" => Ok(ValueType::Str),
+        "bytes" => Ok(ValueType::Bytes),
         _ => located_failure(
             "frontend.python.dagcert.local-annotation-unsupported",
             format!("unsupported operation local annotation {:?}", name.id),
@@ -1139,6 +1142,11 @@ fn infer_operation_expression(
         return infer_expression(expression, input_name, input_record, records, locals)
             .map(|value_type| (value_type, BTreeSet::new()));
     };
+    if matches!(call.func.as_ref(), ast::Expr::Name(name) if records.contains_key(name.id.as_str()))
+    {
+        return infer_expression(expression, input_name, input_record, records, locals)
+            .map(|value_type| (value_type, BTreeSet::new()));
+    }
     if !call.keywords.is_empty() {
         return located_failure(
             "frontend.python.dagcert.callable-keyword-unsupported",
@@ -1308,6 +1316,9 @@ fn infer_expression(
 ) -> Result<ValueType, OperationFailure> {
     match expression {
         ast::Expr::Name(name) => {
+            if name.id.as_str() == input_name {
+                return Ok(ValueType::Record(input_record.to_owned()));
+            }
             locals
                 .get(name.id.as_str())
                 .cloned()
@@ -1322,28 +1333,61 @@ fn infer_expression(
             ast::Constant::Float(_) => Ok(ValueType::Float),
             ast::Constant::Bool(_) => Ok(ValueType::Bool),
             ast::Constant::Str(_) => Ok(ValueType::Str),
+            ast::Constant::Bytes(_) => Ok(ValueType::Bytes),
             _ => unsupported_expression(expression),
         },
         ast::Expr::Attribute(attribute) => {
-            let ast::Expr::Name(receiver) = attribute.value.as_ref() else {
-                return unsupported_expression(expression);
-            };
-            if receiver.id.as_str() != input_name {
+            let receiver =
+                infer_expression(&attribute.value, input_name, input_record, records, locals)?;
+            let ValueType::Record(record) = receiver else {
                 return failure(
                     "frontend.python.dagcert.field-receiver-unsupported",
-                    "operation expressions may read fields only from the typed task input",
+                    "operation field reads require a source-owned frozen record receiver",
                 );
-            }
-            records[input_record]
+            };
+            records[&record]
                 .fields
                 .iter()
                 .find(|(field, _)| field == attribute.attr.as_str())
                 .map(|(_, field_type)| field_type.clone())
                 .ok_or_else(|| OperationFailure {
                     code: "frontend.python.dagcert.field-unknown",
-                    message: format!("input record has no field {:?}", attribute.attr),
+                    message: format!("record {record:?} has no field {:?}", attribute.attr),
                     byte_offset: Some(attribute.range.start().into()),
                 })
+        }
+        ast::Expr::Call(call) => {
+            let ast::Expr::Name(constructor) = call.func.as_ref() else {
+                return unsupported_expression(expression);
+            };
+            let Some(shape) = records.get(constructor.id.as_str()) else {
+                return unsupported_expression(expression);
+            };
+            if !call.keywords.is_empty() || call.args.len() != shape.fields.len() {
+                return located_failure(
+                    "frontend.python.dagcert.record-constructor-shape-mismatch",
+                    format!(
+                        "frozen record {:?} requires exactly {} positional fields",
+                        constructor.id,
+                        shape.fields.len()
+                    ),
+                    expression,
+                );
+            }
+            for ((field, expected), argument) in shape.fields.iter().zip(&call.args) {
+                let actual = infer_expression(argument, input_name, input_record, records, locals)?;
+                if &actual != expected {
+                    return located_failure(
+                        "frontend.python.dagcert.record-constructor-field-type-mismatch",
+                        format!(
+                            "frozen record {:?} field {field:?} expects {expected:?}, received {actual:?}",
+                            constructor.id
+                        ),
+                        argument,
+                    );
+                }
+            }
+            Ok(ValueType::Record(constructor.id.to_string()))
         }
         ast::Expr::UnaryOp(operation) => {
             let operand = infer_expression(
@@ -1354,7 +1398,11 @@ fn infer_expression(
                 locals,
             )?;
             match operation.op {
-                ast::UnaryOp::Not if operand == ValueType::Bool => Ok(ValueType::Bool),
+                ast::UnaryOp::Not
+                    if matches!(operand, ValueType::Bool | ValueType::Str | ValueType::Bytes) =>
+                {
+                    Ok(ValueType::Bool)
+                }
                 ast::UnaryOp::UAdd | ast::UnaryOp::USub
                     if matches!(operand, ValueType::Int | ValueType::Float) =>
                 {
@@ -1556,6 +1604,22 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.operations, ["classify_seen_image_choice"]);
+    }
+
+    #[test]
+    fn proves_bytes_payload_propagation_and_total_truthiness() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Payload:\n    ok: bool\n    content: bytes\n    label: str\n\n@dataclass(frozen=True)\nclass Ready:\n    content: bytes\n\n@dataclass(frozen=True)\nclass Rejected:\n    reason: str\n\n@operation\ndef classify(request: Payload) -> Ready | Rejected:\n    if not request.ok:\n        return Rejected('provider failed')\n    if not request.content:\n        return Rejected('empty bytes')\n    if not request.label:\n        return Rejected('empty label')\n    return Ready(request.content)\n";
+        let result =
+            verify_operation_module(source, "payload.py", &["classify".to_owned()]).unwrap();
+        assert_eq!(result.operations, ["classify"]);
+    }
+
+    #[test]
+    fn proves_nested_projection_from_source_owned_frozen_records() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass ImageRef:\n    value: str\n\n@dataclass(frozen=True)\nclass Request:\n    image_ref: str\n\n@dataclass(frozen=True)\nclass Completed:\n    image_ref: str\n\n@operation\ndef project(request: Request) -> Completed:\n    image = ImageRef(request.image_ref)\n    return Completed(image.value)\n";
+        let result =
+            verify_operation_module(source, "projection.py", &["project".to_owned()]).unwrap();
+        assert_eq!(result.operations, ["project"]);
     }
 
     #[test]

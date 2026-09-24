@@ -2935,6 +2935,38 @@ fn verifier_proves_dagcert_history_selection_over_variadic_tuple() {
 }
 
 #[test]
+fn verifier_proves_dagcert_bytes_worker_record_flow() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("worker.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass ImageRef:\n    value: str\n\n@dataclass(frozen=True)\nclass WorkerResponse:\n    ok: bool\n    image_ref: str\n    content: bytes\n\n@dataclass(frozen=True)\nclass WorkingImage:\n    image: ImageRef\n    content: bytes\n\n@dataclass(frozen=True)\nclass Failed:\n    image: ImageRef\n    reason: str\n\n@operation\ndef classify(response: WorkerResponse) -> WorkingImage | Failed:\n    image = ImageRef(response.image_ref)\n    if not response.ok:\n        return Failed(image, 'provider failed')\n    if not response.image_ref:\n        return Failed(image, 'empty identity')\n    if not response.content:\n        return Failed(image, 'empty payload')\n    return WorkingImage(ImageRef(image.value), response.content)\n",
+    )
+    .unwrap();
+    let request = ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![SourceFile {
+            path: "worker.py".to_owned(),
+            language: "python".to_owned(),
+            symbols: vec!["classify".to_owned()],
+        }],
+        external_contract_overlays: Vec::new(),
+        python_callable_bindings: Vec::new(),
+        cross_language_bindings: Vec::new(),
+    };
+
+    let response = maledictus::verify(&request);
+    assert!(matches!(response.status, ProofStatus::Proved));
+    assert_eq!(
+        response.files[0].fragment.as_deref(),
+        Some("dagcert-closed-typed-operations/v3")
+    );
+    assert!(response.diagnostics.is_empty());
+}
+
+#[test]
 fn verifier_refuses_partial_expression_inside_dagcert_operation() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(

@@ -25,6 +25,10 @@ updated on one branch; type-changing reassignment and callable rebinding remain 
 Frozen input and outcome records may also contain homogeneous immutable primitive tuples such as
 `tuple[str, ...]`. Equality and type-checked `in`/`not in` membership are total; mutable sequences,
 heterogeneous tuple annotations, and element-type mismatches remain refused.
+Immutable `bytes` payloads may be carried through records and tested for emptiness. Source-owned
+frozen records may be constructed into typed locals and projected recursively when constructor
+arity and every field type match exactly. Arbitrary object construction and attribute dispatch
+remain refused.
 Dagcert must require that fragment in
 the returned file result; a generic `proved` status or a different fragment is not interchangeable.
 Dagcert selects it with `--proof-backend maledictus`, `--proof-backend-executable`, and

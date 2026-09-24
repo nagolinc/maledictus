@@ -1,0 +1,23 @@
+{
+  "schema": "maledictus-nagini-inventory/v1",
+  "project": "Nagini",
+  "tag": "v1.3.1",
+  "commit": "c2fd68f27db324d110824f607aabfda827e3675a",
+  "python_files": 649,
+  "annotations": {
+    "expected_outputs": 1205,
+    "unexpected_outputs": 15,
+    "missing_outputs": 2,
+    "ignored_files": 18
+  },
+  "areas": {
+    "arp": 14,
+    "functional": 416,
+    "io": 112,
+    "obligations": 36,
+    "sif-poss": 8,
+    "sif-prob": 6,
+    "sif-true": 57
+  }
+}
+

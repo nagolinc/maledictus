@@ -1,0 +1,18 @@
+name = "maledictus_solver_sort_predicates_extraction_check"
+version = "0.1.0"
+packagesDir = "../../../.cache/lake/packages/lean-4.31"
+buildDir = "../../../.cache/lake/build/solver-sort-predicates"
+
+[[require]]
+name = "aeneas"
+git = "https://github.com/AeneasVerif/aeneas.git"
+rev = "nightly-2026.08.27-5b9dcf3"
+subDir = "backends/lean"
+
+[[lean_lib]]
+name = "SolverSortPredicates"
+srcDir = "generated"
+
+[[lean_lib]]
+name = "SolverSortPredicatesProofs"
+srcDir = "proofs"

@@ -1,0 +1,19 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "e0a565b45a987dae84121bd69df00cc95c40ebd4a911953e1cecd6444a7ceef8",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "predicate_source_provider.py",
+      "language": "python",
+      "symbols": ["Cell.__init__", "state"]
+    },
+    {
+      "path": "predicate_source_app.py",
+      "language": "python",
+      "symbols": ["verify_state"]
+    }
+  ],
+  "external_contract_overlays": []
+}

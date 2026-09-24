@@ -1,0 +1,19 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "b1265d305811d17dabcb168b9a9ff15657b1195f6c631d6ef194cd1e09e1682f",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "source_app.py",
+      "language": "python",
+      "symbols": ["run"]
+    },
+    {
+      "path": "source_leaf.py",
+      "language": "python",
+      "symbols": ["increment"]
+    }
+  ],
+  "external_contract_overlays": []
+}

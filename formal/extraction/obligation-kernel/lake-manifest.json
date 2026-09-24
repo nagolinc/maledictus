@@ -1,0 +1,7 @@
+{
+  "version": "1.1.0",
+  "packagesDir": "../../../.cache/lake/packages/lean-4.31",
+  "packages": [],
+  "name": "maledictus_obligation_kernel_proofs",
+  "lakeDir": ".lake"
+}

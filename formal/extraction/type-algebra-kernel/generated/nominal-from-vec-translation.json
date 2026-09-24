@@ -1,0 +1,108 @@
+{
+  "aeneas_version": "nightly-2026.08.27-5b9dcf3",
+  "charon_version": "0.1.245",
+  "crate": "maledictus_type_algebra_kernel_extraction",
+  "functions": [
+    {
+      "def_id": 1,
+      "lean_name": "alloc.vec.Vec.pop",
+      "lean_file": "TypeAlgebraNominal/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::vec::{alloc::vec::Vec<T>}::pop",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/vec/mod.rs",
+        "begin_line": 2872,
+        "end_line": 2872
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 0,
+      "lean_name": "TypeAlgebraNominal.python_type_algebra_kernel.NominalClassList.from_vec_loop.body",
+      "lean_file": "TypeAlgebraNominal/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::{maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::NominalClassList}::from_vec",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 80,
+        "end_line": 82
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "TypeAlgebraNominal.python_type_algebra_kernel.NominalClassList.from_vec"
+    },
+    {
+      "def_id": 0,
+      "lean_name": "TypeAlgebraNominal.python_type_algebra_kernel.NominalClassList.from_vec_loop",
+      "lean_file": "TypeAlgebraNominal/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::{maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::NominalClassList}::from_vec",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 80,
+        "end_line": 82
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "TypeAlgebraNominal.python_type_algebra_kernel.NominalClassList.from_vec"
+    },
+    {
+      "def_id": 0,
+      "lean_name": "TypeAlgebraNominal.python_type_algebra_kernel.NominalClassList.from_vec",
+      "lean_file": "TypeAlgebraNominal/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::{maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::NominalClassList}::from_vec",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 78,
+        "end_line": 84
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": true
+    }
+  ],
+  "types": [
+    {
+      "def_id": 1,
+      "lean_name": "TypeAlgebraNominal.python_type_algebra_kernel.NominalClass",
+      "lean_file": "TypeAlgebraNominal/Code/Types.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::NominalClass",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 60,
+        "end_line": 63
+      }
+    },
+    {
+      "def_id": 0,
+      "lean_name": "TypeAlgebraNominal.python_type_algebra_kernel.NominalClassList",
+      "lean_file": "TypeAlgebraNominal/Code/Types.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::NominalClassList",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 71,
+        "end_line": 75
+      }
+    }
+  ],
+  "globals": [],
+  "trait_decls": [],
+  "trait_impls": []
+}

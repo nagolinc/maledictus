@@ -1,0 +1,234 @@
+{
+  "aeneas_version": "nightly-2026.08.27-5b9dcf3",
+  "charon_version": "0.1.245",
+  "crate": "maledictus_kernel_exit_effects_extraction",
+  "functions": [
+    {
+      "def_id": 6,
+      "lean_name": "core.slice.iter.Iter.Insts.CoreIterTraitsIteratorIteratorSharedAT.any",
+      "lean_file": "KernelExitEffects/Code/FunsExternal_Template.lean",
+      "rust_name": "core::slice::iter::{impl core::iter::traits::iterator::Iterator<&'a T> for core::slice::iter::Iter<'a, T>}::any",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/core/src/slice/iter/macros.rs",
+        "begin_line": 321,
+        "end_line": 324
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 131,
+      "lean_name": "alloc.string.String.Insts.CoreCmpPartialEqString.eq",
+      "lean_file": "KernelExitEffects/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::cmp::PartialEq<alloc::string::String> for alloc::string::String}::eq",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 350,
+        "end_line": 350
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 4,
+      "lean_name": "alloc.string.String.Insts.CoreCloneClone.clone",
+      "lean_file": "KernelExitEffects/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::clone::Clone for alloc::string::String}::clone",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2388,
+        "end_line": 2388
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 8,
+      "lean_name": "KernelExitEffects.check_exit_effects.closure.Insts.CoreOpsFunctionFnMutTupleSharedStringBool.call_mut",
+      "lean_file": "KernelExitEffects/Code/Funs.lean",
+      "rust_name": "maledictus_kernel_exit_effects_extraction::check_exit_effects::{impl core::ops::function::FnMut<(&'_ alloc::string::String,), bool> for maledictus_kernel_exit_effects_extraction::check_exit_effects::closure<'_0, '_1>}::call_mut",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/kernel.rs",
+        "begin_line": 40,
+        "end_line": 40
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 7,
+      "lean_name": "KernelExitEffects.check_exit_effects.closure.Insts.CoreOpsFunctionFnOnceTupleSharedStringBool.call_once",
+      "lean_file": "KernelExitEffects/Code/Funs.lean",
+      "rust_name": "maledictus_kernel_exit_effects_extraction::check_exit_effects::{impl core::ops::function::FnOnce<(&'_ alloc::string::String,), bool> for maledictus_kernel_exit_effects_extraction::check_exit_effects::closure<'_0, '_1>}::call_once",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/kernel.rs",
+        "begin_line": 40,
+        "end_line": 40
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 0,
+      "lean_name": "KernelExitEffects.check_exit_effects_loop.body",
+      "lean_file": "KernelExitEffects/Code/Funs.lean",
+      "rust_name": "maledictus_kernel_exit_effects_extraction::check_exit_effects",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/kernel.rs",
+        "begin_line": 1,
+        "end_line": 50
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "KernelExitEffects.check_exit_effects"
+    },
+    {
+      "def_id": 0,
+      "lean_name": "KernelExitEffects.check_exit_effects_loop",
+      "lean_file": "KernelExitEffects/Code/Funs.lean",
+      "rust_name": "maledictus_kernel_exit_effects_extraction::check_exit_effects",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/kernel.rs",
+        "begin_line": 1,
+        "end_line": 50
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "KernelExitEffects.check_exit_effects"
+    },
+    {
+      "def_id": 0,
+      "lean_name": "KernelExitEffects.check_exit_effects",
+      "lean_file": "KernelExitEffects/Code/Funs.lean",
+      "rust_name": "maledictus_kernel_exit_effects_extraction::check_exit_effects",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/kernel.rs",
+        "begin_line": 27,
+        "end_line": 50
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    }
+  ],
+  "types": [
+    {
+      "def_id": 0,
+      "lean_name": "KernelExitEffects.ExitEffect",
+      "lean_file": "KernelExitEffects/Code/Types.lean",
+      "rust_name": "maledictus_kernel_exit_effects_extraction::ExitEffect",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/kernel.rs",
+        "begin_line": 6,
+        "end_line": 17
+      }
+    },
+    {
+      "def_id": 3,
+      "lean_name": "KernelExitEffects.KernelFailure",
+      "lean_file": "KernelExitEffects/Code/Types.lean",
+      "rust_name": "maledictus_kernel_exit_effects_extraction::KernelFailure",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/kernel.rs",
+        "begin_line": 20,
+        "end_line": 24
+      }
+    },
+    {
+      "def_id": 6,
+      "lean_name": "KernelExitEffects.check_exit_effects.closure",
+      "lean_file": "KernelExitEffects/Code/Types.lean",
+      "rust_name": "maledictus_kernel_exit_effects_extraction::check_exit_effects::closure",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/kernel.rs",
+        "begin_line": 40,
+        "end_line": 40
+      }
+    }
+  ],
+  "globals": [],
+  "trait_decls": [],
+  "trait_impls": [
+    {
+      "def_id": 10,
+      "lean_name": "KernelExitEffects.alloc.string.String.Insts.CoreCmpPartialEqString",
+      "lean_file": "KernelExitEffects/Code/Funs.lean",
+      "rust_name": "alloc::string::{impl core::cmp::PartialEq<alloc::string::String> for alloc::string::String}",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 350,
+        "end_line": 350
+      },
+      "impl_trait_def_id": 19,
+      "impl_trait_rust_name": "core::cmp::PartialEq",
+      "impl_trait_is_builtin": true
+    },
+    {
+      "def_id": 0,
+      "lean_name": "KernelExitEffects.check_exit_effects.closure.Insts.CoreOpsFunctionFnOnceTupleSharedStringBool",
+      "lean_file": "KernelExitEffects/Code/Funs.lean",
+      "rust_name": "maledictus_kernel_exit_effects_extraction::check_exit_effects::{impl core::ops::function::FnOnce<(&'_ alloc::string::String,), bool> for maledictus_kernel_exit_effects_extraction::check_exit_effects::closure<'_0, '_1>}",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/kernel.rs",
+        "begin_line": 40,
+        "end_line": 40
+      },
+      "impl_trait_def_id": 2,
+      "impl_trait_rust_name": "core::ops::function::FnOnce",
+      "impl_trait_is_builtin": true
+    },
+    {
+      "def_id": 1,
+      "lean_name": "KernelExitEffects.check_exit_effects.closure.Insts.CoreOpsFunctionFnMutTupleSharedStringBool",
+      "lean_file": "KernelExitEffects/Code/Funs.lean",
+      "rust_name": "maledictus_kernel_exit_effects_extraction::check_exit_effects::{impl core::ops::function::FnMut<(&'_ alloc::string::String,), bool> for maledictus_kernel_exit_effects_extraction::check_exit_effects::closure<'_0, '_1>}",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/kernel.rs",
+        "begin_line": 40,
+        "end_line": 40
+      },
+      "impl_trait_def_id": 1,
+      "impl_trait_rust_name": "core::ops::function::FnMut",
+      "impl_trait_is_builtin": true
+    }
+  ]
+}

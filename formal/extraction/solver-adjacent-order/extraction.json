@@ -1,0 +1,256 @@
+{
+  "schema": "maledictus-rust-lean-extraction/v1",
+  "identity": "solver-adjacent-order-aeneas-extraction/v1",
+  "status": "translated-compiled-and-universally-refinement-proved",
+  "counts_as_implementation_refinement": true,
+  "source": {
+    "path": "src/solver.rs",
+    "sha256": "98c8d342ae6b3ed9e88a4b37f07940624602e97874c4913a00faf41bd124000e",
+    "extracted_functions": [
+      {
+        "name": "is_exact_sorted_adjacent_order_theorem",
+        "line_start": 144,
+        "line_end": 235,
+        "universally_proved": true
+      },
+      {
+        "name": "unwrap_singleton_and",
+        "line_start": 237,
+        "line_end": 245,
+        "universally_proved": true
+      },
+      {
+        "name": "is_bound_variable",
+        "line_start": 247,
+        "line_end": 255,
+        "universally_proved": true
+      },
+      {
+        "name": "is_integer_literal",
+        "line_start": 257,
+        "line_end": 262,
+        "universally_proved": true
+      },
+      {
+        "name": "is_bound_successor",
+        "line_start": 264,
+        "line_end": 272,
+        "universally_proved": true
+      },
+      {
+        "name": "is_python_index_of",
+        "line_start": 274,
+        "line_end": 323,
+        "universally_proved": true
+      },
+      {
+        "name": "is_nonnegative_bound",
+        "line_start": 325,
+        "line_end": 342,
+        "universally_proved": true
+      },
+      {
+        "name": "is_adjacent_upper_bound",
+        "line_start": 344,
+        "line_end": 359,
+        "universally_proved": true
+      }
+    ]
+  },
+  "toolchain": {
+    "aeneas_release": "nightly-2026.08.27-5b9dcf3",
+    "aeneas_release_sha": "5b9dcf3",
+    "charon_version": "0.1.245",
+    "charon_commit": "4ad295c1bf982b5533ce7d85f4ddc889ff3127f8",
+    "rust_toolchain": "nightly-2026-08-18",
+    "rustc_version": "1.100.0-nightly (8fa1c96cf 2026-08-17)",
+    "lean_toolchain": "v4.31.0"
+  },
+  "extraction": {
+    "roots": [
+      "crate::solver::is_exact_sorted_adjacent_order_theorem"
+    ],
+    "opaque": [
+      "{impl core::cmp::PartialEq<crate::vc::Term> for crate::vc::Term}"
+    ],
+    "direct_production_source": true,
+    "rust_wrapper": false,
+    "source_seam": false
+  },
+  "llbc": {
+    "checked_in": false,
+    "sha256": "8c15f1eb64ff831587b2095b4740c089d564cc1daa81d62c865b6b2c2729d16f",
+    "size_bytes": 1115503,
+    "warnings": 0
+  },
+  "generated": [
+    {
+      "path": "formal/extraction/solver-adjacent-order/generated/SolverAdjacentOrder.lean",
+      "sha256": "011002040c138eda1e5cc8499e24ea8fe948da6811d60fc654fb778ea4304aa3"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/generated/SolverAdjacentOrder/Code/Types.lean",
+      "sha256": "2cf14bcf38fca65d802cc064dba0306f52868b63f9db3147590aa01bce45215a"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/generated/SolverAdjacentOrder/Code/Funs.lean",
+      "sha256": "7c3f0a63ce5cfeafaddd877a70e3819bb0e1274f5bd1aabfe6e28f46751b946e"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/generated/translation.json",
+      "sha256": "6528b367e5fc9b4046c59cda835de5bc20be83fe537363fea90c99a8bedbaaa1"
+    }
+  ],
+  "external_models": [
+    {
+      "path": "formal/extraction/solver-adjacent-order/generated/SolverAdjacentOrder/Code/TypesExternal.lean",
+      "sha256": "b25efabf1cd600e31f6b78e6e9eae67fbaa06af441e5ec5053316674732aa527",
+      "constructive": true,
+      "trusted": false,
+      "replaces": [
+        "Aeneas recursive Vec type occurrences with Lean List"
+      ]
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/generated/SolverAdjacentOrder/Code/FunsExternal.lean",
+      "sha256": "379f48507c5cc6b2768906a059ad95ddbaca54161e9030870327cd8c68def69f",
+      "constructive": true,
+      "trusted": false,
+      "replaces": [
+        "UTF-8 string and slice operations",
+        "structural Term equality",
+        "Aeneas partial loop combinator"
+      ]
+    }
+  ],
+  "translation": {
+    "local_functions": 11,
+    "transparent_local_functions": 10,
+    "opaque_local_functions": 1,
+    "external_functions": 6,
+    "source_loops": 1
+  },
+  "lean_build": {
+    "result": "passed",
+    "jobs": 1706,
+    "library": "SolverAdjacentOrderProofs.AxiomAudit"
+  },
+  "proof_progress": {
+    "all_input_exact_results_proved": true,
+    "finite_source_loops_proved": true,
+    "constructive_vec_iteration_proved": true,
+    "axiom_dependency_audited": true,
+    "checked_theorems": [
+      "SolverAdjacentOrder.Proofs.is_exact_sorted_adjacent_order_theorem_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.unwrap_singleton_and_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.is_bound_variable_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.is_integer_literal_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.is_bound_successor_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.is_python_index_of_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.is_nonnegative_bound_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.is_adjacent_upper_bound_all_inputs_exact"
+    ],
+    "open_obligations": 0
+  },
+  "axiom_audits": [
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.is_integer_literal_all_inputs_exact",
+      "axioms": ["propext", "Quot.sound"],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.is_bound_variable_all_inputs_exact",
+      "axioms": ["propext", "Quot.sound"],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.is_bound_successor_all_inputs_exact",
+      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.unwrap_singleton_and_all_inputs_exact",
+      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.is_python_index_of_all_inputs_exact",
+      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.is_nonnegative_bound_all_inputs_exact",
+      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.is_adjacent_upper_bound_all_inputs_exact",
+      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.is_exact_sorted_adjacent_order_theorem_all_inputs_exact",
+      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "contains_sorry_ax": false
+    }
+  ],
+  "proof_project": [
+    {
+      "path": "formal/extraction/solver-adjacent-order/README.md",
+      "sha256": "dc063eab636b2fb8371280d58211d8f94c0ea358dd43eff585ecbb8616ef87fb"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/normalize-generated.ps1",
+      "sha256": "196f7c5b33ecbf89de0ffa604cb4867da63aee40d5b161378f467f40a9d901cd"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/lakefile.toml",
+      "sha256": "e6db0297c4e8df1794f756f51306bba74a5e51703c2370c7af84541e7530f445"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/lean-toolchain",
+      "sha256": "efac0b94923b2d8b6840cd35be9177ad0fc5ab2332f4f4311c98712cee92fdee"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/lake-manifest.json",
+      "sha256": "844ea08a434821f46aeb06ecd29ae74cd0e3c833a84722ed3114992d92ff4547"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs.lean",
+      "sha256": "3eb31027b445d657253bbc6c9326b89f1c48248aa78339fb6874d9da74fb5d5d"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs/Refinement.lean",
+      "sha256": "397769fa98522eb211dcddc15c2209598b71dc2f255aadb0f133da1216d4747b"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs/Top.lean",
+      "sha256": "8cd732f358cb4751360443c75269a1e077efb42d7f2952895a34e0fb2204f384"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs/AxiomAudit.lean",
+      "sha256": "e078c622fbdad3df446915c1bed5fc41b40c0ac27067499663b91fb2434c0a6d"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/tests/AxiomAuditRejectsSorry.lean",
+      "sha256": "54db8b3508af50761aee1acea6edcc40692201b2e2d7ff0e59268c03ca75e836"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/tests/AxiomAuditRejectsProjectAxiom.lean",
+      "sha256": "c8d9f2c664a50030a19a05943c2bd336589dc5324d3dce2ffd5b84644f6fda48"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/test-axiom-audits.ps1",
+      "sha256": "31cdc9810a54027e820c6ad0c0353383ba5d2dacf824fdaf47ee4d7de310e25e"
+    },
+    {
+      "path": "formal/extraction/test-axiom-audits.ps1",
+      "sha256": "9a69fd859dd6285f85a549eb5d8aa84b8aa7605978061ce46f13812d049aebba"
+    },
+    {
+      "path": "formal/lake-projects.json",
+      "sha256": "cc536fc6959683430fa5ec60f03a07856ba41709950dbcf205a1b1bc0f1e9f52"
+    }
+  ],
+  "open_obligations": []
+}

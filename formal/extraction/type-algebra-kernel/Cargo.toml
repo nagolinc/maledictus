@@ -1,0 +1,19 @@
+[package]
+name = "maledictus-type-algebra-kernel-extraction"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = { version = "=1.0.151", features = ["arbitrary_precision"] }
+sha2 = "=0.10.9"
+rustpython-parser = { version = "=0.4.0", features = ["full-lexer"] }
+rustpython-ast = { version = "=0.4.0", features = ["fold", "visitor"] }
+z3 = { version = "=0.21.0", features = ["gh-release"] }
+tempfile = "=3.27.0"
+
+[lib]
+path = "../../../src/lib.rs"
+
+[workspace]

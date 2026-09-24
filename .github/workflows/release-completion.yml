@@ -1,0 +1,28 @@
+name: release completion
+
+on:
+  workflow_dispatch:
+
+jobs:
+  complete:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: marcoeilers/nagini
+          ref: c2fd68f27db324d110824f607aabfda827e3675a
+          path: .upstream/nagini
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12.10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - shell: pwsh
+        run: ./tests/release_completion_gate.Tests.ps1
+      - shell: pwsh
+        run: ./scripts/release-completion-gate.ps1

@@ -1,0 +1,180 @@
+{
+  "schema": "maledictus-rust-lean-extraction/v1",
+  "identity": "python-io-sort-kernel-aeneas-extraction/v1",
+  "status": "translated-compiled-and-universally-refinement-proved",
+  "counts_as_implementation_refinement": true,
+  "source": {
+    "path": "src/python_io_contracts.rs",
+    "sha256": "767e26e5beadabfcb5ce70d3548274350942c3b26ed742e02de70ed59773d198",
+    "functions": [
+      {
+        "name": "same_value_sort",
+        "line_start": 1376,
+        "line_end": 1385
+      },
+      {
+        "name": "value_has_sort",
+        "line_start": 1629,
+        "line_end": 1634
+      }
+    ],
+    "value_variants": 3,
+    "sort_variants": 2,
+    "payloads_ignored_only_after_constructor_match": true
+  },
+  "manifest": {
+    "path": "formal/extraction/io-sort-kernel/Cargo.toml",
+    "sha256": "980a37bc58575084291ad73e74078af080f440a252c8042a5dc70e5519072f9c",
+    "production_library_path": "../../../src/lib.rs"
+  },
+  "lockfile": {
+    "path": "formal/extraction/io-sort-kernel/Cargo.lock",
+    "sha256": "f9948c4f6d9f4e72b2390fbecdb581c4d8cfec684b470d4f76a9468f60dd62d2"
+  },
+  "toolchain": {
+    "aeneas_release": "nightly-2026.08.27-5b9dcf3",
+    "aeneas_release_sha": "5b9dcf3",
+    "charon_version": "0.1.245",
+    "charon_commit": "4ad295c1bf982b5533ce7d85f4ddc889ff3127f8",
+    "rust_toolchain": "nightly-2026-08-18",
+    "rustc_version": "1.100.0-nightly (8fa1c96cf 2026-08-17)",
+    "lean_toolchain": "v4.31.0"
+  },
+  "llbc": {
+    "checked_in": false,
+    "sha256": "36799cfb0ec5594c34f958f33581635a4c2303cd9d2edfdd016a5bab09e285f1",
+    "size_bytes": 249215,
+    "warnings": 0
+  },
+  "generated": [
+    {
+      "path": "formal/extraction/io-sort-kernel/generated/IoSortKernel.lean",
+      "sha256": "e65016b4c13ed9986e73f282d0f9d4061b3a02946165244abeae6838e8db265e"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/generated/IoSortKernel/Code/Types.lean",
+      "sha256": "4138f563595157ee3150d964dfa10d927839d2c2980a1164847e15a5ae191363"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/generated/IoSortKernel/Code/Funs.lean",
+      "sha256": "967c29abc004772fcd58440d4499a1d21fc3a72c7038e77d81dd9d0e78d36918"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/generated/translation.json",
+      "sha256": "fb58fdb982d47a8434051beee62092b8a0434d9e80307da98195b322f4ee9b8f"
+    }
+  ],
+  "external_models": [],
+  "translation": {
+    "local_functions": 2,
+    "transparent_local_functions": 2,
+    "opaque_functions": 0,
+    "recursive_functions": 0,
+    "can_diverge_functions": 0
+  },
+  "lean_build": {
+    "result": "passed",
+    "jobs": 1704,
+    "library": "IoSortKernelProofs"
+  },
+  "proof_progress": {
+    "all_input_value_has_sort_refinement_proved": true,
+    "all_input_same_value_sort_refinement_proved": true,
+    "all_input_value_has_sort_totality_proved": true,
+    "all_input_same_value_sort_totality_proved": true,
+    "value_has_sort_constructor_cases": 6,
+    "same_value_sort_constructor_cases": 9,
+    "open_obligations": 0,
+    "checked_theorems": [
+      "IoSortKernel.Proofs.value_has_sort_matches_reference",
+      "IoSortKernel.Proofs.same_value_sort_matches_reference",
+      "IoSortKernel.Proofs.value_has_sort_is_total",
+      "IoSortKernel.Proofs.same_value_sort_is_total"
+    ]
+  },
+  "axiom_audits": [
+    {
+      "theorem": "IoSortKernel.Proofs.value_has_sort_matches_reference",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "IoSortKernel.Proofs.same_value_sort_matches_reference",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "IoSortKernel.Proofs.value_has_sort_is_total",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "IoSortKernel.Proofs.same_value_sort_is_total",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    }
+  ],
+  "proof_project": [
+    {
+      "path": "formal/extraction/io-sort-kernel/README.md",
+      "sha256": "1c7ac47f4e66f17104240ae43eae52cf927884f1e3b5677727827edd271aef75"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/lakefile.toml",
+      "sha256": "3424a6df4214f9c3dfa3df6d8f64e282edae986ab4db966be490cb9d8052ecdb"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/lean-toolchain",
+      "sha256": "1550dc85bb00026cc586c6390f0af6d6b84c0aef210f4b8b44efdc6812ef6256"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/lake-manifest.json",
+      "sha256": "844ea08a434821f46aeb06ecd29ae74cd0e3c833a84722ed3114992d92ff4547"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/proofs/IoSortKernelProofs.lean",
+      "sha256": "227bcdbbdbac775c58328ecd9b92ab5c8cb161a99b9e4727303e7a92156578c4"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/proofs/IoSortKernelProofs/Refinement.lean",
+      "sha256": "d7ca9dd74f02511a0727b1e7e2eb23c9386e0558c4b6cedd4f8523694c8d3011"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/proofs/IoSortKernelProofs/AxiomAudit.lean",
+      "sha256": "d30eccd279ff00a1c208c55e9301c69389c156fc96cad833f5c8881397e02ec3"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/tests/AxiomAuditRejectsSorry.lean",
+      "sha256": "1d1de5819cf584dda896cde3a8f38be6b7f52ac04b68bffb922eb895fee6b9ab"
+    },
+    {
+      "path": "formal/extraction/io-sort-kernel/tests/AxiomAuditRejectsProjectAxiom.lean",
+      "sha256": "b01ee2b256f408162307aac1f296e4093a9da50a25cc9df2bfc27df43457cde2"
+    },
+    {
+      "path": "formal/extraction/test-axiom-audits.ps1",
+      "sha256": "9a69fd859dd6285f85a549eb5d8aa84b8aa7605978061ce46f13812d049aebba"
+    },
+    {
+      "path": "formal/test-lake-cache-hygiene.ps1",
+      "sha256": "55fd686ba90d94f16d6f787f8511ba12ff081a24fb384d4825f8604c40509aff"
+    },
+    {
+      "path": "formal/run-lake.ps1",
+      "sha256": "835198af317e165038b5dbf97702088cf127aa4bed778f660bb43730c4d7475d"
+    },
+    {
+      "path": "formal/lake-projects.json",
+      "sha256": "cc536fc6959683430fa5ec60f03a07856ba41709950dbcf205a1b1bc0f1e9f52"
+    }
+  ],
+  "open_obligations": []
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "6140c737fc2654fa3df3018c7419085cb6c07a603a9d670ab270841c7cbc4cbf",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "closed_javascript.js",
+      "language": "javascript",
+      "symbols": ["choose"]
+    }
+  ],
+  "external_contract_overlays": []
+}

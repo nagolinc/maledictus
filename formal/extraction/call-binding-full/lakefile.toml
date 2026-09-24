@@ -1,0 +1,17 @@
+name = "maledictus_call_binding_full_extraction_check"
+packagesDir = "../../../.cache/lake/packages/lean-4.31"
+buildDir = "../../../.cache/lake/build/call-binding-full"
+
+[[require]]
+name = "aeneas"
+git = "https://github.com/AeneasVerif/aeneas.git"
+rev = "nightly-2026.08.27-5b9dcf3"
+subDir = "backends/lean"
+
+[[lean_lib]]
+name = "BindCallFull"
+srcDir = "generated"
+
+[[lean_lib]]
+name = "BindCallFullProofs"
+srcDir = "proofs"

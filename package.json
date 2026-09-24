@@ -1,0 +1,9 @@
+{
+  "name": "maledictus-typescript-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Pinned real TypeScript compiler used by the Maledictus proof frontend",
+  "dependencies": {
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,350 @@
+{
+  "schema": "maledictus-rust-lean-extraction/v1",
+  "identity": "python-type-algebra-kernel-aeneas-extraction/v1",
+  "status": "translated-compiled-and-universally-refinement-proved",
+  "counts_as_implementation_refinement": true,
+  "source": {
+    "path": "src/python_type_algebra_kernel.rs",
+    "sha256": "c3f8999f5396f5f352ddb32993820f1354f2ab2fd3da92b7cb565b63e072fc4e",
+    "extracted_functions": [
+      { "name": "normalize_union", "universally_proved": true },
+      { "name": "expand_union", "universally_proved": true },
+      { "name": "is_subclass", "universally_proved": true },
+      { "name": "is_assignable", "universally_proved": true },
+      { "name": "cast_compatible", "universally_proved": true },
+      { "name": "narrow_type", "universally_proved": true },
+      { "name": "clone_type", "universally_proved": true },
+      { "name": "clone_type_list", "universally_proved": true },
+      { "name": "type_equals", "universally_proved": true },
+      { "name": "type_lists_equal", "universally_proved": true },
+      { "name": "type_list_contains", "universally_proved": true },
+      { "name": "flatten_union_types", "universally_proved": true },
+      { "name": "reverse_type_list", "universally_proved": true },
+      { "name": "normalize_type_list", "universally_proved": true },
+      { "name": "expand_union_list", "universally_proved": true },
+      { "name": "len", "universally_proved": true },
+      { "name": "into_vec", "universally_proved": true },
+      { "name": "class_parent", "universally_proved": true },
+      { "name": "subclass_with_remaining", "universally_proved": true },
+      { "name": "type_is_well_formed", "universally_proved": true },
+      { "name": "type_list_is_well_formed", "universally_proved": true },
+      { "name": "is_assignable_in_valid_hierarchy", "universally_proved": true },
+      { "name": "every_type_assignable_to", "universally_proved": true },
+      { "name": "type_assignable_to_any", "universally_proved": true },
+      { "name": "type_lists_assignable", "universally_proved": true },
+      { "name": "TypeList::from_vec", "universally_proved": true },
+      { "name": "NominalClassList::from_vec", "universally_proved": true },
+      { "name": "narrow_variants", "universally_proved": true },
+      { "name": "validate_nominal_hierarchy", "universally_proved": true },
+      { "name": "build_nominal_hierarchy", "universally_proved": true }
+    ]
+  },
+  "manifest": {
+    "path": "formal/extraction/type-algebra-kernel/Cargo.toml",
+    "sha256": "978352c0f78540165a6457a844551a5ae8c2e02e8d3498cf233b800aeaa29187",
+    "production_library_path": "../../../src/lib.rs"
+  },
+  "lockfile": {
+    "path": "formal/extraction/type-algebra-kernel/Cargo.lock",
+    "sha256": "3fb0a9b863dec9fcd1cea557e76a0edc48509cf5708202dde155784ad3a07e60"
+  },
+  "toolchain": {
+    "aeneas_release": "nightly-2026.08.27-5b9dcf3",
+    "aeneas_release_sha": "5b9dcf3",
+    "charon_version": "0.1.245",
+    "lean_toolchain": "v4.31.0"
+  },
+  "nominal_closure_extraction": {
+    "added_root": "crate::python_type_algebra_kernel::build_nominal_hierarchy",
+    "llbc": {
+      "checked_in": false,
+      "sha256": "1a9324cb9367f99cf7cc5f8d779e568f67f17d2bf88bb727f5eb916656f66e79",
+      "size_bytes": 800422
+    },
+    "transparent_source_functions": [
+      "build_nominal_hierarchy",
+      "validate_nominal_hierarchy",
+      "NominalClassList::from_vec"
+    ],
+    "aeneas_translation": {
+      "result": "passed",
+      "transparent_local_functions": 3,
+      "opaque_external_functions": 10
+    },
+    "all_input_exact_result_proved": true
+  },
+  "nominal_from_vec_extraction": {
+    "root": "crate::python_type_algebra_kernel::NominalClassList::from_vec",
+    "production_symbol": "maledictus::python_type_algebra_kernel::<NominalClassList>::from_vec",
+    "source_line_start": 78,
+    "source_line_end": 84,
+    "source_node_sha256": "2a1a97ad792f5f92710eda643f1da19ba92cca27cc86d3ef7877b484f9477a2d",
+    "raw_llbc": {
+      "checked_in": false,
+      "sha256": "a152650ec37a3a72099f74d2f077f35f6ef29d061583d4317d16605a51c2b708",
+      "size_bytes": 288833,
+      "ordered_declarations_emitted": 0
+    },
+    "ordered_llbc": {
+      "checked_in": false,
+      "sha256": "9eaa1cfb89aac8c39307075ca8cfc688c367e5926f5eb1bb6a29d79bc24c2a38",
+      "size_bytes": 289321,
+      "declarations_and_bodies_unchanged": true,
+      "ordered_declarations_added": 16
+    },
+    "entrypoint_transparent": true,
+    "constructive_vec_pop_model_reused": true,
+    "all_input_exact_result_proved": true
+  },
+  "generated": [
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/TypeAlgebraKernel.lean",
+      "sha256": "dba6c99c37886981e566735ce4b008115b6bc2a7c3fc22630b0ad16b52bbdb40"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/TypeAlgebraKernel/Code/Types.lean",
+      "sha256": "e90ba07ece1acf7e60c649095db17ee66629606b02f6c18d8c75037c395da53c"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/TypeAlgebraKernel/Code/Funs.lean",
+      "sha256": "ab6e69ca0eea959ee8dcde28de90e60d435b70bcf9f3d92cf18d483e634470a9"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/translation.json",
+      "sha256": "212d06d3e62a9fc98a5fe37a578b05fd1c1b7ac9eeab793a534aab7495e43a5e"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/TypeAlgebraNominal/Code/Types.lean",
+      "sha256": "40eee739b8891eec3dd13d808452a8675681a44bb7d35c2f6eaaad6c9dd2c193"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/TypeAlgebraNominal/Code/Funs.lean",
+      "sha256": "60cb548d71d5cc55451aeb942b8ee5368612e38055cdd37879532adb235939f4"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/nominal-from-vec-translation.json",
+      "sha256": "b0535c81779647c19eeaa0880dec7d2412b57efb1ef6a5860fbeea832c979517"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/TypeAlgebraHierarchy/Code/Types.lean",
+      "sha256": "de1462ceccade8a158074cf44848f29d4136808c277b18f58cfcfaf67a9ff145"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/TypeAlgebraHierarchy/Code/Funs.lean",
+      "sha256": "07f2ab0819d18714e8792dbc300d09a1dc2625495b4eefc3ce40e2bcbd704c91"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/nominal-hierarchy-translation.json",
+      "sha256": "2284499dae7da370c0ab8f1d565bbb539ef932cb9c54ff3648883c4961a14a7b"
+    }
+  ],
+  "external_models": [
+    {
+      "path": "formal/extraction/type-algebra-kernel/generated/TypeAlgebraKernel/Code/FunsExternal.lean",
+      "sha256": "10768d39e6bcbe1881356a949c2bf25835c17df461848ce7863b6d6e2e7ffc79",
+      "constructive": true,
+      "trusted": false
+    }
+  ],
+  "translation": {
+    "local_functions": 31,
+    "transparent_local_functions": 31,
+    "opaque_local_functions": 0,
+    "external_functions": 7
+  },
+  "lean_build": {
+    "result": "passed",
+    "jobs": 1717,
+    "library": "TypeAlgebraKernelProofs.AxiomAudit"
+  },
+  "proof_progress": {
+    "checked_theorems": [
+      "TypeAlgebraKernel.Proofs.normalize_union_exact",
+      "TypeAlgebraKernel.Proofs.expand_union_exact",
+      "TypeAlgebraKernel.Proofs.is_subclass_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.is_assignable_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.cast_compatible_exact",
+      "TypeAlgebraKernel.Proofs.narrow_type_exact",
+      "TypeAlgebraKernel.Proofs.clone_type_exact",
+      "TypeAlgebraKernel.Proofs.clone_type_list_exact",
+      "TypeAlgebraKernel.Proofs.type_equals_exact",
+      "TypeAlgebraKernel.Proofs.type_lists_equal_exact",
+      "TypeAlgebraKernel.Proofs.type_list_contains_exact",
+      "TypeAlgebraKernel.Proofs.flatten_union_types_exact",
+      "TypeAlgebraKernel.Proofs.reverse_type_list_exact",
+      "TypeAlgebraKernel.Proofs.normalize_type_list_exact",
+      "TypeAlgebraKernel.Proofs.expand_union_list_exact",
+      "TypeAlgebraKernel.Proofs.nominal_class_list_len_exact",
+      "TypeAlgebraKernel.Proofs.typeList_into_vec_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.class_parent_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.subclass_with_remaining_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.type_is_well_formed_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.type_list_is_well_formed_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.is_assignable_in_valid_hierarchy_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.every_type_assignable_to_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.type_assignable_to_any_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.type_lists_assignable_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.typeList_from_vec_exact",
+      "TypeAlgebraKernel.Proofs.nominalClassList_from_vec_exact",
+      "TypeAlgebraKernel.Proofs.narrow_variants_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.NominalConstruction.validate_nominal_hierarchy_all_inputs_exact",
+      "TypeAlgebraKernel.Proofs.NominalConstruction.build_nominal_hierarchy_all_inputs_exact"
+    ],
+    "universal_entrypoints_proved": 30,
+    "production_entrypoints": 30,
+    "open_obligations": 0
+  },
+  "axiom_audits": [
+    {
+      "theorems": [
+        "TypeAlgebraKernel.Proofs.normalize_union_exact",
+        "TypeAlgebraKernel.Proofs.expand_union_exact",
+        "TypeAlgebraKernel.Proofs.clone_type_exact",
+        "TypeAlgebraKernel.Proofs.clone_type_list_exact",
+        "TypeAlgebraKernel.Proofs.type_equals_exact",
+        "TypeAlgebraKernel.Proofs.type_lists_equal_exact",
+        "TypeAlgebraKernel.Proofs.type_list_contains_exact",
+        "TypeAlgebraKernel.Proofs.flatten_union_types_exact",
+        "TypeAlgebraKernel.Proofs.reverse_type_list_exact",
+        "TypeAlgebraKernel.Proofs.normalize_type_list_exact",
+        "TypeAlgebraKernel.Proofs.expand_union_list_exact",
+        "TypeAlgebraKernel.Proofs.nominal_class_list_len_exact",
+        "TypeAlgebraKernel.Proofs.typeList_into_vec_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.typeList_from_vec_exact",
+        "TypeAlgebraKernel.Proofs.nominalClassList_from_vec_exact",
+        "TypeAlgebraKernel.Proofs.class_parent_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.subclass_with_remaining_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.type_is_well_formed_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.type_list_is_well_formed_all_inputs_exact"
+      ],
+      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorems": [
+        "TypeAlgebraKernel.Proofs.cast_compatible_exact",
+        "TypeAlgebraKernel.Proofs.narrow_type_exact"
+      ],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+        "TypeAlgebraKernel.Proofs.is_subclass_exact._native.decide.ax_1_6",
+        "TypeAlgebraKernel.Proofs.is_subclass_exact._native.decide.ax_1_7",
+        "TypeAlgebraKernel.Proofs.is_subclass_exact._native.decide.ax_1_9",
+        "TypeAlgebraKernel.Proofs.subclassDecisionAllReference._native.decide.ax_1",
+        "TypeAlgebraKernel.python_type_algebra_kernel.is_subclass._native.decide.ax_1"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorems": [
+        "TypeAlgebraKernel.Proofs.is_subclass_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.is_assignable_in_valid_hierarchy_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.every_type_assignable_to_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.type_assignable_to_any_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.type_lists_assignable_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.is_assignable_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.narrow_variants_all_inputs_exact"
+      ],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+        "TypeAlgebraKernel.Proofs.is_subclass_all_inputs_exact._native.decide.ax_1_5",
+        "TypeAlgebraKernel.Proofs.is_subclass_all_inputs_exact._native.decide.ax_1_6",
+        "TypeAlgebraKernel.Proofs.is_subclass_all_inputs_exact._native.decide.ax_1_8",
+        "TypeAlgebraKernel.Proofs.subclassDecisionAllReference._native.decide.ax_1",
+        "TypeAlgebraKernel.python_type_algebra_kernel.is_subclass._native.decide.ax_1"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorems": [
+        "TypeAlgebraKernel.Proofs.NominalConstruction.validate_nominal_hierarchy_all_inputs_exact",
+        "TypeAlgebraKernel.Proofs.NominalConstruction.build_nominal_hierarchy_all_inputs_exact"
+      ],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+        "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy._native.decide.ax_1",
+        "TypeAlgebraKernel.Proofs.NominalConstruction.object_name_from_str_exact._native.decide.ax_1",
+        "TypeAlgebraKernel.Proofs.NominalConstruction.object_name_from_str_exact._native.decide.ax_1_1",
+        "TypeAlgebraKernel.Proofs.NominalConstruction.object_name_from_str_exact._native.native_decide.ax_1_4"
+      ],
+      "contains_sorry_ax": false
+    }
+  ],
+  "proof_project": [
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs.lean",
+      "sha256": "71694f6cc8062f705fd7244e3f2adca30333a47a6efb668de5e44cdced977819"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/Foundation.lean",
+      "sha256": "1ab3255f3ad4c7a7eb2c5d0a156d8a29bb3d8135abc2caf6701e872def887f6c"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/Sequences.lean",
+      "sha256": "4f112469f8f9b7d27609a60832491b1e741a7672aa5445e1f50d2a91fc8427e0"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/Normalization.lean",
+      "sha256": "25fe3332ad32a4f0b859058098da1cec5b9fd49ab7fd7de3434cfe72bce1aa5d"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/Hierarchy.lean",
+      "sha256": "736e983d040cc73876f4fd3447f9ec5173a3171c2d9826e24b7e613ec006487d"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/Assignability.lean",
+      "sha256": "a629fbf6495d814dd435140e6d08a7e10613b75bb7807514861fa0dd0ee3bb87"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/AssignabilityExact.lean",
+      "sha256": "602e831dfbd7b19cd8aa0218614af104c929b39e30eece1c08923dcc665ef511"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/Narrowing.lean",
+      "sha256": "8ea9336dd490f2803d55264554c65e1a482304aeb8bfdd9b8d2c1c6998b019ca"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/Refinement.lean",
+      "sha256": "22c700b03e73eab3e8263102f69b01a070a75c077e5acce17b0493245ce00ce2"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/AxiomAudit.lean",
+      "sha256": "838d5b547b12d53220cf4e54a36dfa0c7f49ed2e42e980ab0a1f916424186d1b"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/NominalFromVec.lean",
+      "sha256": "d1f375e8e90a2118570db014dc4d102a899445726d3524dbae21e85a1b4d466e"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/proofs/TypeAlgebraKernelProofs/HierarchyConstruction.lean",
+      "sha256": "ec7486ccaf9aea4e16cbb2ca4933a230b05ddaf06b4c2eee4d45987369468b18"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/repair-nominal-from-vec-ordered-decls.ps1",
+      "sha256": "fef2308e60a0d83871ae1959c774a0c01583315cd4faec293f475db51a319840"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/normalize-nominal-from-vec-generated.ps1",
+      "sha256": "e28068a9970687c4975c0987076d926f22d9f8dd71d8daca30aa6b97956bcdf1"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/lakefile.toml",
+      "sha256": "da1b09423062e7fe517e753e49eccd8c70a5306020909326d0eb18f9997d7196"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/tests/AxiomAuditRejectsSorry.lean",
+      "sha256": "f99c0def1e1f53f4a8a603566632f5a261ddb25d3871ca73b0e950f3caf316e1"
+    },
+    {
+      "path": "formal/extraction/type-algebra-kernel/tests/AxiomAuditRejectsProjectAxiom.lean",
+      "sha256": "4b4c69a85f279621ee8626d58c547664b45dab0b17b22d93f6d0ff4f93bbab0b"
+    }
+  ],
+  "open_obligations": []
+}

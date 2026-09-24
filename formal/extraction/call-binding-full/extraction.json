@@ -1,0 +1,351 @@
+{
+  "schema": "maledictus-rust-lean-extraction/v1",
+  "identity": "call-binding-full-aeneas-extraction/v1",
+  "status": "translated-compiled-and-universally-refinement-proved",
+  "counts_as_implementation_refinement": true,
+  "source": {
+    "path": "src/call_binding.rs",
+    "sha256": "1dae760eedfc95a831920a11eb4635a8401a5355b47b77caa1428f39184a3d28",
+    "entrypoint": "bind_call_with_allocator",
+    "additional_entrypoints": [
+      "<CallSignature<Type, Value> as Default>::default",
+      "bind_call_with"
+    ],
+    "line_start": 372,
+    "line_end": 390,
+    "production_wrapper": "bind_call",
+    "production_wrapper_line_start": 353,
+    "production_wrapper_line_end": 363,
+    "arbitrary_argument_cap": false,
+    "count_overflow_semantics": "checked-usize-with-phase-specific-typed-errors",
+    "unconditionally_proved_helpers": [
+      {
+        "name": "default",
+        "symbol": "<CallSignature<Type,Value>>::default",
+        "line_start": 67,
+        "line_end": 75,
+        "source_sha256": "73213bdf7883fd8042b18c512a0253185ed535184001e8dd4417bd6bd8bbfbe1"
+      },
+      {
+        "name": "accepts",
+        "symbol": "<ExactTypeCompatibility>::accepts",
+        "line_start": 318,
+        "line_end": 320,
+        "source_sha256": "67c4a4917339c50b572cb8cfd1e6808746dd1bba065174dd78ed7df58f9b0fd5"
+      },
+      {
+        "name": "accepts",
+        "symbol": "<CallbackTypeCompatibility<Compatible>>::accepts",
+        "line_start": 347,
+        "line_end": 349,
+        "source_sha256": "9d7e735fb76ac5cc068c66931815c236fa0e4bef8c733f495db6e69f1806d460"
+      }
+    ]
+  },
+  "manifest": {
+    "path": "formal/extraction/call-binding-full/Cargo.toml",
+    "sha256": "9be58b0725fea8ab3cf8328b75570b816d778038fc6654e41007cf2f21f624c3"
+  },
+  "toolchain": {
+    "aeneas_release": "nightly-2026.08.27-5b9dcf3",
+    "aeneas_release_sha": "5b9dcf3",
+    "charon_version": "0.1.245",
+    "charon_commit": "4ad295c1bf982b5533ce7d85f4ddc889ff3127f8",
+    "rust_toolchain": "nightly-2026-08-18",
+    "rustc_version": "1.100.0-nightly (8fa1c96cf 2026-08-17)",
+    "lean_toolchain": "v4.31.0"
+  },
+  "llbc": {
+    "checked_in": false,
+    "sha256": "83d5770db9843c3c6976e8ebb5735fd3a0f473ecd8be720754414a70a17e8c65",
+    "size_bytes": 7556561,
+    "full_sysroot": true,
+    "warnings": 0
+  },
+  "generated": [
+    {
+      "path": "formal/extraction/call-binding-full/generated/BindCallFull.lean",
+      "sha256": "cc9da3463f1b96380e426b41d28a808db69216164c884eda65749fd9d2a910cb"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/generated/translation.json",
+      "sha256": "e191ab74984c2a93f740ee50660ae9de6ca93379855f298961501fbb103b91e4"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/generated/BindCallFull/Code/Types.lean",
+      "sha256": "fa390b6874ddf599e7c81cdfa0141bacda2e8f4ede6ba680dd971607dd89f39c"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/generated/BindCallFull/Code/Funs.lean",
+      "sha256": "324494b9668937aeeaa8383cb05dc8fe1d0675ae736e8801bef180a7b2b5bf6a"
+    }
+  ],
+  "proof_preserving_generation_corrections": [
+    {
+      "path": "formal/extraction/call-binding-full/generated/BindCallFull/Code/Funs.lean",
+      "reason": "Aeneas emitted an explicit binder for the trait method's implicit type parameter",
+      "from": "allocate := fun (T : Type) =>",
+      "to": "allocate := fun {T : Type} =>",
+      "semantic_change": false
+    },
+    {
+      "path": "formal/extraction/call-binding-full/generated/BindCallFull/Code/Funs.lean",
+      "reason": "Lean could not infer the already-fixed result element type at the polymorphic allocator call",
+      "from": "BindingAllocatorInst.allocate allocator site requested",
+      "to": "BindingAllocatorInst.allocate (T := T) allocator site requested",
+      "semantic_change": false
+    }
+  ],
+  "external_models": [
+    {
+      "path": "formal/extraction/call-binding-full/generated/BindCallFull/Code/TypesExternal.lean",
+      "sha256": "9b8422e81e5ee1ae2f0387c30c2fcaf0206c21565a106205305dc8a01e3d60d6",
+      "rust_items": [
+        "alloc::collections::TryReserveError"
+      ],
+      "constructive": false,
+      "trusted": false,
+      "unconditional_helper_proofs_depend_on_model": false
+    },
+    {
+      "path": "formal/extraction/call-binding-full/generated/BindCallFull/Code/FunsExternal.lean",
+      "sha256": "d871478e0c9332ccef56dcab0f3f8aba7bc8fd7948004b5fcde58f87882afdbb",
+      "rust_items": [
+        "core::option::Option<T>::clone",
+        "core::result::Result<T,E>::err",
+        "alloc::string::String::eq",
+        "alloc::string::String::is_empty",
+        "alloc::string::String::clone",
+        "alloc::vec::Vec<T>::try_reserve_exact"
+      ],
+      "constructive": false,
+      "trusted": false,
+      "unconditional_helper_proofs_depend_on_model": false
+    }
+  ],
+  "lean_build": {
+    "result": "passed",
+    "jobs": 1707,
+    "generated_entrypoint": "BindCallFull.bind_call_with_allocator",
+    "entrypoint_transparent": true,
+    "translation_marks_entrypoint_can_diverge": true,
+    "all_generated_loop_termination_proved": true
+  },
+  "proof_progress": {
+    "generated_loops": 28,
+    "generated_loops_proved": [
+      "BindCallFull.string_list_contains_loop",
+      "BindCallFull.validate_signature_loop0",
+      "BindCallFull.validate_signature_loop1",
+      "BindCallFull.validate_signature_loop2",
+      "BindCallFull.ordinary_parameter_name_loop0",
+      "BindCallFull.ordinary_parameter_name_loop1",
+      "BindCallFull.named_actual_index_loop",
+      "BindCallFull.first_missing_positional_only_loop",
+      "BindCallFull.first_unexpected_keyword_loop",
+      "BindCallFull.first_duplicate_named_actual_loop0_loop0",
+      "BindCallFull.first_duplicate_named_actual_loop0",
+      "BindCallFull.first_missing_keyword_only_loop",
+      "BindCallFull.first_missing_ordinary_loop",
+      "BindCallFull.first_duplicate_binding_loop",
+      "BindCallFull.first_extra_positional_type_mismatch_loop",
+      "BindCallFull.first_extra_named_type_mismatch_loop",
+      "BindCallFull.first_positional_only_type_mismatch_loop",
+      "BindCallFull.canonical_environment_loop4",
+      "BindCallFull.canonical_environment_loop3",
+      "BindCallFull.canonical_environment_loop5",
+      "BindCallFull.first_keyword_only_type_mismatch_loop",
+      "BindCallFull.preflight_actual_items_loop",
+      "BindCallFull.expand_actual_items_loop0_loop0",
+      "BindCallFull.first_ordinary_type_mismatch_loop",
+      "BindCallFull.canonical_environment_loop0",
+      "BindCallFull.canonical_environment_loop1",
+      "BindCallFull.canonical_environment_loop2",
+      "BindCallFull.expand_actual_items_loop0"
+    ],
+    "checked_theorems": [
+      "BindCallFull.Proofs.string_list_contains_matches_reference",
+      "BindCallFull.Proofs.validate_formal_parameter_string_exact",
+      "BindCallFull.Proofs.validate_signature_loop0_matches_reference",
+      "BindCallFull.Proofs.validate_signature_loop1_matches_reference",
+      "BindCallFull.Proofs.validate_signature_loop2_matches_reference",
+      "BindCallFull.Proofs.ordinary_parameter_name_loop0_matches_reference",
+      "BindCallFull.Proofs.ordinary_parameter_name_loop1_matches_reference",
+      "BindCallFull.Proofs.ordinary_parameter_name_matches_reference",
+      "BindCallFull.Proofs.named_actual_index_loop_matches_reference",
+      "BindCallFull.Proofs.named_actual_index_matches_reference",
+      "BindCallFull.Proofs.find_named_actual_matches_reference",
+      "BindCallFull.Proofs.first_missing_positional_only_loop_matches_reference",
+      "BindCallFull.Proofs.first_unexpected_keyword_loop_matches_reference",
+      "BindCallFull.Proofs.first_unexpected_keyword_matches_reference",
+      "BindCallFull.Proofs.first_duplicate_named_actual_inner_loop_matches_reference",
+      "BindCallFull.Proofs.first_duplicate_named_actual_outer_loop_matches_reference",
+      "BindCallFull.Proofs.first_duplicate_named_actual_matches_reference",
+      "BindCallFull.Proofs.first_missing_keyword_only_loop_matches_reference",
+      "BindCallFull.Proofs.first_missing_keyword_only_matches_reference",
+      "BindCallFull.Proofs.first_missing_ordinary_loop_matches_reference",
+      "BindCallFull.Proofs.first_missing_ordinary_matches_reference",
+      "BindCallFull.Proofs.first_missing_positional_only_matches_reference",
+      "BindCallFull.Proofs.first_missing_required_argument_matches_reference",
+      "BindCallFull.Proofs.first_duplicate_binding_loop_matches_reference",
+      "BindCallFull.Proofs.first_duplicate_binding_matches_reference",
+      "BindCallFull.Proofs.first_extra_positional_type_mismatch_loop_matches_reference",
+      "BindCallFull.Proofs.first_extra_positional_type_mismatch_matches_reference",
+      "BindCallFull.Proofs.first_extra_named_type_mismatch_loop_matches_reference",
+      "BindCallFull.Proofs.first_extra_named_type_mismatch_matches_reference",
+      "BindCallFull.Proofs.first_variadic_type_mismatch_matches_reference",
+      "BindCallFull.Proofs.first_positional_only_type_mismatch_loop_matches_reference",
+      "BindCallFull.Proofs.canonical_environment_loop4_matches_reference",
+      "BindCallFull.Proofs.canonical_environment_loop3_matches_reference",
+      "BindCallFull.Proofs.canonical_environment_loop5_matches_reference",
+      "BindCallFull.Proofs.first_keyword_only_type_mismatch_loop_matches_reference",
+      "BindCallFull.Proofs.preflight_actual_items_loop_matches_reference",
+      "BindCallFull.Proofs.preflight_actual_items_matches_reference",
+      "BindCallFull.Proofs.first_ordinary_type_mismatch_loop_matches_reference",
+      "BindCallFull.Proofs.canonical_environment_loop0_matches_reference",
+      "BindCallFull.Proofs.canonical_environment_loop1_matches_reference",
+      "BindCallFull.Proofs.canonical_environment_loop2_matches_reference",
+      "BindCallFull.Proofs.validate_signature_matches_reference",
+      "BindCallFull.Proofs.expand_actual_items_with_allocator_matches_reference",
+      "BindCallFull.Proofs.validate_call_with_counts_matches_reference",
+      "BindCallFull.Proofs.canonical_environment_matches_reference",
+      "BindCallFull.Proofs.bindingEnvironmentView_injective",
+      "BindCallFull.Proofs.bindingResultView_injective",
+      "BindCallFull.Proofs.bind_call_with_allocator_matches_exact_reference",
+      "BindCallFull.Proofs.call_signature_default_exact",
+      "BindCallFull.Proofs.exact_type_compatibility_accepts_exact",
+      "BindCallFull.Proofs.callback_type_compatibility_accepts_exact",
+      "BindCallFull.Proofs.type_compatibility_accepts_implementations_exact"
+    ],
+    "remaining_generated_loops": 0,
+    "proof_build_result": "passed",
+    "proof_build_jobs": 1707
+  },
+  "axiom_audits": [
+    {
+      "theorem": "BindCallFull.Proofs.bind_call_with_allocator_matches_exact_reference",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project call-binding-full -LakePath lake env lean proofs/BindCallFullProofs/AxiomAudit.lean",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "BindCallFull.Proofs.canonical_environment_matches_reference",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project call-binding-full -LakePath lake env lean proofs/BindCallFullProofs/AxiomAudit.lean",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "BindCallFull.Proofs.expand_actual_items_with_allocator_matches_reference",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project call-binding-full -LakePath lake env lean proofs/BindCallFullProofs/AxiomAudit.lean",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "BindCallFull.Proofs.validate_signature_matches_reference",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project call-binding-full -LakePath lake env lean proofs/BindCallFullProofs/AxiomAudit.lean",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "BindCallFull.Proofs.bindingResultView_injective",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project call-binding-full -LakePath lake env lean proofs/BindCallFullProofs/AxiomAudit.lean",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "BindCallFull.Proofs.call_signature_default_exact",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project call-binding-full -LakePath lake env lean proofs/BindCallFullProofs/AxiomAudit.lean",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "BindCallFull.Proofs.type_compatibility_accepts_implementations_exact",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project call-binding-full -LakePath lake env lean proofs/BindCallFullProofs/AxiomAudit.lean",
+      "axioms": [],
+      "contains_sorry_ax": false
+    }
+  ],
+  "proof_project": [
+    {
+      "path": "formal/extraction/call-binding-full/lakefile.toml",
+      "sha256": "37e7b00595321e6f40afdc2e3a4002df8e2e607283be72c25dff352d205e517c"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/lean-toolchain",
+      "sha256": "efac0b94923b2d8b6840cd35be9177ad0fc5ab2332f4f4311c98712cee92fdee"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/lake-manifest.json",
+      "sha256": "844ea08a434821f46aeb06ecd29ae74cd0e3c833a84722ed3114992d92ff4547"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/proofs/BindCallFullProofs/Foundation.lean",
+      "sha256": "88cb3a312f969ab8d870e36df0713fa4306ee48b815502652f77630c6d7247fc"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/proofs/BindCallFullProofs/LoopSpecs.lean",
+      "sha256": "325134cc360edd8f1c4a6dee1a2bf395a1a7c59d02f2d0ec31c108d6c7503a95"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/proofs/BindCallFullProofs/Composition.lean",
+      "sha256": "85a8ff78337a31d02138adc9a1e4d9dbc14c256f1e794e8b82754925e7e93be9"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/proofs/BindCallFullProofs/AxiomAudit.lean",
+      "sha256": "b4c612209a3826c797e538311fb9bd2bbd2e66fd078ecd89279464c0192aa2d8"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/tests/AxiomAuditRejectsSorry.lean",
+      "sha256": "ed46156cffdc81fdf75b6e9f3374550c95913294dea489c1daa257fa90d551f7"
+    },
+    {
+      "path": "formal/extraction/call-binding-full/tests/AxiomAuditRejectsProjectAxiom.lean",
+      "sha256": "973e22df562ec18da46c36758cedcb0a1cbbb047db4b9a622459096182c0a39f"
+    },
+    {
+      "path": "formal/extraction/test-axiom-audits.ps1",
+      "sha256": "9a69fd859dd6285f85a549eb5d8aa84b8aa7605978061ce46f13812d049aebba"
+    },
+    {
+      "path": "formal/test-lake-cache-hygiene.ps1",
+      "sha256": "55fd686ba90d94f16d6f787f8511ba12ff081a24fb384d4825f8604c40509aff"
+    },
+    {
+      "path": "formal/run-lake.ps1",
+      "sha256": "835198af317e165038b5dbf97702088cf127aa4bed778f660bb43730c4d7475d"
+    },
+    {
+      "path": "formal/lake-projects.json",
+      "sha256": "cc536fc6959683430fa5ec60f03a07856ba41709950dbcf205a1b1bc0f1e9f52"
+    }
+  ],
+  "external_contracts": [
+    {
+      "boundary": "SystemBindingAllocator::allocate",
+      "source_bound": true,
+      "semantics": "each Vec::try_reserve_exact failure maps to AllocationFailed with the stable site and requested count",
+      "included_in_proved_binder_semantics": false
+    }
+  ],
+  "open_obligations": []
+}

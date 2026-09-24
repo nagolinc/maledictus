@@ -1,0 +1,772 @@
+{
+  "aeneas_version": "nightly-2026.08.27-5b9dcf3",
+  "charon_version": "0.1.245",
+  "crate": "maledictus_type_algebra_kernel_extraction",
+  "functions": [
+    {
+      "def_id": 30,
+      "lean_name": "core.option.Option.as_deref",
+      "lean_file": "TypeAlgebraKernel/Code/FunsExternal_Template.lean",
+      "rust_name": "core::option::{core::option::Option<T>}::as_deref",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/core/src/option.rs",
+        "begin_line": 1386,
+        "end_line": 1388
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 33,
+      "lean_name": "Str.Insts.CoreCmpPartialEqStr.eq",
+      "lean_file": "TypeAlgebraKernel/Code/FunsExternal_Template.lean",
+      "rust_name": "core::str::traits::{impl core::cmp::PartialEq<str> for str}::eq",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/core/src/str/traits.rs",
+        "begin_line": 29,
+        "end_line": 29
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 51,
+      "lean_name": "alloc.string.String.Insts.CoreCmpPartialEqString.eq",
+      "lean_file": "TypeAlgebraKernel/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::cmp::PartialEq<alloc::string::String> for alloc::string::String}::eq",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 350,
+        "end_line": 350
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 48,
+      "lean_name": "alloc.string.String.Insts.CoreCloneClone.clone",
+      "lean_file": "TypeAlgebraKernel/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::clone::Clone for alloc::string::String}::clone",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2388,
+        "end_line": 2388
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 29,
+      "lean_name": "alloc.string.String.Insts.CoreCmpPartialEqShared0Str.eq",
+      "lean_file": "TypeAlgebraKernel/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::cmp::PartialEq<&'_0 str> for alloc::string::String}::eq",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2703,
+        "end_line": 2703
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 35,
+      "lean_name": "alloc.string.String.Insts.CoreOpsDerefDerefStr.deref",
+      "lean_file": "TypeAlgebraKernel/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::ops::deref::Deref<str> for alloc::string::String}::deref",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2859,
+        "end_line": 2859
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 20,
+      "lean_name": "alloc.vec.Vec.pop",
+      "lean_file": "TypeAlgebraKernel/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::vec::{alloc::vec::Vec<T>}::pop",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/vec/mod.rs",
+        "begin_line": 2872,
+        "end_line": 2872
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 6,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList.from_vec_loop.body",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::{maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::TypeList}::from_vec",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 38,
+        "end_line": 40
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList.from_vec"
+    },
+    {
+      "def_id": 6,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList.from_vec_loop",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::{maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::TypeList}::from_vec",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 38,
+        "end_line": 40
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList.from_vec"
+    },
+    {
+      "def_id": 6,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList.from_vec",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::{maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::TypeList}::from_vec",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 36,
+        "end_line": 42
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": true
+    },
+    {
+      "def_id": 9,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList.into_vec_loop.body",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::{maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::TypeList}::into_vec",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 48,
+        "end_line": 53
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList.into_vec"
+    },
+    {
+      "def_id": 9,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList.into_vec_loop",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::{maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::TypeList}::into_vec",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 48,
+        "end_line": 53
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList.into_vec"
+    },
+    {
+      "def_id": 9,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList.into_vec",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::{maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::TypeList}::into_vec",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 44,
+        "end_line": 56
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": true
+    },
+    {
+      "def_id": 14,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.NominalClassList.len",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::{maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::NominalClassList}::len",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 86,
+        "end_line": 91
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 24,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.reverse_type_list",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::reverse_type_list",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 177,
+        "end_line": 184
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 18,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.type_equals",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::type_equals",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 198,
+        "end_line": 216
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 42,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.type_lists_equal",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::type_lists_equal",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 218,
+        "end_line": 226
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 46,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.type_list_contains",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::type_list_contains",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 186,
+        "end_line": 191
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 23,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.flatten_union_types",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::flatten_union_types",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 158,
+        "end_line": 175
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 7,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.normalize_type_list",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::normalize_type_list",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 149,
+        "end_line": 156
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 0,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.normalize_union",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::normalize_union",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 145,
+        "end_line": 147
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 26,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.clone_type",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::clone_type",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 233,
+        "end_line": 250
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 47,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.clone_type_list",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::clone_type_list",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 252,
+        "end_line": 259
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 8,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.expand_union_list",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::expand_union_list",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 266,
+        "end_line": 274
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 1,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.expand_union",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::expand_union",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 262,
+        "end_line": 264
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 10,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.class_parent",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::class_parent",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 306,
+        "end_line": 317
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 15,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.subclass_with_remaining",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::subclass_with_remaining",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 289,
+        "end_line": 304
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.is_subclass",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::is_subclass",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 276,
+        "end_line": 287
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 17,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.is_assignable_in_valid_hierarchy",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::is_assignable_in_valid_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 351,
+        "end_line": 380
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 38,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.every_type_assignable_to",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::every_type_assignable_to",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 382,
+        "end_line": 394
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 39,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.type_assignable_to_any",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::type_assignable_to_any",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 396,
+        "end_line": 408
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 40,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.type_lists_assignable",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::type_lists_assignable",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 410,
+        "end_line": 423
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 16,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.type_is_well_formed",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::type_is_well_formed",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 326,
+        "end_line": 340
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 37,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.type_list_is_well_formed",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::type_list_is_well_formed",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 342,
+        "end_line": 349
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 3,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.is_assignable",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::is_assignable",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 319,
+        "end_line": 324
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 4,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.cast_compatible",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::cast_compatible",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 426,
+        "end_line": 440
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 19,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.narrow_variants",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::narrow_variants",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 460,
+        "end_line": 483
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 5,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.narrow_type",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::narrow_type",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 443,
+        "end_line": 458
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    }
+  ],
+  "types": [
+    {
+      "def_id": 1,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.Type",
+      "lean_file": "TypeAlgebraKernel/Code/Types.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::Type",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 8,
+        "end_line": 21
+      }
+    },
+    {
+      "def_id": 3,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.TypeList",
+      "lean_file": "TypeAlgebraKernel/Code/Types.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::TypeList",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 29,
+        "end_line": 33
+      }
+    },
+    {
+      "def_id": 8,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.NominalClass",
+      "lean_file": "TypeAlgebraKernel/Code/Types.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::NominalClass",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 60,
+        "end_line": 63
+      }
+    },
+    {
+      "def_id": 5,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.NominalClassList",
+      "lean_file": "TypeAlgebraKernel/Code/Types.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::NominalClassList",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 71,
+        "end_line": 75
+      }
+    },
+    {
+      "def_id": 4,
+      "lean_name": "TypeAlgebraKernel.python_type_algebra_kernel.NominalHierarchy",
+      "lean_file": "TypeAlgebraKernel/Code/Types.lean",
+      "rust_name": "maledictus_type_algebra_kernel_extraction::python_type_algebra_kernel::NominalHierarchy",
+      "is_local": true,
+      "source": {
+        "file": "../../../src/python_type_algebra_kernel.rs",
+        "begin_line": 66,
+        "end_line": 68
+      }
+    }
+  ],
+  "globals": [],
+  "trait_decls": [],
+  "trait_impls": [
+    {
+      "def_id": 3,
+      "lean_name": "TypeAlgebraKernel.Str.Insts.CoreCmpPartialEqStr",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "core::str::traits::{impl core::cmp::PartialEq<str> for str}",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/core/src/str/traits.rs",
+        "begin_line": 27,
+        "end_line": 27
+      },
+      "impl_trait_def_id": 1,
+      "impl_trait_rust_name": "core::cmp::PartialEq",
+      "impl_trait_is_builtin": true
+    },
+    {
+      "def_id": 10,
+      "lean_name": "TypeAlgebraKernel.alloc.string.String.Insts.CoreCmpPartialEqString",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "alloc::string::{impl core::cmp::PartialEq<alloc::string::String> for alloc::string::String}",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 350,
+        "end_line": 350
+      },
+      "impl_trait_def_id": 1,
+      "impl_trait_rust_name": "core::cmp::PartialEq",
+      "impl_trait_is_builtin": true
+    },
+    {
+      "def_id": 9,
+      "lean_name": "TypeAlgebraKernel.alloc.string.String.Insts.CoreOpsDerefDerefStr",
+      "lean_file": "TypeAlgebraKernel/Code/Funs.lean",
+      "rust_name": "alloc::string::{impl core::ops::deref::Deref<str> for alloc::string::String}",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2855,
+        "end_line": 2855
+      },
+      "impl_trait_def_id": 2,
+      "impl_trait_rust_name": "core::ops::deref::Deref",
+      "impl_trait_is_builtin": true
+    }
+  ]
+}

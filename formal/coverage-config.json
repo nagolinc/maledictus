@@ -1,0 +1,629 @@
+{
+  "schema": "maledictus-formal-coverage/v2",
+  "root": {
+    "symbol": "maledictus::verify_internal",
+    "invocation": "verify_internal(request, issuance=true)"
+  },
+  "source_proofs": [
+    {
+      "id": "obligation-kernel-transitions",
+      "basis": "conditional-source-bound",
+      "source_file": "src/obligation_kernel.rs",
+      "function_names": [
+        "measure_satisfies",
+        "decide_produce",
+        "decide_consume",
+        "decide_close",
+        "preserves_loop_invariant"
+      ],
+      "manifest": "formal/extraction/obligation-kernel/extraction.json",
+      "theorem": "ObligationKernel.Proofs.source_transition_semantics"
+    },
+    {
+      "id": "vc-term-sort",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/vc.rs",
+      "function_names": [
+        "sort_typed",
+        "term_sort_extraction_entrypoint",
+        "require_predicate_argument_sorts",
+        "require_permission_transfer_amounts",
+        "require_all_sorts",
+        "collect_sorts",
+        "require_finite_dict_entry_sorts",
+        "validate_int_enum_descriptor",
+        "all_nominal_references",
+        "is_exact_nominal_reference_list",
+        "is_reference_binder_projection",
+        "all_nominal_reference_keys",
+        "is_list_element_sort",
+        "all_list_element_sorts",
+        "is_variadic_tuple_element_sort",
+        "require_variadic_tuple_element_sorts",
+        "require_comprehension_body",
+        "require_bound_term_sort",
+        "validate_bound_occurrences",
+        "is_finite_dict_key_sort",
+        "is_finite_dict_value_sort",
+        "all_finite_dict_key_sorts",
+        "all_finite_dict_value_sorts",
+        "require_sort"
+      ],
+      "manifest": "formal/extraction/vc-term-sort/extraction.json",
+      "theorem": "VcTermSort.Proofs.raw_term_sort_extraction_entrypoint_structured_refinement"
+    },
+    {
+      "id": "vc-obligation-result-satisfied",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/vc.rs",
+      "function_names": [
+        "satisfied"
+      ],
+      "manifest": "formal/extraction/vc-term-sort/extraction.json",
+      "theorem": "VcTermSort.Proofs.obligation_result_satisfied_exact"
+    },
+    {
+      "id": "kernel-check-exit-effects",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/kernel.rs",
+      "function_names": [
+        "check_exit_effects"
+      ],
+      "manifest": "formal/extraction/kernel-exit-effects/extraction.json",
+      "theorem": "KernelExitEffects.Proofs.check_exit_effects_all_inputs_exact"
+    },
+    {
+      "id": "solver-z3-collection-key-sort",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "is_z3_collection_key_sort"
+      ],
+      "manifest": "formal/extraction/solver-sort-predicates/extraction.json",
+      "theorem": "SolverSortPredicates.Proofs.collection_key_sort_all_inputs_exact"
+    },
+    {
+      "id": "solver-z3-collection-value-sort",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "is_z3_collection_value_sort"
+      ],
+      "manifest": "formal/extraction/solver-sort-predicates/extraction.json",
+      "theorem": "SolverSortPredicates.Proofs.collection_value_sort_all_inputs_exact"
+    },
+    {
+      "id": "solver-z3-nested-equality-sort",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "is_z3_nested_equality_sort"
+      ],
+      "manifest": "formal/extraction/solver-sort-predicates/extraction.json",
+      "theorem": "SolverSortPredicates.Proofs.nested_equality_sort_all_inputs_exact"
+    },
+    {
+      "id": "solver-adjacent-order-root",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "is_exact_sorted_adjacent_order_theorem"
+      ],
+      "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
+      "theorem": "SolverAdjacentOrder.Proofs.is_exact_sorted_adjacent_order_theorem_all_inputs_exact"
+    },
+    {
+      "id": "solver-adjacent-order-unwrap-singleton-and",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "unwrap_singleton_and"
+      ],
+      "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
+      "theorem": "SolverAdjacentOrder.Proofs.unwrap_singleton_and_all_inputs_exact"
+    },
+    {
+      "id": "solver-adjacent-order-bound-variable",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "is_bound_variable"
+      ],
+      "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
+      "theorem": "SolverAdjacentOrder.Proofs.is_bound_variable_all_inputs_exact"
+    },
+    {
+      "id": "solver-adjacent-order-integer-literal",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "is_integer_literal"
+      ],
+      "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
+      "theorem": "SolverAdjacentOrder.Proofs.is_integer_literal_all_inputs_exact"
+    },
+    {
+      "id": "solver-adjacent-order-bound-successor",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "is_bound_successor"
+      ],
+      "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
+      "theorem": "SolverAdjacentOrder.Proofs.is_bound_successor_all_inputs_exact"
+    },
+    {
+      "id": "solver-adjacent-order-python-index",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "is_python_index_of"
+      ],
+      "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
+      "theorem": "SolverAdjacentOrder.Proofs.is_python_index_of_all_inputs_exact"
+    },
+    {
+      "id": "solver-adjacent-order-nonnegative-bound",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "is_nonnegative_bound"
+      ],
+      "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
+      "theorem": "SolverAdjacentOrder.Proofs.is_nonnegative_bound_all_inputs_exact"
+    },
+    {
+      "id": "solver-adjacent-order-upper-bound",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/solver.rs",
+      "function_names": [
+        "is_adjacent_upper_bound"
+      ],
+      "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
+      "theorem": "SolverAdjacentOrder.Proofs.is_adjacent_upper_bound_all_inputs_exact"
+    },
+    {
+      "id": "call-binding-full",
+      "basis": "conditional-source-bound",
+      "source_file": "src/call_binding.rs",
+      "function_names": [
+        "allocate_buffer",
+        "compatibility_mismatch",
+        "bind_call_with_allocator",
+        "bind_call_with_relation",
+        "bind_expanded_call_with",
+        "expand_actual_items_with_allocator",
+        "preflight_actual_items",
+        "add_parameter_count",
+        "signature_counts",
+        "named_actual_index",
+        "find_named_actual",
+        "first_duplicate_named_actual",
+        "first_duplicate_binding",
+        "first_missing_required_argument",
+        "first_missing_positional_only",
+        "first_missing_ordinary",
+        "first_missing_keyword_only",
+        "first_positional_only_type_mismatch",
+        "first_ordinary_type_mismatch",
+        "ordinary_actual_mismatch",
+        "first_keyword_only_type_mismatch",
+        "first_variadic_type_mismatch",
+        "first_extra_positional_type_mismatch",
+        "first_extra_named_type_mismatch",
+        "string_list_contains",
+        "ordinary_parameter_name",
+        "first_unexpected_keyword",
+        "validate_signature",
+        "validate_formal_parameter",
+        "validate_call",
+        "canonical_environment"
+      ],
+      "manifest": "formal/extraction/call-binding-full/extraction.json",
+      "theorem": "BindCallFull.Proofs.bind_call_with_allocator_matches_exact_reference"
+    },
+    {
+      "id": "call-binding-call-signature-default",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/call_binding.rs",
+      "function_names": [
+        "default"
+      ],
+      "manifest": "formal/extraction/call-binding-full/extraction.json",
+      "theorem": "BindCallFull.Proofs.call_signature_default_exact"
+    },
+    {
+      "id": "call-binding-type-compatibility-accepts",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/call_binding.rs",
+      "function_names": [
+        "accepts"
+      ],
+      "manifest": "formal/extraction/call-binding-full/extraction.json",
+      "theorem": "BindCallFull.Proofs.type_compatibility_accepts_implementations_exact"
+    },
+    {
+      "id": "io-sort-value-has-sort",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_io_contracts.rs",
+      "function_names": [
+        "value_has_sort"
+      ],
+      "manifest": "formal/extraction/io-sort-kernel/extraction.json",
+      "theorem": "IoSortKernel.Proofs.value_has_sort_matches_reference"
+    },
+    {
+      "id": "io-sort-same-value-sort",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_io_contracts.rs",
+      "function_names": [
+        "same_value_sort"
+      ],
+      "manifest": "formal/extraction/io-sort-kernel/extraction.json",
+      "theorem": "IoSortKernel.Proofs.same_value_sort_matches_reference"
+    },
+    {
+      "id": "persistent-compatible-kinds",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_persistent_collections.rs",
+      "function_names": [
+        "require_compatible_kinds_typed"
+      ],
+      "manifest": "formal/extraction/persistent-collections/extraction.json",
+      "theorem": "PersistentCollections.Proofs.require_compatible_kinds_all_inputs"
+    },
+    {
+      "id": "persistent-concatenate",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_persistent_collections.rs",
+      "function_names": [
+        "concatenate_typed"
+      ],
+      "manifest": "formal/extraction/persistent-collections/extraction.json",
+      "theorem": "PersistentCollections.Proofs.concatenate_all_inputs_exact"
+    },
+    {
+      "id": "persistent-unique",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_persistent_collections.rs",
+      "function_names": [
+        "unique"
+      ],
+      "manifest": "formal/extraction/persistent-collections/extraction.json",
+      "theorem": "PersistentCollections.Proofs.unique_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-normalize-union",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["normalize_union"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.normalize_union_exact"
+    },
+    {
+      "id": "type-algebra-expand-union",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["expand_union"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.expand_union_exact"
+    },
+    {
+      "id": "type-algebra-is-subclass",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["is_subclass"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.is_subclass_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-is-assignable",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["is_assignable"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.is_assignable_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-cast-compatible",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["cast_compatible"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.cast_compatible_exact"
+    },
+    {
+      "id": "type-algebra-narrow-type",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["narrow_type"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.narrow_type_exact"
+    },
+    {
+      "id": "type-algebra-clone-type",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["clone_type"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.clone_type_exact"
+    },
+    {
+      "id": "type-algebra-clone-type-list",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["clone_type_list"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.clone_type_list_exact"
+    },
+    {
+      "id": "type-algebra-type-equals",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["type_equals"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.type_equals_exact"
+    },
+    {
+      "id": "type-algebra-type-lists-equal",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["type_lists_equal"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.type_lists_equal_exact"
+    },
+    {
+      "id": "type-algebra-type-list-contains",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["type_list_contains"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.type_list_contains_exact"
+    },
+    {
+      "id": "type-algebra-flatten-union-types",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["flatten_union_types"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.flatten_union_types_exact"
+    },
+    {
+      "id": "type-algebra-reverse-type-list",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["reverse_type_list"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.reverse_type_list_exact"
+    },
+    {
+      "id": "type-algebra-normalize-type-list",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["normalize_type_list"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.normalize_type_list_exact"
+    },
+    {
+      "id": "type-algebra-expand-union-list",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["expand_union_list"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.expand_union_list_exact"
+    },
+    {
+      "id": "type-algebra-nominal-class-list-len",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["len"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.nominal_class_list_len_exact"
+    },
+    {
+      "id": "type-algebra-type-list-into-vec",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["into_vec"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.typeList_into_vec_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-type-list-from-vec",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_symbols": [
+        "maledictus::python_type_algebra_kernel::<TypeList>::from_vec"
+      ],
+      "manifest_function_names": ["TypeList::from_vec"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.typeList_from_vec_exact"
+    },
+    {
+      "id": "type-algebra-nominal-class-list-from-vec",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_symbols": [
+        "maledictus::python_type_algebra_kernel::<NominalClassList>::from_vec"
+      ],
+      "manifest_function_names": ["NominalClassList::from_vec"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.nominalClassList_from_vec_exact"
+    },
+    {
+      "id": "type-algebra-class-parent",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["class_parent"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.class_parent_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-subclass-with-remaining",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["subclass_with_remaining"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.subclass_with_remaining_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-type-is-well-formed",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["type_is_well_formed"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.type_is_well_formed_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-type-list-is-well-formed",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["type_list_is_well_formed"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.type_list_is_well_formed_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-assignable-valid-hierarchy",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["is_assignable_in_valid_hierarchy"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.is_assignable_in_valid_hierarchy_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-every-type-assignable-to",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["every_type_assignable_to"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.every_type_assignable_to_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-type-assignable-to-any",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["type_assignable_to_any"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.type_assignable_to_any_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-type-lists-assignable",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["type_lists_assignable"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.type_lists_assignable_all_inputs_exact"
+    },
+    {
+      "id": "type-algebra-narrow-variants",
+      "basis": "unconditional-source-bound",
+      "source_file": "src/python_type_algebra_kernel.rs",
+      "function_names": ["narrow_variants"],
+      "manifest": "formal/extraction/type-algebra-kernel/extraction.json",
+      "theorem": "TypeAlgebraKernel.Proofs.narrow_variants_all_inputs_exact"
+    }
+  ],
+  "external_boundaries": [
+    {
+      "id": "smt.z3",
+      "provider": "z3 crate and native Z3 solver",
+      "cargo_packages": [
+        "z3"
+      ],
+      "used_by": [
+        "src/solver.rs"
+      ],
+      "contract": null,
+      "basis": "unmodeled"
+    },
+    {
+      "id": "python.parser",
+      "provider": "rustpython-parser and rustpython-ast crates",
+      "cargo_packages": [
+        "rustpython-ast",
+        "rustpython-parser"
+      ],
+      "used_by": [
+        "src/python.rs",
+        "src/python_contracts.rs",
+        "src/python_heap_contracts.rs",
+        "src/python_reference_contracts.rs"
+      ],
+      "contract": null,
+      "basis": "unmodeled"
+    },
+    {
+      "id": "python.strict-typechecker",
+      "provider": "pinned external Python runtime and mypy 1.5 process",
+      "cargo_packages": [],
+      "used_by": [
+        "src/python_typecheck.rs"
+      ],
+      "contract": "runtime version, distribution RECORD, configuration, output protocol, and source confinement checks",
+      "basis": "runtime-checked"
+    },
+    {
+      "id": "typescript.frontend",
+      "provider": "pinned Node.js process and typescript/frontend.cjs",
+      "cargo_packages": [],
+      "used_by": [
+        "src/typescript.rs"
+      ],
+      "contract": "runtime and frontend source identities plus JSON protocol are checked before issuance",
+      "basis": "runtime-checked"
+    },
+    {
+      "id": "serialization",
+      "provider": "serde and serde_json crates",
+      "cargo_packages": [
+        "serde",
+        "serde_json"
+      ],
+      "used_by": [
+        "src/protocol.rs",
+        "src/lib.rs",
+        "src/typescript.rs"
+      ],
+      "contract": null,
+      "basis": "unmodeled"
+    },
+    {
+      "id": "cryptographic-hashing",
+      "provider": "sha2 crate",
+      "cargo_packages": [
+        "sha2"
+      ],
+      "used_by": [
+        "src/lib.rs",
+        "src/python_typecheck.rs",
+        "src/typescript.rs"
+      ],
+      "contract": null,
+      "basis": "unmodeled"
+    },
+    {
+      "id": "operating-system",
+      "provider": "Rust standard library filesystem, environment, process, and tempfile facilities",
+      "cargo_packages": [
+        "tempfile"
+      ],
+      "used_by": [
+        "src/lib.rs",
+        "src/python_typecheck.rs",
+        "src/typescript.rs"
+      ],
+      "contract": "I/O and subprocess failures are converted to typed refusal diagnostics, but provider semantics are not formally proved",
+      "basis": "runtime-checked"
+    },
+    {
+      "id": "binding.allocator",
+      "provider": "SystemBindingAllocator::allocate and Vec::try_reserve_exact",
+      "cargo_packages": [],
+      "used_by": [
+        "src/call_binding.rs"
+      ],
+      "contract": "AllocatorContract is a premise of the extracted binder theorem; the concrete production allocator is outside that theorem",
+      "basis": "assumed"
+    }
+  ]
+}

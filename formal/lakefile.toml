@@ -1,0 +1,8 @@
+name = "maledictus"
+version = "0.1.0"
+defaultTargets = ["Maledictus"]
+packagesDir = "../.cache/lake/packages/lean-4.24"
+buildDir = "../.cache/lake/build/formal"
+
+[[lean_lib]]
+name = "Maledictus"

@@ -1,0 +1,16 @@
+[package]
+name = "maledictus"
+version = "0.1.0"
+edition = "2024"
+description = "Fail-closed multi-language proof backend"
+
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
+sha2 = "0.10"
+rustpython-parser = { version = "0.4.0", features = ["full-lexer"] }
+rustpython-ast = { version = "0.4.0", features = ["fold", "visitor"] }
+z3 = { version = "0.21.0", features = ["gh-release"] }
+tempfile = "3"
+
+[dev-dependencies]

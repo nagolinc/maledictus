@@ -1,0 +1,24 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "object_source_provider.py",
+      "language": "python",
+      "symbols": ["identity"]
+    },
+    {
+      "path": "object_source_adapter.py",
+      "language": "python",
+      "symbols": ["passthrough"]
+    },
+    {
+      "path": "object_source_app.py",
+      "language": "python",
+      "symbols": ["checked_passthrough"]
+    }
+  ],
+  "external_contract_overlays": []
+}

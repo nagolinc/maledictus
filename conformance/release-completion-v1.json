@@ -1,0 +1,61 @@
+{
+  "schema": "maledictus-release-completion/v1",
+  "classification": {
+    "pin": "conformance/nagini-v1.3.1.json",
+    "report_schema": "maledictus-nagini-combined-classification/v4",
+    "suite_commit": "c2fd68f27db324d110824f607aabfda827e3675a",
+    "roots": [
+      "tests/functional",
+      "tests/obligations",
+      "tests/arp",
+      "tests/io",
+      "tests/sif-poss",
+      "tests/sif-prob",
+      "tests/sif-true"
+    ],
+    "total": 620,
+    "profile_ignored": 13,
+    "evaluated": 607,
+    "exact_match_kinds": [
+      "semantic-verification",
+      "production-typecheck-rejection",
+      "source-wellformedness-rejection"
+    ]
+  },
+  "formal": {
+    "coverage": "formal/coverage.json",
+    "config": "formal/coverage-config.json",
+    "tool_manifest": "formal/coverage-tool/Cargo.toml",
+    "report_schema": "maledictus-formal-coverage/v2"
+  },
+  "examples": {
+    "root": "examples",
+    "requests": [
+      "class_typed_heap.request.json",
+      "closed_javascript.request.json",
+      "closed_typescript.request.json",
+      "conditional_values.request.json",
+      "constructor_reference_field.request.json",
+      "dagcert_operation.request.json",
+      "external_adapter.request.json",
+      "external_exception.request.json",
+      "external_heap.request.json",
+      "external_reference.request.json",
+      "immutable_list.request.json",
+      "mixed_language.request.json",
+      "safe_slice.request.json",
+      "scalar_contract.request.json",
+      "source_heap.request.json",
+      "source_modules.request.json",
+      "source_predicate.request.json",
+      "source_reference.request.json"
+    ]
+  },
+  "windows_package": {
+    "destination": ".cache/release/windows-x86_64",
+    "manifest_schema": "maledictus-windows-package/v2",
+    "profile": "release",
+    "executable": "maledictus.exe",
+    "libz3": "libz3.dll"
+  }
+}

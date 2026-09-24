@@ -1,0 +1,14 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "ba34ef3eaaeb29c5a9bc745ee03bf0c5e2647e3dc4f7ed6d5741e09e6c68b0cf",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "dagcert_operation.py",
+      "language": "python",
+      "symbols": ["work"]
+    }
+  ],
+  "external_contract_overlays": []
+}

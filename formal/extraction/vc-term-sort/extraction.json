@@ -1,0 +1,299 @@
+{
+  "schema": "maledictus-rust-lean-extraction/v1",
+  "identity": "vc-term-sort-aeneas-extraction/v1",
+  "status": "translated-compiled-exact-structured-all-input-refinement-proved",
+  "counts_as_implementation_refinement": true,
+  "source": {
+    "path": "src/vc.rs",
+    "sha256": "e83827046146ab661f119cda7b05f7dd3bac7d708574311391b3e0d71c2d6390",
+    "entrypoint": "term_sort_extraction_entrypoint",
+    "production_method": "Term::sort_typed",
+    "method_line_start": 794,
+    "method_line_end": 1323,
+    "wrapper_line_start": 1330,
+    "wrapper_line_end": 1332,
+    "mounted_as_hard_link": true,
+    "sort_variants": 16,
+    "term_variants": 68
+  },
+  "manifest": {
+    "path": "formal/extraction/vc-term-sort/Cargo.toml",
+    "sha256": "b2c26e959e1d955e58f8fa9f5d8444c4a9b0cc78e40ae43262227fcccc530f74"
+  },
+  "toolchain": {
+    "aeneas_release": "nightly-2026.08.27-5b9dcf3",
+    "aeneas_release_sha": "5b9dcf3",
+    "aeneas_binary_sha256": "194d9ade88f9b49ace754f1aa7375f8e7c39ba66a488d1cd661dfc45dc9e629e",
+    "charon_version": "0.1.245",
+    "charon_commit": "4ad295c1bf982b5533ce7d85f4ddc889ff3127f8",
+    "charon_binary_sha256": "0b292929bcbae54820fbffad8464a18ed704dec3556a807af928ab4e0572c076",
+    "rust_toolchain": "nightly-2026-08-18",
+    "rustc_version": "1.100.0-nightly (8fa1c96cf 2026-08-17)",
+    "lean_toolchain": "v4.31.0",
+    "container_used": true,
+    "container_image": "registry.gitlab.com/mopsa/mopsa-analyzer:1.2"
+  },
+  "llbc": {
+    "checked_in": false,
+    "sha256": "d9cd6847aa766365f8cc2ab400c3c3d43767477d366318bc28e5ef331a28cb74",
+    "size_bytes": 8386514,
+    "full_sysroot": true,
+    "warnings": 0
+  },
+  "helper_extraction": {
+    "root": "crate::ObligationResult::satisfied",
+    "production_method": "ObligationResult::satisfied",
+    "method_line_start": 1890,
+    "method_line_end": 1896,
+    "method_sha256": "61bca9f7f6b7de50efbfde8bb5f73c4b8c851744f5574cf9eab61c2a32501ced",
+    "raw_llbc": {
+      "checked_in": false,
+      "sha256": "30d47695de874231fbda61e23046761f244ea9ba8329f38ffc10412d6a718d9f",
+      "size_bytes": 133933,
+      "transparent_local_functions": 1,
+      "ordered_declarations_emitted": 0
+    },
+    "ordered_llbc": {
+      "checked_in": false,
+      "sha256": "c82b0aa0aca75b110a6a27255367068d20e9262ae313e538d5c34e1e7178909d",
+      "size_bytes": 134200,
+      "declarations_and_bodies_unchanged": true,
+      "ordered_declarations_added": 6
+    },
+    "entrypoint_transparent": true,
+    "all_input_exact_result_proved": true
+  },
+  "translation": {
+    "transparent_local_definitions": 59,
+    "entrypoint_transparent": true,
+    "term_sort_transparent": true,
+    "normalization_constructive": true,
+    "normalization_correspondence_proved": true,
+    "normalized_finite_slice_loops": 15
+  },
+  "proof_progress": {
+    "top_level_obligations_closed": 8,
+    "top_level_obligations_total": 8,
+    "all_input_entrypoint_refinement_proved": true,
+    "all_input_entrypoint_termination_proved": true,
+    "wrapper_decomposition_proved": true,
+    "sort_clone_model_exact": true,
+    "sort_structural_equality_model_exact": true,
+    "compiler_derived_trait_correspondence_proved": true,
+    "recursive_storage_measure_proved": true,
+    "nonrecursive_constructor_termination_proved": 10,
+    "recursive_constructor_termination_proved": 58,
+    "recursive_constructor_termination_total": 58,
+    "model_vec_observation_lemmas_proved": 4,
+    "model_vec_push_refinement_proved": true,
+    "recursive_vec_list_refinement_proved": true,
+    "standard_library_model_refinement_proved": true,
+    "generic_finite_loop_trace_semantics_proved": true,
+    "concrete_loop_trace_bounds_proved": 15,
+    "concrete_loop_trace_bounds_total": 15,
+    "concrete_loop_bounds_composed": true,
+    "finite_loop_runner_refinement_proved": true,
+    "checked_theorem_declarations": 520,
+    "raw_recursive_constructor_termination_proved": 58,
+    "raw_recursive_constructor_termination_total": 58,
+    "raw_normalization_constructor_correspondence_proved": 68,
+    "raw_normalization_constructor_correspondence_total": 68,
+    "raw_entrypoint_correspondence_proved": true,
+    "structured_success_error_field_correspondence_proved": true,
+    "axiom_dependency_audited": true,
+    "checked_theorems": [
+      "VcTermSort.Proofs.obligation_result_satisfied_exact"
+    ]
+  },
+  "generated": [
+    {
+      "path": "formal/extraction/vc-term-sort/generated/VcTermSort.lean",
+      "sha256": "35d3e5c969c13692135093be9891b2ae48f09c24e0bd4be68fbbdf10d6a2a863"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/generated/translation.json",
+      "sha256": "2bbc12f788f9f92b9339f1886e958b3eb26bc16f84667a6ff429b88a30c41a5f"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Code/Types.lean",
+      "sha256": "7de50e0d7c0e7f24c3ee0a1bd1098bf52bb1e3526ff2f3b769fdcfb4ca6a377c"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Code/Funs.lean",
+      "sha256": "886937cf6d5c7808bf210d8dfe049d95917e63ab591fb893477205f03f292966"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Code/RawFuns.lean",
+      "sha256": "82132f7f4408496805a58f0fe20cc64c4c972ea6773f8059e10ee94147891df4"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Helpers/Types.lean",
+      "sha256": "feb65ea66e520041af2f78c848b29e9f4caa9ee907bb3d5a2dd81ecc433316f0"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Helpers/Funs.lean",
+      "sha256": "153ad8ccc3ff5993a2ba184ae0148afa6479dd99d3aca487ad81330b1e712703"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/generated/helpers-translation.json",
+      "sha256": "20f57a9a35dd400b61c5cea86f8726ce85d42257ce6907e6255d81b866b4776f"
+    }
+  ],
+  "external_models": [
+    {
+      "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Code/TypesExternal.lean",
+      "sha256": "98044b7652be983a61af4f125fa8e598e42174b20bd470b6a837c62c6710341a",
+      "constructive": true,
+      "trusted": false
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Code/FunsExternal.lean",
+      "sha256": "b1acb03606bb8d9e9f4ad41e41d8ffbce1b5998804ec73fefa50a947a502e52b",
+      "constructive": true,
+      "trusted": false
+    }
+  ],
+  "proof_project": [
+    {
+      "path": "formal/extraction/vc-term-sort/lakefile.toml",
+      "sha256": "3b416f8d672f9fe2dc45170579ac016be336e8f57b9e3a59b3645ff3191fffce"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/lean-toolchain",
+      "sha256": "1550dc85bb00026cc586c6390f0af6d6b84c0aef210f4b8b44efdc6812ef6256"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/lake-manifest.json",
+      "sha256": "844ea08a434821f46aeb06ecd29ae74cd0e3c833a84722ed3114992d92ff4547"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/normalize-generated.ps1",
+      "sha256": "86e777be9904afd63da80267923ae25343015bfc550bc6ae40a84bb66e9238d9"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/repair-helper-ordered-decls.ps1",
+      "sha256": "b9321f8aefe44ec82e0984238f3cefea1d66212ad9bb6211f8668b00625669bc"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/derive-raw-decrease-proofs.ps1",
+      "sha256": "38b4eacb1f56f5f5e237320236d5e59f94a3e338e87639376e4c56f53e8b0232"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/derive-raw-recursive-proof.ps1",
+      "sha256": "5065253d79dce13e14af1df3e6c7553338d17021c5cfd01a0284c27c5db53f38"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/setup-extraction-workspace.ps1",
+      "sha256": "5a0dfff38c53dac4c836b786a563e43755088ae99ce0362eac34253c868d2040"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/tests/setup-extraction-workspace.Tests.ps1",
+      "sha256": "f200e2d67d8ac433e3b706d8b48036d8f82e4b432265951ea14287109b96a9af"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/README.md",
+      "sha256": "5626571e60c091d75643726f9d46b5800dd52f4f6d5e041322aae8e8eea4a35d"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs.lean",
+      "sha256": "1b8d66c1d015c22b815b6e2ab43cad05d80e34c56d648be84327664c8113c1e7"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/AxiomAudit.lean",
+      "sha256": "6e5f56e80802de129c963f33e16ee84e2db3b4854e3b17ec0dce279661ade5cf"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/Helpers.lean",
+      "sha256": "e54beeb199daf37e2daf82b8319db41fb2eed23758103544c508a52a5e47fe05"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/tests/AxiomAuditRejectsSorry.lean",
+      "sha256": "ee50a2dc343fdea429843b9e824cec6540d51666068d2e87fe1b41c07ae9fb87"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/tests/AxiomAuditRejectsProjectAxiom.lean",
+      "sha256": "1807b218677f775cfef821073d15ef3763ef6e2239bb201933b98ac3d6b1a2ad"
+    },
+    {
+      "path": "formal/extraction/test-axiom-audits.ps1",
+      "sha256": "9a69fd859dd6285f85a549eb5d8aa84b8aa7605978061ce46f13812d049aebba"
+    },
+    {
+      "path": "formal/test-lake-cache-hygiene.ps1",
+      "sha256": "55fd686ba90d94f16d6f787f8511ba12ff081a24fb384d4825f8604c40509aff"
+    },
+    {
+      "path": "formal/run-lake.ps1",
+      "sha256": "835198af317e165038b5dbf97702088cf127aa4bed778f660bb43730c4d7475d"
+    },
+    {
+      "path": "formal/lake-projects.json",
+      "sha256": "cc536fc6959683430fa5ec60f03a07856ba41709950dbcf205a1b1bc0f1e9f52"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/Composition.lean",
+      "sha256": "90e75e0490a92b9f1c2c7690b268780929cd54f978d6d56df089f9404a64440a"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/ConcreteLoops.lean",
+      "sha256": "f8964dcc313e35ff95804702b9ceeda68103d0c5a819221024b4b442a55ebe6f"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/DerivedTraits.lean",
+      "sha256": "d5b8a5f585e77c42fd81ee64914209185157bb5cde29c1c7b4a2b615fedb3b76"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/Foundation.lean",
+      "sha256": "72cb0b69a440eb2100ad44166dcd8399cdde8ff22cf5aec514790572d60881f5"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/NormalizationCorrespondence.lean",
+      "sha256": "c56164c0b00d6723c7fe09c8696b39dc9cb10ed24debec1d99724d222b2ae900"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/RawDecreaseProofs.lean",
+      "sha256": "c846eace46073863b1f414d5246404ecf63bb40e953e826c7bf0cc7d5eb94850"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/RawRecursiveTermination.lean",
+      "sha256": "898988e93230aaa76e6d36fa0b030784822cd64c8a29ccea375b819402fe05e0"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/RecursiveTermination.lean",
+      "sha256": "9ef939a3dcb00ffb848e5a66b826d99caa4ccd1ab37cbe3aa1b1f03da4d2f005"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/StdlibRefinement.lean",
+      "sha256": "c30316658bb37e785cee7f0d61ab61571333304ce85fbb2c8fd434e796dc28b4"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/StructuredRefinement.lean",
+      "sha256": "3d84bf55caed66cfc0ff249bbe950d20d8df6349cfb286e3b5239d8ea22943a8"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/TerminationMeasure.lean",
+      "sha256": "131539c9c0db750b09d7f521dd78b27a07d09aec9d87d22838ef62e9dbf705d4"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/VecRefinement.lean",
+      "sha256": "3b2fc54558e9c3dda0a29e608de80311c1030d5fd18e4d51f3cee3761e5ff51f"
+    }
+  ],
+  "axiom_audits": [
+    {
+      "theorem": "VcTermSort.Proofs.obligation_result_satisfied_exact",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath lake build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    }
+  ],
+  "lean_build": {
+    "result": "passed",
+    "jobs": 1719,
+    "generated_entrypoint": "VcTermSortRaw.term_sort_extraction_entrypoint",
+    "public_theorem": "VcTermSort.Proofs.raw_term_sort_extraction_entrypoint_structured_refinement"
+  },
+  "open_obligations": []
+}

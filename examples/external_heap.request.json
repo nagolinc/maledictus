@@ -1,0 +1,21 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "external_heap_adapter.py",
+      "language": "python",
+      "symbols": ["construct_and_read"]
+    }
+  ],
+  "external_contract_overlays": [
+    {
+      "adapter_path": "external_heap_adapter.py",
+      "module": "external_cell",
+      "stub_path": "external_cell_contract.py",
+      "exception_policy": "assume-no-exception"
+    }
+  ]
+}

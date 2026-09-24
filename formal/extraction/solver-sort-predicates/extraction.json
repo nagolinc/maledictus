@@ -1,0 +1,181 @@
+{
+  "schema": "maledictus-rust-lean-extraction/v1",
+  "identity": "solver-sort-predicates-aeneas-extraction/v1",
+  "status": "translated-compiled-and-universally-refinement-proved",
+  "counts_as_implementation_refinement": true,
+  "source": {
+    "path": "src/solver.rs",
+    "sha256": "98c8d342ae6b3ed9e88a4b37f07940624602e97874c4913a00faf41bd124000e",
+    "extracted_functions": [
+      {
+        "name": "is_z3_collection_key_sort",
+        "line_start": 3174,
+        "line_end": 3189,
+        "universally_proved": true
+      },
+      {
+        "name": "is_z3_collection_value_sort",
+        "line_start": 3191,
+        "line_end": 3210,
+        "universally_proved": true
+      },
+      {
+        "name": "is_z3_nested_equality_sort",
+        "line_start": 3212,
+        "line_end": 3227,
+        "universally_proved": true
+      }
+    ]
+  },
+  "toolchain": {
+    "aeneas_release": "nightly-2026.08.27-5b9dcf3",
+    "aeneas_release_sha": "5b9dcf3",
+    "charon_version": "0.1.245",
+    "charon_commit": "4ad295c1bf982b5533ce7d85f4ddc889ff3127f8",
+    "rust_toolchain": "nightly-2026-08-18",
+    "rustc_version": "1.100.0-nightly (8fa1c96cf 2026-08-17)",
+    "lean_toolchain": "v4.31.0"
+  },
+  "extraction": {
+    "roots": [
+      "crate::solver::is_z3_collection_key_sort",
+      "crate::solver::is_z3_collection_value_sort",
+      "crate::solver::is_z3_nested_equality_sort"
+    ],
+    "direct_production_source": true,
+    "rust_wrapper": false,
+    "source_seam": false
+  },
+  "llbc": {
+    "checked_in": false,
+    "sha256": "25240a7db0dc6dcc023007de0b122d33249f311ef4bbc36e61310de311e4ac2a",
+    "size_bytes": 778711,
+    "warnings": 0
+  },
+  "generated": [
+    {
+      "path": "formal/extraction/solver-sort-predicates/generated/SolverSortPredicates.lean",
+      "sha256": "3c9961caf98245fbb514f78c7ab9a01c9b7efd2953109b3074a539edfadd0ce8"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/generated/SolverSortPredicates/Code/Types.lean",
+      "sha256": "810aaf10f0c1b7f76967fbb8907981615575d6ede53646068332e394c8d67b71"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/generated/SolverSortPredicates/Code/Funs.lean",
+      "sha256": "e48f4cdf39b1fd12663b6873b3b103e0d4175fa57fc7d0dfc538aac350cc9245"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/generated/translation.json",
+      "sha256": "231b653bd1a4872c35d3df4b0f015192cc47e310a61432dbc66449287c27bbf1"
+    }
+  ],
+  "external_models": [
+    {
+      "path": "formal/extraction/solver-sort-predicates/generated/SolverSortPredicates/Code/FunsExternal.lean",
+      "sha256": "64db3aacb7f99a79bef6d7a0a8f99346111d8d4800aed17ea4ab2a9f2e146ef3",
+      "constructive": true,
+      "trusted": false,
+      "replaces": [
+        "shared Vec::into_iter",
+        "Aeneas partial loop combinator"
+      ]
+    }
+  ],
+  "translation": {
+    "local_functions": 9,
+    "transparent_local_functions": 9,
+    "opaque_local_functions": 0,
+    "external_functions": 1,
+    "source_loops": 3
+  },
+  "lean_build": {
+    "result": "passed",
+    "jobs": 1704,
+    "library": "SolverSortPredicatesProofs.AxiomAudit"
+  },
+  "proof_progress": {
+    "all_input_exact_results_proved": true,
+    "finite_source_loops_proved": true,
+    "constructive_vec_iteration_proved": true,
+    "axiom_dependency_audited": true,
+    "checked_theorems": [
+      "SolverSortPredicates.Proofs.collection_key_sort_all_inputs_exact",
+      "SolverSortPredicates.Proofs.collection_value_sort_all_inputs_exact",
+      "SolverSortPredicates.Proofs.nested_equality_sort_all_inputs_exact"
+    ],
+    "open_obligations": 0
+  },
+  "axiom_audits": [
+    {
+      "theorem": "SolverSortPredicates.Proofs.collection_key_sort_all_inputs_exact",
+      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.Proofs.collection_value_sort_all_inputs_exact",
+      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.Proofs.nested_equality_sort_all_inputs_exact",
+      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "contains_sorry_ax": false
+    }
+  ],
+  "proof_project": [
+    {
+      "path": "formal/extraction/solver-sort-predicates/README.md",
+      "sha256": "d3027e457bfe5b1051b2c1b5bbadc8bd847b4b5f3d86186568ef52fac0cca9fb"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/normalize-generated.ps1",
+      "sha256": "d89167038a409a0a013cd716f2265f86e48988a18eb0ba97d9b982a4cd16f8e7"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/lakefile.toml",
+      "sha256": "4c0eb5c2f9fb5f04605d657eea38e4d26dfb155f6b24c257c39e98267db09695"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/lean-toolchain",
+      "sha256": "efac0b94923b2d8b6840cd35be9177ad0fc5ab2332f4f4311c98712cee92fdee"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/lake-manifest.json",
+      "sha256": "844ea08a434821f46aeb06ecd29ae74cd0e3c833a84722ed3114992d92ff4547"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/proofs/SolverSortPredicatesProofs.lean",
+      "sha256": "3311bf1de1513dd6cf18c979d64d50efa74c5d8c8fe17932868ae03eec707404"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/proofs/SolverSortPredicatesProofs/Refinement.lean",
+      "sha256": "c46d800799a3ce26a668b1c1d440511a26c8d1a7574b09476a34dea32e7514fc"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/proofs/SolverSortPredicatesProofs/AxiomAudit.lean",
+      "sha256": "a1b06e87e13e6994f0e664987945ac8dac83e99e5f6fce61ee0da25fe7a2f5cf"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/tests/AxiomAuditRejectsSorry.lean",
+      "sha256": "327c3f0a9d45541719c9afd9e0b3e3dd67d0c8f88733d4cbcc25f5252ab5dc33"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/tests/AxiomAuditRejectsProjectAxiom.lean",
+      "sha256": "9675adfc04a5c8f9f070436985ebb670c9a87e95090ccd85a0fefe8d88d3a8e5"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/test-axiom-audits.ps1",
+      "sha256": "0d1d3d33c87af0d8fcfc78e8d0273a0138bfcca2b2a5c9e766b3e74bdcbcdc38"
+    },
+    {
+      "path": "formal/extraction/test-axiom-audits.ps1",
+      "sha256": "9a69fd859dd6285f85a549eb5d8aa84b8aa7605978061ce46f13812d049aebba"
+    },
+    {
+      "path": "formal/lake-projects.json",
+      "sha256": "cc536fc6959683430fa5ec60f03a07856ba41709950dbcf205a1b1bc0f1e9f52"
+    }
+  ],
+  "open_obligations": []
+}

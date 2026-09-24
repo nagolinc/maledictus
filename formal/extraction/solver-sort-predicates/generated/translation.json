@@ -1,0 +1,202 @@
+{
+  "aeneas_version": "nightly-2026.08.27-5b9dcf3",
+  "charon_version": "0.1.245",
+  "crate": "maledictus",
+  "functions": [
+    {
+      "def_id": 3,
+      "lean_name": "SharedAVec.Insts.CoreIterTraitsCollectIntoIteratorSharedATIter.into_iter",
+      "lean_file": "SolverSortPredicates/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::vec::{impl core::iter::traits::collect::IntoIterator<&'a T, core::slice::iter::Iter<'a, T>> for &'a alloc::vec::Vec<T>}::into_iter",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/vec/mod.rs",
+        "begin_line": 4047,
+        "end_line": 4047
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 0,
+      "lean_name": "SolverSortPredicates.solver.is_z3_collection_key_sort_loop",
+      "lean_file": "SolverSortPredicates/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_z3_collection_key_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 3179,
+        "end_line": 3183
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "SolverSortPredicates.solver.is_z3_collection_key_sort"
+    },
+    {
+      "def_id": 0,
+      "lean_name": "SolverSortPredicates.solver.is_z3_collection_key_sort_loop.body",
+      "lean_file": "SolverSortPredicates/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_z3_collection_key_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 3179,
+        "end_line": 3183
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "SolverSortPredicates.solver.is_z3_collection_key_sort"
+    },
+    {
+      "def_id": 0,
+      "lean_name": "SolverSortPredicates.solver.is_z3_collection_key_sort",
+      "lean_file": "SolverSortPredicates/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_z3_collection_key_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 3174,
+        "end_line": 3189
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 1,
+      "lean_name": "SolverSortPredicates.solver.is_z3_collection_value_sort_loop",
+      "lean_file": "SolverSortPredicates/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_z3_collection_value_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 3196,
+        "end_line": 3200
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "SolverSortPredicates.solver.is_z3_collection_value_sort"
+    },
+    {
+      "def_id": 1,
+      "lean_name": "SolverSortPredicates.solver.is_z3_collection_value_sort_loop.body",
+      "lean_file": "SolverSortPredicates/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_z3_collection_value_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 3196,
+        "end_line": 3200
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "SolverSortPredicates.solver.is_z3_collection_value_sort"
+    },
+    {
+      "def_id": 1,
+      "lean_name": "SolverSortPredicates.solver.is_z3_collection_value_sort",
+      "lean_file": "SolverSortPredicates/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_z3_collection_value_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 3191,
+        "end_line": 3210
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 2,
+      "lean_name": "SolverSortPredicates.solver.is_z3_nested_equality_sort_loop",
+      "lean_file": "SolverSortPredicates/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_z3_nested_equality_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 3217,
+        "end_line": 3221
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "SolverSortPredicates.solver.is_z3_nested_equality_sort"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "SolverSortPredicates.solver.is_z3_nested_equality_sort_loop.body",
+      "lean_file": "SolverSortPredicates/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_z3_nested_equality_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 3217,
+        "end_line": 3221
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "SolverSortPredicates.solver.is_z3_nested_equality_sort"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "SolverSortPredicates.solver.is_z3_nested_equality_sort",
+      "lean_file": "SolverSortPredicates/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_z3_nested_equality_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 3212,
+        "end_line": 3227
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    }
+  ],
+  "types": [
+    {
+      "def_id": 0,
+      "lean_name": "SolverSortPredicates.vc.Sort",
+      "lean_file": "SolverSortPredicates/Code/Types.lean",
+      "rust_name": "maledictus::vc::Sort",
+      "is_local": true,
+      "source": { "file": "src/vc.rs", "begin_line": 37, "end_line": 59 }
+    }
+  ],
+  "globals": [],
+  "trait_decls": [],
+  "trait_impls": []
+}

@@ -1,0 +1,119 @@
+{
+  "schema": "maledictus-upstream-suite/v1",
+  "project": "Nagini",
+  "repository": "https://github.com/marcoeilers/nagini.git",
+  "tag": "v1.3.1",
+  "commit": "c2fd68f27db324d110824f607aabfda827e3675a",
+  "license": "MPL-2.0",
+  "test_entrypoint": "src/nagini_translation/tests.py",
+  "fixture_roots": [
+    "tests/functional",
+    "tests/obligations",
+    "tests/arp",
+    "tests/io",
+    "tests/sif-poss",
+    "tests/sif-prob",
+    "tests/sif-true"
+  ],
+  "fixture_profiles": [
+    {
+      "root": "tests/functional",
+      "information_flow": "ordinary"
+    },
+    {
+      "root": "tests/obligations",
+      "information_flow": "ordinary"
+    },
+    {
+      "root": "tests/arp",
+      "information_flow": "ordinary"
+    },
+    {
+      "root": "tests/io",
+      "information_flow": "ordinary"
+    },
+    {
+      "root": "tests/sif-poss",
+      "information_flow": "possibilistic-secure-information-flow"
+    },
+    {
+      "root": "tests/sif-prob",
+      "information_flow": "probabilistic-secure-information-flow"
+    },
+    {
+      "root": "tests/sif-true",
+      "information_flow": "secure-information-flow"
+    }
+  ],
+  "conformance_environment": {
+    "python": {
+      "implementation": "cpython",
+      "major": 3,
+      "minor": 12
+    },
+    "nagini_tag": "v1.3.1",
+    "nagini_commit": "c2fd68f27db324d110824f607aabfda827e3675a",
+    "annotation_profiles": [
+      {
+        "root": "tests/functional",
+        "phase": "verification",
+        "backend": "silicon"
+      },
+      {
+        "root": "tests/functional/translation",
+        "phase": "translation",
+        "backend": "any"
+      },
+      {
+        "root": "tests/obligations",
+        "phase": "verification",
+        "backend": "silicon"
+      },
+      {
+        "root": "tests/obligations/translation",
+        "phase": "translation",
+        "backend": "any"
+      },
+      {
+        "root": "tests/arp",
+        "phase": "verification",
+        "backend": "silicon"
+      },
+      {
+        "root": "tests/arp/translation",
+        "phase": "translation",
+        "backend": "any"
+      },
+      {
+        "root": "tests/io",
+        "phase": "verification",
+        "backend": "silicon"
+      },
+      {
+        "root": "tests/io/translation",
+        "phase": "translation",
+        "backend": "any"
+      },
+      {
+        "root": "tests/sif-poss",
+        "phase": "verification",
+        "backend": "silicon"
+      },
+      {
+        "root": "tests/sif-prob",
+        "phase": "verification",
+        "backend": "silicon"
+      },
+      {
+        "root": "tests/sif-true",
+        "phase": "verification",
+        "backend": "silicon"
+      },
+      {
+        "root": "tests/sif-true/translation",
+        "phase": "translation",
+        "backend": "any"
+      }
+    ]
+  }
+}

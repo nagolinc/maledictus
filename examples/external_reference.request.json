@@ -1,0 +1,21 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "external_reference_adapter.py",
+      "language": "python",
+      "symbols": ["checked_widget"]
+    }
+  ],
+  "external_contract_overlays": [
+    {
+      "adapter_path": "external_reference_adapter.py",
+      "module": "object_provider",
+      "stub_path": "object_provider_contract.py",
+      "exception_policy": "assume-no-exception"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+[package]
+name = "maledictus-kernel-exit-effects-extraction"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+serde = { version = "=1.0.229", features = ["derive"] }
+
+[lib]
+path = "../../../src/kernel.rs"
+
+[workspace]

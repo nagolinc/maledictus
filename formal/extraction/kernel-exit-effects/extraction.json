@@ -1,0 +1,159 @@
+{
+  "schema": "maledictus-rust-lean-extraction/v1",
+  "identity": "kernel-exit-effects-aeneas-extraction/v1",
+  "status": "translated-compiled-and-universally-refinement-proved",
+  "counts_as_implementation_refinement": true,
+  "source": {
+    "path": "src/kernel.rs",
+    "sha256": "919d9cf64cd57d795128a9be6b8d054ce914033dfd19f46158b8f6489d9c9f45",
+    "extracted_functions": [
+      {
+        "name": "check_exit_effects",
+        "line_start": 27,
+        "line_end": 50,
+        "universally_proved": true
+      }
+    ]
+  },
+  "manifest": {
+    "path": "formal/extraction/kernel-exit-effects/Cargo.toml",
+    "sha256": "d862ed215e05ef2d98c12b77ef0084fadaf4d1bfd8dafe9b541786ed529a211d",
+    "production_library_path": "../../../src/kernel.rs"
+  },
+  "lockfile": {
+    "path": "formal/extraction/kernel-exit-effects/Cargo.lock",
+    "sha256": "7397d03d8423398b2afbe433765047440041189c4db484c6b1fff5f4d7ef79ba"
+  },
+  "toolchain": {
+    "aeneas_release": "nightly-2026.08.27-5b9dcf3",
+    "aeneas_release_sha": "5b9dcf3",
+    "charon_version": "0.1.245",
+    "charon_commit": "4ad295c1bf982b5533ce7d85f4ddc889ff3127f8",
+    "rust_toolchain": "nightly-2026-08-18",
+    "rustc_version": "1.100.0-nightly (8fa1c96cf 2026-08-17)",
+    "lean_toolchain": "v4.31.0"
+  },
+  "extraction": {
+    "root": "crate::check_exit_effects",
+    "direct_production_source": true,
+    "rust_wrapper": false,
+    "source_seam": false
+  },
+  "llbc": {
+    "checked_in": false,
+    "sha256": "72c55420acf2d0d537956318fdaa8f773eadf0ea0817315390cbbea5f3c5ed15",
+    "size_bytes": 408070,
+    "warnings": 0
+  },
+  "generated": [
+    {
+      "path": "formal/extraction/kernel-exit-effects/generated/KernelExitEffects.lean",
+      "sha256": "99fbed2bb233856d7b01eed29a1b72a27c0a398972257feaeba316808414ff53"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/generated/KernelExitEffects/Code/Types.lean",
+      "sha256": "3bb1781e19e7890366ad1d971c2544db1d807ed4c8d9fc3d7744ff2181e4be88"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/generated/KernelExitEffects/Code/Funs.lean",
+      "sha256": "af03983098d2a9ad20a9be8d3295a9fb24601d2bde9762c5ac15488ced8c1a38"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/generated/translation.json",
+      "sha256": "1176dc709f1a7a5d96606d39fc92b4a54b687826b8e1d7e7477e6ec426822392"
+    }
+  ],
+  "external_models": [
+    {
+      "path": "formal/extraction/kernel-exit-effects/generated/KernelExitEffects/Code/FunsExternal.lean",
+      "sha256": "20f15a3b0d7811f28b380cafa8c12baf8a4b7b077b72adbe281d9debb643e9b6",
+      "constructive": true,
+      "trusted": false,
+      "replaces": [
+        "Iterator::any",
+        "String::eq",
+        "String::clone"
+      ]
+    }
+  ],
+  "translation": {
+    "local_functions": 5,
+    "transparent_local_functions": 5,
+    "opaque_local_functions": 0,
+    "external_functions": 3,
+    "source_loops": 1
+  },
+  "lean_build": {
+    "result": "passed",
+    "jobs": 1704,
+    "library": "KernelExitEffectsProofs.AxiomAudit",
+    "public_theorem": "KernelExitEffects.Proofs.check_exit_effects_all_inputs_exact"
+  },
+  "proof_progress": {
+    "all_input_exact_result_proved": true,
+    "empty_no_effects_proved": true,
+    "ordered_first_disallowed_raise_proved": true,
+    "ordered_first_unknown_proved": true,
+    "allowed_raise_continues_proved": true,
+    "clone_and_iterator_outcomes_proved": true,
+    "axiom_dependency_audited": true,
+    "checked_theorems": [
+      "KernelExitEffects.Proofs.check_exit_effects_all_inputs_exact"
+    ],
+    "open_obligations": 0
+  },
+  "axiom_audits": [
+    {
+      "theorem": "KernelExitEffects.Proofs.check_exit_effects_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    }
+  ],
+  "proof_project": [
+    {
+      "path": "formal/extraction/kernel-exit-effects/README.md",
+      "sha256": "de95e165b7c275321d04503d190b623096f12cfb3fdc892711077d3269c8094a"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/lakefile.toml",
+      "sha256": "21448f6fa414526546611529bd0fb56944bf7330c152a5699d6e0ec950baff42"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/lean-toolchain",
+      "sha256": "efac0b94923b2d8b6840cd35be9177ad0fc5ab2332f4f4311c98712cee92fdee"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/lake-manifest.json",
+      "sha256": "844ea08a434821f46aeb06ecd29ae74cd0e3c833a84722ed3114992d92ff4547"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/proofs/KernelExitEffectsProofs.lean",
+      "sha256": "28c2122d55c87137335d6d65a36831e0a8f6f3127724557ee521326fa9e2437e"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/proofs/KernelExitEffectsProofs/Refinement.lean",
+      "sha256": "303ad915b799b16b2f2a67f3f0c7e9c2643221ed32b4c876b5fb37bb1b518874"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/proofs/KernelExitEffectsProofs/AxiomAudit.lean",
+      "sha256": "d5c613d98902cb2c6baf5491c956a62b1b03c7077d01a542d19b6e5774304364"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/tests/AxiomAuditRejectsSorry.lean",
+      "sha256": "a53780cbddb2f1e572334a582e373264bb79b4f75df81382990bb1c4e92c55cc"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/tests/AxiomAuditRejectsProjectAxiom.lean",
+      "sha256": "51a9d04d7b2f23387c773043cfe8cc3e4cad6ea6c29878333ea29b15e0e7f257"
+    },
+    {
+      "path": "formal/extraction/kernel-exit-effects/test-axiom-audits.ps1",
+      "sha256": "b67b21f4fc02d9d29ce379d2c0b9eca5bff0cdc6e67a8a774d105de6dae14bf9"
+    }
+  ],
+  "open_obligations": []
+}

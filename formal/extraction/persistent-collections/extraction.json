@@ -1,0 +1,196 @@
+{
+  "schema": "maledictus-rust-lean-extraction/v1",
+  "identity": "python-persistent-collections-aeneas-extraction/v1",
+  "status": "four-kernels-extracted-three-kernels-universally-refinement-proved",
+  "counts_as_implementation_refinement": true,
+  "source": {
+    "path": "src/python_persistent_collections.rs",
+    "sha256": "64dd4124f695d06d8a73ed350754d4447baa61a1f4a32e32324741a221f8898d",
+    "extracted_functions": [
+      {
+        "name": "require_compatible_kinds_typed",
+        "line_start": 925,
+        "line_end": 938,
+        "universally_proved": true
+      },
+      {
+        "name": "concatenate_typed",
+        "line_start": 948,
+        "line_end": 957,
+        "universally_proved": true
+      },
+      {
+        "name": "unique",
+        "line_start": 963,
+        "line_end": 972,
+        "universally_proved": true
+      },
+      {
+        "name": "comparable_equal_typed",
+        "line_start": 991,
+        "line_end": 1041,
+        "universally_proved": false
+      }
+    ]
+  },
+  "manifest": {
+    "path": "formal/extraction/persistent-collections/Cargo.toml",
+    "sha256": "84ba4a9f00aa708c721b3e9c4c5af033b74f1198a960102e0ac83d008613e466",
+    "production_library_path": "../../../src/lib.rs"
+  },
+  "lockfile": {
+    "path": "formal/extraction/persistent-collections/Cargo.lock",
+    "sha256": "88ff37d6d5366948ebd15c201eff18403ddedd71a977f88f3ce3379f4c84c6d1"
+  },
+  "toolchain": {
+    "aeneas_release": "nightly-2026.08.27-5b9dcf3",
+    "aeneas_release_sha": "5b9dcf3",
+    "charon_version": "0.1.245",
+    "charon_commit": "4ad295c1bf982b5533ce7d85f4ddc889ff3127f8",
+    "rust_toolchain": "nightly-2026-08-18",
+    "rustc_version": "1.100.0-nightly (8fa1c96cf 2026-08-17)",
+    "lean_toolchain": "v4.31.0"
+  },
+  "llbc": {
+    "checked_in": false,
+    "sha256": "5c9f79b008ba21b91135b3b869141124efe9304e2c49e1a645dee89ae75b1ee8",
+    "size_bytes": 3067134
+  },
+  "translation": {
+    "functions": 25,
+    "local_functions": 15,
+    "opaque_external_functions": 10,
+    "source_functions_requested": 4,
+    "source_functions_extracted": 4,
+    "generated_can_diverge_functions": 6
+  },
+  "generated": [
+    {
+      "path": "formal/extraction/persistent-collections/generated/PersistentCollections.lean",
+      "sha256": "e7d5764f0c0ae71a0f142c14f9bf4e308588b271aef8646a77d6b338bb814f57"
+    },
+    {
+      "path": "formal/extraction/persistent-collections/generated/PersistentCollections/Code/Types.lean",
+      "sha256": "3295d00e12cb321acf56af1756d8eb06c1e4b67e5c178d0832e51375977a411b"
+    },
+    {
+      "path": "formal/extraction/persistent-collections/generated/PersistentCollections/Code/FunsExternal.lean",
+      "sha256": "fab35ea012b35c42ddd8328707dc78b2cd23bd57b6d7451af6b3b3c43ec3dd99"
+    },
+    {
+      "path": "formal/extraction/persistent-collections/generated/PersistentCollections/Code/Funs.lean",
+      "sha256": "d010cc3dc70c5e169c514b08087f6e249b13a31f8798e704ca00fd9152faf14f"
+    },
+    {
+      "path": "formal/extraction/persistent-collections/generated/translation.json",
+      "sha256": "1d3afd0e4d55bdf439f5948ab70f24832e9f26b4d38db07f14e8a762d3b24d18"
+    }
+  ],
+  "proof_progress": {
+    "requested_kernels": 4,
+    "universally_proved_kernels": 3,
+    "open_kernels": [
+      "comparable_equal_typed"
+    ],
+    "checked_theorems": [
+      "PersistentCollections.Proofs.require_compatible_kinds_all_inputs",
+      "PersistentCollections.Proofs.concatenate_success_all_values",
+      "PersistentCollections.Proofs.concatenate_kind_error_all_values",
+      "PersistentCollections.Proofs.concatenate_capacity_failure_all_values",
+      "PersistentCollections.Proofs.concatenate_never_diverges",
+      "PersistentCollections.Proofs.concatenate_all_inputs_exact",
+      "PersistentCollections.Proofs.unique_loop_exact",
+      "PersistentCollections.Proofs.unique_all_inputs_exact"
+    ]
+  },
+  "axiom_audits": [
+    {
+      "theorem": "PersistentCollections.Proofs.require_compatible_kinds_all_inputs",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem_group": "concatenation refinement and totality",
+      "theorems": [
+        "PersistentCollections.Proofs.concatenate_success_all_values",
+        "PersistentCollections.Proofs.concatenate_kind_error_all_values",
+        "PersistentCollections.Proofs.concatenate_capacity_failure_all_values",
+        "PersistentCollections.Proofs.concatenate_never_diverges",
+        "PersistentCollections.Proofs.concatenate_all_inputs_exact"
+      ],
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem_group": "unique refinement and totality",
+      "theorems": [
+        "PersistentCollections.Proofs.unique_loop_exact",
+        "PersistentCollections.Proofs.unique_all_inputs_exact"
+      ],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    }
+  ],
+  "proof_project": [
+    {
+      "path": "formal/extraction/persistent-collections/proofs/PersistentCollectionsProofs/Refinement.lean",
+      "sha256": "329710d4670625b6e3db7a9779a58cd6573fd850857f1e7ba29dc8d191c117d5"
+    },
+    {
+      "path": "formal/extraction/persistent-collections/proofs/PersistentCollectionsProofs/AxiomAudit.lean",
+      "sha256": "0b1be47036bf4f62e74fb1a0e7ed4c5d4202a6a1ad256933281fcd298fb037c5"
+    },
+    {
+      "path": "formal/extraction/persistent-collections/lakefile.toml",
+      "sha256": "c27b6f45e4408198d2c2c378605a70c8e4d9e395316a8808c426349d7c0199b2"
+    },
+    {
+      "path": "formal/extraction/persistent-collections/lake-manifest.json",
+      "sha256": "a26c4d477ef6d18d66568053b97acfecb727e8b53bb56d297ad696ae515ebb06"
+    },
+    {
+      "path": "formal/extraction/persistent-collections/tests/AxiomAuditRejectsSorry.lean",
+      "sha256": "0b4e2f581c52f2d9e539d684ee661afec6a1b5e9d862f9a9a5166124794793e8"
+    },
+    {
+      "path": "formal/extraction/persistent-collections/tests/AxiomAuditRejectsProjectAxiom.lean",
+      "sha256": "592e9bb0de085067a51d57f3b7a26ae2ea2502e6d8c434cfece62fdb1c947144"
+    },
+    {
+      "path": "formal/extraction/test-axiom-audits.ps1",
+      "sha256": "9a69fd859dd6285f85a549eb5d8aa84b8aa7605978061ce46f13812d049aebba"
+    },
+    {
+      "path": "formal/test-lake-cache-hygiene.ps1",
+      "sha256": "55fd686ba90d94f16d6f787f8511ba12ff081a24fb384d4825f8604c40509aff"
+    },
+    {
+      "path": "formal/run-lake.ps1",
+      "sha256": "835198af317e165038b5dbf97702088cf127aa4bed778f660bb43730c4d7475d"
+    },
+    {
+      "path": "formal/lake-projects.json",
+      "sha256": "cc536fc6959683430fa5ec60f03a07856ba41709950dbcf205a1b1bc0f1e9f52"
+    }
+  ],
+  "lake_cache": {
+    "packages_dir": "../../../.cache/lake/packages/lean-4.31",
+    "build_dir": "../../../.cache/lake/build/persistent-collections",
+    "central_hygiene_gate": "passed"
+  },
+  "commands": {
+    "extract": "charon cargo --preset=aeneas --start-from crate::python_heap_contracts::python_persistent_collections::require_compatible_kinds_typed --start-from crate::python_heap_contracts::python_persistent_collections::concatenate_typed --start-from crate::python_heap_contracts::python_persistent_collections::unique --start-from crate::python_heap_contracts::python_persistent_collections::comparable_equal_typed --dest-file .cache/persistent-extraction/persistent.llbc && aeneas -backend lean -namespace PersistentCollections -subdir PersistentCollections/Code -split-files -emit-json -abort-on-error -dest .cache/persistent-extraction/generated-clean .cache/persistent-extraction/persistent.llbc",
+    "build_and_positive_audit": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project persistent-collections -LakePath lake build PersistentCollectionsProofs.AxiomAudit",
+    "central_fail_closed_audit": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/extraction/test-axiom-audits.ps1 -LakePath .toolchains/elan/bin/lake.exe",
+    "focused_rust_tests": "cargo test --lib python_persistent_collections::tests"
+  }
+}

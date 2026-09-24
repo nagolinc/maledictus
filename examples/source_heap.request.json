@@ -1,0 +1,19 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "heap_source_provider.py",
+      "language": "python",
+      "symbols": ["Cell.__init__", "Cell.get"]
+    },
+    {
+      "path": "heap_source_app.py",
+      "language": "python",
+      "symbols": ["construct_and_read"]
+    }
+  ],
+  "external_contract_overlays": []
+}

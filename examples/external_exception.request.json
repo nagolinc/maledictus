@@ -1,0 +1,21 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "9f42e38abc66c3d171e814110ef2dee8365d7c9fc3f49915e8aafc5eb2708198",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "external_exception_adapter.py",
+      "language": "python",
+      "symbols": ["recovered_value"]
+    }
+  ],
+  "external_contract_overlays": [
+    {
+      "adapter_path": "external_exception_adapter.py",
+      "module": "typed_provider",
+      "stub_path": "typed_provider_contract.py",
+      "exception_policy": "declared-by-exsures"
+    }
+  ]
+}

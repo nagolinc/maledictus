@@ -1,0 +1,14 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "2bc7d46e545c97f0e71594803f1b51f2ff1e93dcd8ea6c22044ddcfaf771cc7a",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "immutable_list.py",
+      "language": "python",
+      "symbols": ["preserve", "first", "first_or_default", "run"]
+    }
+  ],
+  "external_contract_overlays": []
+}

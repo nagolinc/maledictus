@@ -1,0 +1,78 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: marcoeilers/nagini
+          ref: c2fd68f27db324d110824f607aabfda827e3675a
+          path: .upstream/nagini
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo test --all-targets
+      - run: cargo fmt --manifest-path formal/coverage-tool/Cargo.toml --check
+      - run: cargo clippy --manifest-path formal/coverage-tool/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --manifest-path formal/coverage-tool/Cargo.toml
+      - run: >-
+          cargo run --quiet --manifest-path formal/coverage-tool/Cargo.toml --
+          check --project . --config formal/coverage-config.json --output formal/coverage.json
+      - run: cargo run -- conformance check-scalar-suite --suite .upstream/nagini --pin conformance/nagini-v1.3.1.json --manifest conformance/scalar-fixtures-v1.json
+      - run: cargo run -- conformance check-heap-suite --suite .upstream/nagini --pin conformance/nagini-v1.3.1.json --manifest conformance/heap-fixtures-v1.json
+      - run: cargo run -- conformance check-reference-suite --suite .upstream/nagini --pin conformance/nagini-v1.3.1.json --manifest conformance/reference-fixtures-v1.json
+
+  lean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: formal
+      - shell: pwsh
+        run: ./formal/run-lake.ps1 -Project call-binding-full -LakePath lake build BindCallFullProofs.AxiomAudit
+      - shell: pwsh
+        run: ./formal/run-lake.ps1 -Project vc-term-sort -LakePath lake build VcTermSortProofs.AxiomAudit
+      - shell: pwsh
+        run: ./formal/run-lake.ps1 -Project io-sort-kernel -LakePath lake build IoSortKernelProofs.AxiomAudit
+      - shell: pwsh
+        run: ./formal/run-lake.ps1 -Project persistent-collections -LakePath lake build PersistentCollectionsProofs.AxiomAudit
+      - shell: pwsh
+        run: ./formal/run-lake.ps1 -Project type-algebra-kernel -LakePath lake build TypeAlgebraKernelProofs
+      - shell: pwsh
+        run: ./formal/extraction/test-axiom-audits.ps1 -LakePath lake
+
+  windows-package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: marcoeilers/nagini
+          ref: c2fd68f27db324d110824f607aabfda827e3675a
+          path: .upstream/nagini
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12.10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - shell: pwsh
+        run: ./tests/release_completion_gate.Tests.ps1
+      - shell: pwsh
+        run: ./formal/extraction/vc-term-sort/tests/setup-extraction-workspace.Tests.ps1
+      - shell: pwsh
+        run: ./scripts/package-windows.ps1 -Profile release
+      - shell: pwsh
+        run: ./scripts/verify-windows-package.ps1

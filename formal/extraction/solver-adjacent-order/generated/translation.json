@@ -1,0 +1,384 @@
+{
+  "aeneas_version": "nightly-2026.08.27-5b9dcf3",
+  "charon_version": "0.1.245",
+  "crate": "maledictus",
+  "functions": [
+    {
+      "def_id": 8,
+      "lean_name": "core.slice.Slice.split_first",
+      "lean_file": "SolverAdjacentOrder/Code/FunsExternal_Template.lean",
+      "rust_name": "core::slice::{[T]}::split_first",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/core/src/slice/mod.rs",
+        "begin_line": 198,
+        "end_line": 198
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 15,
+      "lean_name": "Box.Insts.CoreCmpPartialEqBox.ne",
+      "lean_file": "SolverAdjacentOrder/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::boxed::{impl core::cmp::PartialEq<alloc::boxed::Box<T>> for alloc::boxed::Box<T>}::ne",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/boxed.rs",
+        "begin_line": 2170,
+        "end_line": 2170
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 2,
+      "lean_name": "Box.Insts.CoreConvertAsRef.as_ref",
+      "lean_file": "SolverAdjacentOrder/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::boxed::{impl core::convert::AsRef<T> for alloc::boxed::Box<T>}::as_ref",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/boxed.rs",
+        "begin_line": 2414,
+        "end_line": 2414
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 31,
+      "lean_name": "alloc.string.String.Insts.CoreCmpPartialEqStr.ne",
+      "lean_file": "SolverAdjacentOrder/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::cmp::PartialEq<str> for alloc::string::String}::ne",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2707,
+        "end_line": 2707
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 30,
+      "lean_name": "alloc.string.String.Insts.CoreCmpPartialEqStr.eq",
+      "lean_file": "SolverAdjacentOrder/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::cmp::PartialEq<str> for alloc::string::String}::eq",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2703,
+        "end_line": 2703
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 4,
+      "lean_name": "alloc.string.String.Insts.CoreOpsDerefDerefStr.deref",
+      "lean_file": "SolverAdjacentOrder/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::ops::deref::Deref<str> for alloc::string::String}::deref",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2859,
+        "end_line": 2859
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 16,
+      "lean_name": "vc.Term.Insts.CoreCmpPartialEqTerm.eq",
+      "lean_file": "SolverAdjacentOrder/Code/FunsExternal_Template.lean",
+      "rust_name": "maledictus::vc::{impl core::cmp::PartialEq<maledictus::vc::Term> for maledictus::vc::Term}::eq",
+      "is_local": true,
+      "source": { "file": "src/vc.rs", "begin_line": 487, "end_line": 487 },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 19,
+      "lean_name": "SolverAdjacentOrder.solver.is_integer_literal",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_integer_literal",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 257,
+        "end_line": 262
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 18,
+      "lean_name": "SolverAdjacentOrder.solver.is_bound_variable",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_bound_variable",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 247,
+        "end_line": 255
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 17,
+      "lean_name": "SolverAdjacentOrder.solver.is_bound_successor",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_bound_successor",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 264,
+        "end_line": 272
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 10,
+      "lean_name": "SolverAdjacentOrder.solver.is_adjacent_upper_bound",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_adjacent_upper_bound",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 344,
+        "end_line": 359
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 7,
+      "lean_name": "SolverAdjacentOrder.solver.is_nonnegative_bound",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_nonnegative_bound",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 325,
+        "end_line": 342
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": true,
+      "reducible": false
+    },
+    {
+      "def_id": 1,
+      "lean_name": "SolverAdjacentOrder.solver.unwrap_singleton_and_loop.body",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::solver::unwrap_singleton_and",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 238,
+        "end_line": 243
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "SolverAdjacentOrder.solver.unwrap_singleton_and"
+    },
+    {
+      "def_id": 1,
+      "lean_name": "SolverAdjacentOrder.solver.unwrap_singleton_and_loop",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::solver::unwrap_singleton_and",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 238,
+        "end_line": 243
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "SolverAdjacentOrder.solver.unwrap_singleton_and"
+    },
+    {
+      "def_id": 1,
+      "lean_name": "SolverAdjacentOrder.solver.unwrap_singleton_and",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::solver::unwrap_singleton_and",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 237,
+        "end_line": 245
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": true
+    },
+    {
+      "def_id": 5,
+      "lean_name": "SolverAdjacentOrder.solver.is_python_index_of",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_python_index_of",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 274,
+        "end_line": 323
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 0,
+      "lean_name": "SolverAdjacentOrder.solver.is_exact_sorted_adjacent_order_theorem",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::solver::is_exact_sorted_adjacent_order_theorem",
+      "is_local": true,
+      "source": {
+        "file": "src/solver.rs",
+        "begin_line": 144,
+        "end_line": 235
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    }
+  ],
+  "types": [
+    {
+      "def_id": 10,
+      "lean_name": "core.num.niche_types.NonZeroI128Inner",
+      "lean_file": "SolverAdjacentOrder/Code/TypesExternal_Template.lean",
+      "rust_name": "core::num::niche_types::NonZeroI128Inner",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/core/src/num/niche_types.rs",
+        "begin_line": 20,
+        "end_line": 20
+      }
+    },
+    {
+      "def_id": 8,
+      "lean_name": "core.num.nonzero.NonZero",
+      "lean_file": "SolverAdjacentOrder/Code/TypesExternal_Template.lean",
+      "rust_name": "core::num::nonzero::NonZero",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/core/src/num/nonzero.rs",
+        "begin_line": 112,
+        "end_line": 112
+      }
+    },
+    {
+      "def_id": 6,
+      "lean_name": "SolverAdjacentOrder.vc.IntEnumDescriptor",
+      "lean_file": "SolverAdjacentOrder/Code/Types.lean",
+      "rust_name": "maledictus::vc::IntEnumDescriptor",
+      "is_local": true,
+      "source": { "file": "src/vc.rs", "begin_line": 475, "end_line": 478 }
+    },
+    {
+      "def_id": 5,
+      "lean_name": "SolverAdjacentOrder.vc.Sort",
+      "lean_file": "SolverAdjacentOrder/Code/Types.lean",
+      "rust_name": "maledictus::vc::Sort",
+      "is_local": true,
+      "source": { "file": "src/vc.rs", "begin_line": 37, "end_line": 59 }
+    },
+    {
+      "def_id": 7,
+      "lean_name": "SolverAdjacentOrder.vc.PermissionTransferAmount",
+      "lean_file": "SolverAdjacentOrder/Code/Types.lean",
+      "rust_name": "maledictus::vc::PermissionTransferAmount",
+      "is_local": true,
+      "source": { "file": "src/vc.rs", "begin_line": 481, "end_line": 485 }
+    },
+    {
+      "def_id": 0,
+      "lean_name": "SolverAdjacentOrder.vc.Term",
+      "lean_file": "SolverAdjacentOrder/Code/Types.lean",
+      "rust_name": "maledictus::vc::Term",
+      "is_local": true,
+      "source": { "file": "src/vc.rs", "begin_line": 489, "end_line": 785 }
+    }
+  ],
+  "globals": [],
+  "trait_decls": [],
+  "trait_impls": [
+    {
+      "def_id": 11,
+      "lean_name": "SolverAdjacentOrder.alloc.string.String.Insts.CoreCmpPartialEqStr",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "alloc::string::{impl core::cmp::PartialEq<str> for alloc::string::String}",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2701,
+        "end_line": 2701
+      },
+      "impl_trait_def_id": 0,
+      "impl_trait_rust_name": "core::cmp::PartialEq",
+      "impl_trait_is_builtin": true
+    },
+    {
+      "def_id": 3,
+      "lean_name": "SolverAdjacentOrder.vc.Term.Insts.CoreCmpPartialEqTerm",
+      "lean_file": "SolverAdjacentOrder/Code/Funs.lean",
+      "rust_name": "maledictus::vc::{impl core::cmp::PartialEq<maledictus::vc::Term> for maledictus::vc::Term}",
+      "is_local": true,
+      "source": { "file": "src/vc.rs", "begin_line": 487, "end_line": 487 },
+      "impl_trait_def_id": 0,
+      "impl_trait_rust_name": "core::cmp::PartialEq",
+      "impl_trait_is_builtin": true
+    }
+  ]
+}

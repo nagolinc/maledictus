@@ -1,0 +1,21 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "4fe2ef76e67a351ab39d4da8e55afecdc5c13fe9dbba72d26d94c58f15ba8eb6",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "external_adapter.py",
+      "language": "python",
+      "symbols": ["adapted_successor"]
+    }
+  ],
+  "external_contract_overlays": [
+    {
+      "adapter_path": "external_adapter.py",
+      "module": "provider",
+      "stub_path": "provider_contract.py",
+      "exception_policy": "assume-no-exception"
+    }
+  ]
+}

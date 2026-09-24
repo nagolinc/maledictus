@@ -1,0 +1,17 @@
+name = "maledictus_vc_term_sort_extraction_check"
+packagesDir = "../../../.cache/lake/packages/lean-4.31"
+buildDir = "../../../.cache/lake/build/vc-term-sort"
+
+[[require]]
+name = "aeneas"
+git = "https://github.com/AeneasVerif/aeneas.git"
+rev = "nightly-2026.08.27-5b9dcf3"
+subDir = "backends/lean"
+
+[[lean_lib]]
+name = "VcTermSort"
+srcDir = "generated"
+
+[[lean_lib]]
+name = "VcTermSortProofs"
+srcDir = "proofs"

@@ -1,0 +1,18 @@
+name = "maledictus_kernel_exit_effects_extraction_check"
+version = "0.1.0"
+packagesDir = "../../../.cache/lake/packages/lean-4.31"
+buildDir = "../../../.cache/lake/build/kernel-exit-effects"
+
+[[require]]
+name = "aeneas"
+git = "https://github.com/AeneasVerif/aeneas.git"
+rev = "nightly-2026.08.27-5b9dcf3"
+subDir = "backends/lean"
+
+[[lean_lib]]
+name = "KernelExitEffects"
+srcDir = "generated"
+
+[[lean_lib]]
+name = "KernelExitEffectsProofs"
+srcDir = "proofs"

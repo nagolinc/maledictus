@@ -1,0 +1,14 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "4534058bf79ac2e71c5d334559eeff43ffe1c49ce6ef39663a4ef3f0aa7a8bfd",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "scalar_contract.py",
+      "language": "python",
+      "symbols": ["successor"]
+    }
+  ],
+  "external_contract_overlays": []
+}

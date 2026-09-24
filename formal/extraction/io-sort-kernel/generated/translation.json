@@ -1,0 +1,70 @@
+{
+  "aeneas_version": "nightly-2026.08.27-5b9dcf3",
+  "charon_version": "0.1.245",
+  "crate": "maledictus",
+  "functions": [
+    {
+      "def_id": 1,
+      "lean_name": "IoSortKernel.python_io_contracts.same_value_sort",
+      "lean_file": "IoSortKernel/Code/Funs.lean",
+      "rust_name": "maledictus::python_io_contracts::same_value_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/python_io_contracts.rs",
+        "begin_line": 1376,
+        "end_line": 1385
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 0,
+      "lean_name": "IoSortKernel.python_io_contracts.value_has_sort",
+      "lean_file": "IoSortKernel/Code/Funs.lean",
+      "rust_name": "maledictus::python_io_contracts::value_has_sort",
+      "is_local": true,
+      "source": {
+        "file": "src/python_io_contracts.rs",
+        "begin_line": 1629,
+        "end_line": 1634
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    }
+  ],
+  "types": [
+    {
+      "def_id": 1,
+      "lean_name": "IoSortKernel.python_io_contracts.IoSort",
+      "lean_file": "IoSortKernel/Code/Types.lean",
+      "rust_name": "maledictus::python_io_contracts::IoSort",
+      "is_local": true,
+      "source": {
+        "file": "src/python_io_contracts.rs",
+        "begin_line": 21,
+        "end_line": 24
+      }
+    },
+    {
+      "def_id": 0,
+      "lean_name": "IoSortKernel.python_io_contracts.Value",
+      "lean_file": "IoSortKernel/Code/Types.lean",
+      "rust_name": "maledictus::python_io_contracts::Value",
+      "is_local": true,
+      "source": {
+        "file": "src/python_io_contracts.rs",
+        "begin_line": 27,
+        "end_line": 31
+      }
+    }
+  ],
+  "globals": [],
+  "trait_decls": [],
+  "trait_impls": []
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "f602f63388ee6f6e5059901c8254f4bc0d21e0c57cf02c1d2d3e621b5f11bd21",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "constructor_reference_field.py",
+      "language": "python",
+      "symbols": ["Child.__init__", "Parent.__init__", "verify_parent_identity"]
+    }
+  ],
+  "external_contract_overlays": []
+}

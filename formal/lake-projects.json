@@ -1,0 +1,144 @@
+{
+  "schema": "maledictus-lake-projects/v1",
+  "projects": [
+    {
+      "id": "formal",
+      "directory": "formal",
+      "config": "formal/lakefile.toml",
+      "manifest": "formal/lake-manifest.json",
+      "toolchain": "formal/lean-toolchain",
+      "packages": ".cache/lake/packages/lean-4.24",
+      "build": ".cache/lake/build/formal",
+      "sources": [
+        "formal/Maledictus",
+        "formal/Maledictus.lean"
+      ]
+    },
+    {
+      "id": "obligation-kernel",
+      "directory": "formal/extraction/obligation-kernel",
+      "config": "formal/extraction/obligation-kernel/lakefile.toml",
+      "manifest": "formal/extraction/obligation-kernel/lake-manifest.json",
+      "toolchain": "formal/extraction/obligation-kernel/lean-toolchain",
+      "packages": ".cache/lake/packages/lean-4.31",
+      "build": ".cache/lake/build/obligation-kernel",
+      "sources": [
+        "formal/extraction/obligation-kernel/generated",
+        "formal/extraction/obligation-kernel/proofs",
+        "formal/extraction/obligation-kernel/tests"
+      ]
+    },
+    {
+      "id": "call-binding-full",
+      "directory": "formal/extraction/call-binding-full",
+      "config": "formal/extraction/call-binding-full/lakefile.toml",
+      "manifest": "formal/extraction/call-binding-full/lake-manifest.json",
+      "toolchain": "formal/extraction/call-binding-full/lean-toolchain",
+      "packages": ".cache/lake/packages/lean-4.31",
+      "build": ".cache/lake/build/call-binding-full",
+      "sources": [
+        "formal/extraction/call-binding-full/generated",
+        "formal/extraction/call-binding-full/proofs",
+        "formal/extraction/call-binding-full/tests"
+      ]
+    },
+    {
+      "id": "vc-term-sort",
+      "directory": "formal/extraction/vc-term-sort",
+      "config": "formal/extraction/vc-term-sort/lakefile.toml",
+      "manifest": "formal/extraction/vc-term-sort/lake-manifest.json",
+      "toolchain": "formal/extraction/vc-term-sort/lean-toolchain",
+      "packages": ".cache/lake/packages/lean-4.31",
+      "build": ".cache/lake/build/vc-term-sort",
+      "sources": [
+        "formal/extraction/vc-term-sort/generated",
+        "formal/extraction/vc-term-sort/proofs",
+        "formal/extraction/vc-term-sort/tests"
+      ]
+    },
+    {
+      "id": "io-sort-kernel",
+      "directory": "formal/extraction/io-sort-kernel",
+      "config": "formal/extraction/io-sort-kernel/lakefile.toml",
+      "manifest": "formal/extraction/io-sort-kernel/lake-manifest.json",
+      "toolchain": "formal/extraction/io-sort-kernel/lean-toolchain",
+      "packages": ".cache/lake/packages/lean-4.31",
+      "build": ".cache/lake/build/io-sort-kernel",
+      "sources": [
+        "formal/extraction/io-sort-kernel/generated",
+        "formal/extraction/io-sort-kernel/proofs",
+        "formal/extraction/io-sort-kernel/tests"
+      ]
+    },
+    {
+      "id": "persistent-collections",
+      "directory": "formal/extraction/persistent-collections",
+      "config": "formal/extraction/persistent-collections/lakefile.toml",
+      "manifest": "formal/extraction/persistent-collections/lake-manifest.json",
+      "toolchain": "formal/extraction/persistent-collections/lean-toolchain",
+      "packages": ".cache/lake/packages/lean-4.31",
+      "build": ".cache/lake/build/persistent-collections",
+      "sources": [
+        "formal/extraction/persistent-collections/generated",
+        "formal/extraction/persistent-collections/proofs",
+        "formal/extraction/persistent-collections/tests"
+      ]
+    },
+    {
+      "id": "type-algebra-kernel",
+      "directory": "formal/extraction/type-algebra-kernel",
+      "config": "formal/extraction/type-algebra-kernel/lakefile.toml",
+      "manifest": "formal/extraction/type-algebra-kernel/lake-manifest.json",
+      "toolchain": "formal/extraction/type-algebra-kernel/lean-toolchain",
+      "packages": ".cache/lake/packages/lean-4.31",
+      "build": ".cache/lake/build/type-algebra-kernel",
+      "sources": [
+        "formal/extraction/type-algebra-kernel/generated",
+        "formal/extraction/type-algebra-kernel/proofs",
+        "formal/extraction/type-algebra-kernel/tests"
+      ]
+    },
+    {
+      "id": "kernel-exit-effects",
+      "directory": "formal/extraction/kernel-exit-effects",
+      "config": "formal/extraction/kernel-exit-effects/lakefile.toml",
+      "manifest": "formal/extraction/kernel-exit-effects/lake-manifest.json",
+      "toolchain": "formal/extraction/kernel-exit-effects/lean-toolchain",
+      "packages": ".cache/lake/packages/lean-4.31",
+      "build": ".cache/lake/build/kernel-exit-effects",
+      "sources": [
+        "formal/extraction/kernel-exit-effects/generated",
+        "formal/extraction/kernel-exit-effects/proofs",
+        "formal/extraction/kernel-exit-effects/tests"
+      ]
+    },
+    {
+      "id": "solver-sort-predicates",
+      "directory": "formal/extraction/solver-sort-predicates",
+      "config": "formal/extraction/solver-sort-predicates/lakefile.toml",
+      "manifest": "formal/extraction/solver-sort-predicates/lake-manifest.json",
+      "toolchain": "formal/extraction/solver-sort-predicates/lean-toolchain",
+      "packages": ".cache/lake/packages/lean-4.31",
+      "build": ".cache/lake/build/solver-sort-predicates",
+      "sources": [
+        "formal/extraction/solver-sort-predicates/generated",
+        "formal/extraction/solver-sort-predicates/proofs",
+        "formal/extraction/solver-sort-predicates/tests"
+      ]
+    },
+    {
+      "id": "solver-adjacent-order",
+      "directory": "formal/extraction/solver-adjacent-order",
+      "config": "formal/extraction/solver-adjacent-order/lakefile.toml",
+      "manifest": "formal/extraction/solver-adjacent-order/lake-manifest.json",
+      "toolchain": "formal/extraction/solver-adjacent-order/lean-toolchain",
+      "packages": ".cache/lake/packages/lean-4.31",
+      "build": ".cache/lake/build/solver-adjacent-order",
+      "sources": [
+        "formal/extraction/solver-adjacent-order/generated",
+        "formal/extraction/solver-adjacent-order/proofs",
+        "formal/extraction/solver-adjacent-order/tests"
+      ]
+    }
+  ]
+}

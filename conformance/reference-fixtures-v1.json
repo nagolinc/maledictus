@@ -1,0 +1,6 @@
+{
+  "schema": "maledictus-reference-fixtures/v1",
+  "fixtures": [
+    "tests/functional/verification/issues/00057.py"
+  ]
+}

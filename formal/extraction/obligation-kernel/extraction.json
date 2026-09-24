@@ -1,0 +1,145 @@
+{
+  "schema": "maledictus-rust-lean-extraction/v1",
+  "identity": "obligation-kernel-source-linked-model/v1",
+  "status": "source-hash-bound-and-conditionally-refinement-proved",
+  "counts_as_implementation_refinement": true,
+  "source": {
+    "path": "src/obligation_kernel.rs",
+    "sha256": "52fd2315a612e442595456b8427d70e18d250bd64fde7c7f4d2604617838a97e",
+    "extracted_functions": [
+      {
+        "name": "measure_satisfies",
+        "line_start": 41,
+        "line_end": 48,
+        "universally_proved": true
+      },
+      {
+        "name": "decide_produce",
+        "line_start": 50,
+        "line_end": 56,
+        "universally_proved": true
+      },
+      {
+        "name": "decide_consume",
+        "line_start": 58,
+        "line_end": 80,
+        "universally_proved": true
+      },
+      {
+        "name": "decide_close",
+        "line_start": 82,
+        "line_end": 88,
+        "universally_proved": true
+      },
+      {
+        "name": "preserves_loop_invariant",
+        "line_start": 90,
+        "line_end": 97,
+        "universally_proved": true
+      }
+    ]
+  },
+  "extraction": {
+    "direct_production_source": true,
+    "mechanical_rust_extraction": false,
+    "source_correspondence_premise": "ObligationKernel.Corresponds",
+    "premise_discharged": false
+  },
+  "generated": [
+    {
+      "path": "formal/extraction/obligation-kernel/generated/ObligationKernel.lean",
+      "sha256": "083d4cdec6f9befdcc1677417f10a47b46888db57bbff399e4e4c2214f3fc2f2"
+    }
+  ],
+  "lean_build": {
+    "result": "passed",
+    "jobs": 4,
+    "library": "ObligationKernelProofs.AxiomAudit",
+    "public_theorem": "ObligationKernel.Proofs.source_transition_semantics"
+  },
+  "proof_progress": {
+      "consume_produce_close_semantics_proved": true,
+      "loop_invariant_measure_semantics_proved": true,
+    "decision_determinism_proved": true,
+    "source_correspondence_conditional": true,
+    "axiom_dependency_audited": true,
+    "checked_theorems": [
+      "ObligationKernel.Proofs.source_transition_semantics",
+      "ObligationKernel.Proofs.decide_produce_deterministic",
+      "ObligationKernel.Proofs.decide_consume_deterministic",
+      "ObligationKernel.Proofs.decide_close_deterministic"
+    ],
+    "open_obligations": [
+      "mechanically extract src/obligation_kernel.rs and discharge ObligationKernel.Corresponds"
+    ]
+  },
+  "axiom_audits": [
+    {
+      "theorem": "ObligationKernel.Proofs.source_transition_semantics",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "ObligationKernel.Proofs.decide_produce_deterministic",
+      "axioms": [],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "ObligationKernel.Proofs.decide_consume_deterministic",
+      "axioms": [],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "ObligationKernel.Proofs.decide_close_deterministic",
+      "axioms": [],
+      "contains_sorry_ax": false
+    }
+  ],
+  "proof_project": [
+    {
+      "path": "formal/extraction/obligation-kernel/generated/ObligationKernel.lean",
+      "sha256": "083d4cdec6f9befdcc1677417f10a47b46888db57bbff399e4e4c2214f3fc2f2"
+    },
+    {
+      "path": "formal/extraction/obligation-kernel/proofs/ObligationKernelProofs/Refinement.lean",
+      "sha256": "28f8fc19ef5f5fff32d2ca4b084ebeeaa9ac528f4b8b4ef1612dcdc0ab79b501"
+    },
+    {
+      "path": "formal/extraction/obligation-kernel/proofs/ObligationKernelProofs/AxiomAudit.lean",
+      "sha256": "75d8e1a2bbd553ce8e579de601ba5eab2315f7fb285891f0a298eb7938ac3fcb"
+    },
+    {
+      "path": "formal/extraction/obligation-kernel/proofs/ObligationKernelProofs.lean",
+      "sha256": "68d3c4dc0d7cead742ed8ec5a0b317171e91f9112b31108f85fc208cbd2919af"
+    },
+    {
+      "path": "formal/extraction/obligation-kernel/tests/AxiomAuditRejectsSorry.lean",
+      "sha256": "b317ef764fa45680dd8dda043851ae0a63e570a22fab771597951653ed13cbf4"
+    },
+    {
+      "path": "formal/extraction/obligation-kernel/tests/AxiomAuditRejectsProjectAxiom.lean",
+      "sha256": "58f9816449927b8de37892f5762d2e523dc595d643a1b86732c6200ed3da78b5"
+    },
+    {
+      "path": "formal/extraction/obligation-kernel/README.md",
+      "sha256": "1de4741c9dfe4519dbf2eff35f3e6e0c20e5a98f4fbad8bcc5f92eab740620bc"
+    },
+    {
+      "path": "formal/extraction/obligation-kernel/lakefile.toml",
+      "sha256": "e3e8410a6aafc576bc52acad7eb6fd612c28450b4e7d56ba0b4b72cb76785a2b"
+    },
+    {
+      "path": "formal/extraction/obligation-kernel/lean-toolchain",
+      "sha256": "efac0b94923b2d8b6840cd35be9177ad0fc5ab2332f4f4311c98712cee92fdee"
+    },
+    {
+      "path": "formal/extraction/obligation-kernel/lake-manifest.json",
+      "sha256": "afe46324d4837e1d5582a9a60beddd00a93912266229fd72c44403c943533945"
+    }
+  ],
+  "open_obligations": [
+    "ObligationKernel.Corresponds remains an explicit source-correspondence premise"
+  ]
+}

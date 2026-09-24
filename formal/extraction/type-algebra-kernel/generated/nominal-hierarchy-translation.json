@@ -1,0 +1,481 @@
+{
+  "aeneas_version": "nightly-2026.08.27-5b9dcf3",
+  "charon_version": "0.1.245",
+  "crate": "maledictus",
+  "functions": [
+    {
+      "def_id": 8,
+      "lean_name": "core.option.Option.Insts.CoreCloneClone.clone",
+      "lean_file": "TypeAlgebraHierarchy/Code/FunsExternal_Template.lean",
+      "rust_name": "core::option::{impl core::clone::Clone for core::option::Option<T>}::clone",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/core/src/option.rs",
+        "begin_line": 2273,
+        "end_line": 2273
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 9,
+      "lean_name": "alloc.string.String.Insts.CoreCmpPartialEqString.eq",
+      "lean_file": "TypeAlgebraHierarchy/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::cmp::PartialEq<alloc::string::String> for alloc::string::String}::eq",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 350,
+        "end_line": 350
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 7,
+      "lean_name": "alloc.string.String.Insts.CoreCloneClone.clone",
+      "lean_file": "TypeAlgebraHierarchy/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::clone::Clone for alloc::string::String}::clone",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2388,
+        "end_line": 2388
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 5,
+      "lean_name": "alloc.string.String.Insts.CoreConvertFromShared0Str.from",
+      "lean_file": "TypeAlgebraHierarchy/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::string::{impl core::convert::From<&'_0 str> for alloc::string::String}::from",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 3150,
+        "end_line": 3150
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 12,
+      "lean_name": "alloc.vec.Vec.pop",
+      "lean_file": "TypeAlgebraHierarchy/Code/FunsExternal_Template.lean",
+      "rust_name": "alloc::vec::{alloc::vec::Vec<T>}::pop",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/vec/mod.rs",
+        "begin_line": 2872,
+        "end_line": 2872
+      },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 3,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.NominalClassList.from_vec_loop.body",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::{maledictus::python_type_algebra_kernel::NominalClassList}::from_vec",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 80,
+        "end_line": 82
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.NominalClassList.from_vec"
+    },
+    {
+      "def_id": 3,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.NominalClassList.from_vec_loop",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::{maledictus::python_type_algebra_kernel::NominalClassList}::from_vec",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 80,
+        "end_line": 82
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.NominalClassList.from_vec"
+    },
+    {
+      "def_id": 3,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.NominalClassList.from_vec",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::{maledictus::python_type_algebra_kernel::NominalClassList}::from_vec",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 78,
+        "end_line": 84
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": true
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop0_loop0.body",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 117,
+        "end_line": 122
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 1, "pos": [ 0, 0 ], "is_body": true },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop0_loop0",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 117,
+        "end_line": 122
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 1, "pos": [ 0, 0 ], "is_body": false },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop0_loop1.body",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 130,
+        "end_line": 135
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 2, "pos": [ 0, 1 ], "is_body": true },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop0_loop1",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 130,
+        "end_line": 135
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 2, "pos": [ 0, 1 ], "is_body": false },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop0.body",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 112,
+        "end_line": 142
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": true },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop0",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 112,
+        "end_line": 142
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 0, "pos": [ 0 ], "is_body": false },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop1_loop0_loop0.body",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 160,
+        "end_line": 167
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 5, "pos": [ 1, 0, 0 ], "is_body": true },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop1_loop0_loop0",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 160,
+        "end_line": 167
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 5, "pos": [ 1, 0, 0 ], "is_body": false },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop1_loop0.body",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 150,
+        "end_line": 173
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 4, "pos": [ 1, 0 ], "is_body": true },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop1_loop0",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 150,
+        "end_line": 173
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 4, "pos": [ 1, 0 ], "is_body": false },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop1.body",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 146,
+        "end_line": 176
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 3, "pos": [ 1 ], "is_body": true },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy_loop1",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 146,
+        "end_line": 176
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false,
+      "loop": { "id": 3, "pos": [ 1 ], "is_body": false },
+      "parent_lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy"
+    },
+    {
+      "def_id": 2,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.validate_nominal_hierarchy",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::validate_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 108,
+        "end_line": 179
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
+      "def_id": 0,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.build_nominal_hierarchy",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::build_nominal_hierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 94,
+        "end_line": 102
+      },
+      "is_opaque": false,
+      "can_fail": true,
+      "can_diverge": true,
+      "is_rec": false,
+      "reducible": false
+    }
+  ],
+  "types": [
+    {
+      "def_id": 1,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.NominalClass",
+      "lean_file": "TypeAlgebraHierarchy/Code/Types.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::NominalClass",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 60,
+        "end_line": 63
+      }
+    },
+    {
+      "def_id": 5,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.NominalClassList",
+      "lean_file": "TypeAlgebraHierarchy/Code/Types.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::NominalClassList",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 71,
+        "end_line": 75
+      }
+    },
+    {
+      "def_id": 4,
+      "lean_name": "TypeAlgebraHierarchy.python_type_algebra_kernel.NominalHierarchy",
+      "lean_file": "TypeAlgebraHierarchy/Code/Types.lean",
+      "rust_name": "maledictus::python_type_algebra_kernel::NominalHierarchy",
+      "is_local": true,
+      "source": {
+        "file": "src/python_type_algebra_kernel.rs",
+        "begin_line": 66,
+        "end_line": 68
+      }
+    }
+  ],
+  "globals": [],
+  "trait_decls": [],
+  "trait_impls": [
+    {
+      "def_id": 8,
+      "lean_name": "TypeAlgebraHierarchy.alloc.string.String.Insts.CoreCmpPartialEqString",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "alloc::string::{impl core::cmp::PartialEq<alloc::string::String> for alloc::string::String}",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 350,
+        "end_line": 350
+      },
+      "impl_trait_def_id": 3,
+      "impl_trait_rust_name": "core::cmp::PartialEq",
+      "impl_trait_is_builtin": true
+    },
+    {
+      "def_id": 6,
+      "lean_name": "TypeAlgebraHierarchy.alloc.string.String.Insts.CoreCloneClone",
+      "lean_file": "TypeAlgebraHierarchy/Code/Funs.lean",
+      "rust_name": "alloc::string::{impl core::clone::Clone for alloc::string::String}",
+      "is_local": false,
+      "source": {
+        "file": "/rustc/library/alloc/src/string.rs",
+        "begin_line": 2387,
+        "end_line": 2387
+      },
+      "impl_trait_def_id": 2,
+      "impl_trait_rust_name": "core::clone::Clone",
+      "impl_trait_is_builtin": true
+    }
+  ]
+}

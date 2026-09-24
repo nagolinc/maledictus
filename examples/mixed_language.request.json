@@ -1,0 +1,36 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "mixed_language_caller.py",
+      "language": "python",
+      "symbols": ["run"]
+    },
+    {
+      "path": "mixed_language_provider.ts",
+      "language": "typescript",
+      "symbols": ["identity"]
+    }
+  ],
+  "external_contract_overlays": [],
+  "cross_language_bindings": [
+    {
+      "id": "mixed_bridge",
+      "caller_path": "mixed_language_caller.py",
+      "python_module": "mixed_bridge",
+      "python_symbol": "identity",
+      "provider_path": "mixed_language_provider.ts",
+      "provider_export": "identity",
+      "parameters": [
+        {
+          "name": "value",
+          "type_name": "bool"
+        }
+      ],
+      "return_type": "bool"
+    }
+  ]
+}

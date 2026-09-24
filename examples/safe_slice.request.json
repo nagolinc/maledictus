@@ -1,0 +1,14 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "8b363cfb431109d7fcc0ebff2660c1d47605cf91ed7d30c0ff14c1550b6c8307",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "safe_slice.py",
+      "language": "python",
+      "symbols": ["every_other"]
+    }
+  ],
+  "external_contract_overlays": []
+}

@@ -1,0 +1,12 @@
+name = "maledictus_obligation_kernel_proofs"
+version = "0.1.0"
+packagesDir = "../../../.cache/lake/packages/lean-4.31"
+buildDir = "../../../.cache/lake/build/obligation-kernel"
+
+[[lean_lib]]
+name = "ObligationKernel"
+srcDir = "generated"
+
+[[lean_lib]]
+name = "ObligationKernelProofs"
+srcDir = "proofs"

@@ -1,0 +1,14 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "919d8358744871b71d4958645a63c03f03540e7fe9acd330d8cede256bb88c1a",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "conditional_values.py",
+      "language": "python",
+      "symbols": ["conjunction", "disjunction", "choose", "ordered", "first_or_default", "short_circuit", "finite_total"]
+    }
+  ],
+  "external_contract_overlays": []
+}

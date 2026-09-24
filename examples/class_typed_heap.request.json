@@ -1,0 +1,14 @@
+{
+  "schema": "maledictus-verification-request/v4",
+  "source_root": "examples",
+  "source_fingerprint": "82d40cc157d16a2ab9744e48bd14e5bf9822443fc595eca62f7fd6a3aeb152ee",
+  "proof_obligation": "no-undeclared-exceptional-exit",
+  "files": [
+    {
+      "path": "class_typed_heap.py",
+      "language": "python",
+      "symbols": ["Cell.get", "inspect"]
+    }
+  ],
+  "external_contract_overlays": []
+}

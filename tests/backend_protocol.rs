@@ -2871,6 +2871,108 @@ fn verifier_proves_real_dagcert_operation_module() {
 }
 
 #[test]
+fn verifier_composes_dagcert_operation_records_across_source_modules() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("produced.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Identity:\n    image_ref: str\n\n@dataclass(frozen=True)\nclass Candidate:\n    prompt: str\n    identity: Identity\n\n@dataclass(frozen=True)\nclass BuildRequest:\n    prompt: str\n    image_ref: str\n\n@operation\ndef build(request: BuildRequest) -> Candidate:\n    return Candidate(request.prompt, Identity(request.image_ref))\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("consume.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\nfrom produced import Candidate\n\n@dataclass(frozen=True)\nclass Admission:\n    candidate: Candidate\n    enabled: bool\n\n@dataclass(frozen=True)\nclass Accepted:\n    image_ref: str\n\n@dataclass(frozen=True)\nclass Rejected:\n    reason: str\n\n@operation\ndef admit(request: Admission) -> Accepted | Rejected:\n    if not request.enabled:\n        return Rejected('disabled')\n    if request.candidate.identity.image_ref == '':\n        return Rejected('empty image')\n    return Accepted(request.candidate.identity.image_ref)\n",
+    )
+    .unwrap();
+    let request = ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "produced.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["build".to_owned()],
+            },
+            SourceFile {
+                path: "consume.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["admit".to_owned()],
+            },
+        ],
+        external_contract_overlays: Vec::new(),
+        python_callable_bindings: Vec::new(),
+        cross_language_bindings: Vec::new(),
+    };
+
+    let response = maledictus::verify(&request);
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert!(
+        response
+            .files
+            .iter()
+            .all(|file| { file.fragment.as_deref() == Some("dagcert-closed-typed-operations/v3") })
+    );
+    assert_eq!(response.source_imports.len(), 1, "{response:#?}");
+    assert_eq!(response.source_imports[0].importer_path, "consume.py");
+    assert_eq!(response.source_imports[0].provider_path, "produced.py");
+    assert_eq!(response.source_imports[0].module, "produced");
+    assert_eq!(response.source_imports[0].imported_symbols, ["Candidate"]);
+}
+
+#[test]
+fn verifier_refuses_unproved_cross_module_operation_record() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("produced.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Candidate:\n    value: str\n\n@dataclass(frozen=True)\nclass Request:\n    value: str\n\n@operation\ndef build(request: Request) -> Candidate:\n    return Candidate(request.value)\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("consume.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\nfrom produced import Missing\n\n@dataclass(frozen=True)\nclass Request:\n    value: Missing\n\n@dataclass(frozen=True)\nclass Completed:\n    value: str\n\n@operation\ndef consume(request: Request) -> Completed:\n    return Completed('done')\n",
+    )
+    .unwrap();
+    let request = ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "produced.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["build".to_owned()],
+            },
+            SourceFile {
+                path: "consume.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["consume".to_owned()],
+            },
+        ],
+        external_contract_overlays: Vec::new(),
+        python_callable_bindings: Vec::new(),
+        cross_language_bindings: Vec::new(),
+    };
+
+    let response = maledictus::verify(&request);
+    assert!(
+        matches!(response.status, ProofStatus::Refused),
+        "{response:#?}"
+    );
+    assert!(
+        response
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "frontend.python.typecheck.attr-defined"),
+        "{response:#?}"
+    );
+}
+
+#[test]
 fn verifier_proves_dagcert_probability_float_operations() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(

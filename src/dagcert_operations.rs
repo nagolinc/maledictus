@@ -30,9 +30,21 @@ pub use callables::{
     analyze_source_callable,
 };
 
-#[derive(Clone, Debug)]
-struct RecordShape {
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct RecordShape {
     fields: Vec<(String, ValueType)>,
+    constructible: bool,
+}
+
+/// A source-owned operation module whose frozen record definitions were checked by this
+/// frontend. `records` contains the module's complete checked record closure so nested imported
+/// fields retain their shapes. `exports` contains only records actually declared by the module;
+/// consumers may not manufacture exports merely because a provider imported them.
+#[derive(Clone, Debug)]
+pub(crate) struct ImportedOperationModule {
+    pub module: String,
+    records: BTreeMap<String, RecordShape>,
+    exports: BTreeSet<String>,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -75,6 +87,25 @@ pub fn verify_operation_module_with_bindings(
     requested_symbols: &[String],
     callable_bindings: &[ResolvedCallableBinding],
 ) -> Result<OperationVerification, OperationFailure> {
+    verify_and_export_operation_module_with_imports(
+        source,
+        path,
+        path,
+        requested_symbols,
+        callable_bindings,
+        &[],
+    )
+    .map(|(verification, _)| verification)
+}
+
+pub(crate) fn verify_and_export_operation_module_with_imports(
+    source: &str,
+    path: &str,
+    module: &str,
+    requested_symbols: &[String],
+    callable_bindings: &[ResolvedCallableBinding],
+    imported_modules: &[ImportedOperationModule],
+) -> Result<(OperationVerification, ImportedOperationModule), OperationFailure> {
     let suite = ast::Suite::parse(source, path).map_err(|error| OperationFailure {
         code: "frontend.python.dagcert.parse-error",
         message: error.to_string(),
@@ -105,10 +136,91 @@ pub fn verify_operation_module_with_bindings(
             format!("source declaration shadows modeled builtin exception {shadowed:?}"),
         );
     }
-    let mut class_names = BTreeSet::new();
+    let imported_by_module = imported_modules
+        .iter()
+        .map(|imported| (imported.module.as_str(), imported))
+        .collect::<BTreeMap<_, _>>();
+    let mut records = BTreeMap::new();
+    let mut record_origins = BTreeMap::new();
+    let mut imported_record_names = BTreeSet::new();
+    for statement in &suite {
+        let ast::Stmt::ImportFrom(import) = statement else {
+            continue;
+        };
+        let Some(imported_module_name) = import.module.as_ref().map(|name| name.as_str()) else {
+            continue;
+        };
+        let Some(imported_module) = imported_by_module.get(imported_module_name) else {
+            continue;
+        };
+        if import.level.is_some_and(|level| level != 0_u32) {
+            return failure(
+                "frontend.python.dagcert.source-import-relative",
+                "Dagcert operation record imports must use absolute module names",
+            );
+        }
+        for (name, shape) in &imported_module.records {
+            if let Some(origin) = record_origins.get(name) {
+                if origin != imported_module_name {
+                    return failure(
+                        "frontend.python.dagcert.source-import-name-collision",
+                        format!(
+                            "operation record name {name:?} is supplied by both {origin:?} and {imported_module_name:?}"
+                        ),
+                    );
+                }
+            } else {
+                let mut hidden_shape = shape.clone();
+                hidden_shape.constructible = false;
+                records.insert(name.clone(), hidden_shape);
+                record_origins.insert(name.clone(), imported_module_name.to_owned());
+            }
+        }
+        for alias in &import.names {
+            let imported_name = alias.name.as_str();
+            if imported_name == "*" || !imported_module.exports.contains(imported_name) {
+                return failure(
+                    "frontend.python.dagcert.source-import-symbol-unproved",
+                    format!(
+                        "module {imported_module_name:?} does not export proved operation record {imported_name:?}"
+                    ),
+                );
+            }
+            let local_name = alias
+                .asname
+                .as_ref()
+                .map_or(imported_name, |name| name.as_str())
+                .to_owned();
+            let mut shape = imported_module.records.get(imported_name).cloned().ok_or_else(|| {
+                OperationFailure {
+                    code: "frontend.python.dagcert.source-import-symbol-unproved",
+                    message: format!(
+                        "module {imported_module_name:?} omitted proved record shape {imported_name:?}"
+                    ),
+                    byte_offset: None,
+                }
+            })?;
+            if record_origins
+                .get(&local_name)
+                .is_some_and(|origin| origin != imported_module_name)
+                || !imported_record_names.insert(local_name.clone())
+            {
+                return failure(
+                    "frontend.python.dagcert.source-import-name-collision",
+                    format!("imported operation record name {local_name:?} is ambiguous"),
+                );
+            }
+            shape.constructible = true;
+            records.insert(local_name.clone(), shape);
+            record_origins.insert(local_name, imported_module_name.to_owned());
+        }
+    }
+    let mut class_names = imported_record_names.clone();
+    let mut local_class_names = BTreeSet::new();
     for statement in &suite {
         if let ast::Stmt::ClassDef(class) = statement
-            && !class_names.insert(class.name.to_string())
+            && (!local_class_names.insert(class.name.to_string())
+                || !class_names.insert(class.name.to_string()))
         {
             return failure(
                 "frontend.python.dagcert.class-duplicate",
@@ -116,7 +228,6 @@ pub fn verify_operation_module_with_bindings(
             );
         }
     }
-    let mut records = BTreeMap::new();
     let mut functions = Vec::new();
     let same_file_provider_symbols = callable_bindings
         .iter()
@@ -127,8 +238,22 @@ pub fn verify_operation_module_with_bindings(
     for (index, statement) in suite.iter().enumerate() {
         match statement {
             _ if index == 0 && is_docstring(statement) => {}
-            ast::Stmt::ImportFrom(import) if allowed_import(import) => {}
+            ast::Stmt::ImportFrom(import)
+                if allowed_import(import)
+                    || import
+                        .module
+                        .as_ref()
+                        .is_some_and(|name| imported_by_module.contains_key(name.as_str())) => {}
             ast::Stmt::ClassDef(class) => {
+                if records.contains_key(class.name.as_str()) {
+                    return failure(
+                        "frontend.python.dagcert.source-import-name-collision",
+                        format!(
+                            "local operation record {:?} collides with an imported record closure",
+                            class.name
+                        ),
+                    );
+                }
                 let shape = parse_record(
                     class,
                     &markers.dataclasses,
@@ -155,7 +280,7 @@ pub fn verify_operation_module_with_bindings(
             }
         }
     }
-    if records.is_empty() || functions.is_empty() {
+    if local_class_names.is_empty() || functions.is_empty() {
         return failure(
             "frontend.python.dagcert.empty-module",
             "Dagcert operation fragment requires frozen record types and at least one operation",
@@ -199,7 +324,15 @@ pub fn verify_operation_module_with_bindings(
             );
         }
     }
-    Ok(OperationVerification { operations })
+    let verification = OperationVerification { operations };
+    Ok((
+        verification,
+        ImportedOperationModule {
+            module: module.to_owned(),
+            records,
+            exports: local_class_names,
+        },
+    ))
 }
 
 fn imported_markers(suite: &[ast::Stmt]) -> Result<ImportedMarkers, OperationFailure> {
@@ -359,7 +492,10 @@ fn parse_record(
             }
         }
     }
-    Ok(RecordShape { fields })
+    Ok(RecordShape {
+        fields,
+        constructible: true,
+    })
 }
 
 fn frozen_dataclass(expression: &ast::Expr, names: &BTreeSet<String>) -> bool {
@@ -1142,8 +1278,13 @@ fn infer_operation_expression(
         return infer_expression(expression, input_name, input_record, records, locals)
             .map(|value_type| (value_type, BTreeSet::new()));
     };
-    if matches!(call.func.as_ref(), ast::Expr::Name(name) if records.contains_key(name.id.as_str()))
-    {
+    if matches!(
+        call.func.as_ref(),
+        ast::Expr::Name(name)
+            if records
+                .get(name.id.as_str())
+                .is_some_and(|shape| shape.constructible)
+    ) {
         return infer_expression(expression, input_name, input_record, records, locals)
             .map(|value_type| (value_type, BTreeSet::new()));
     }
@@ -1363,6 +1504,16 @@ fn infer_expression(
             let Some(shape) = records.get(constructor.id.as_str()) else {
                 return unsupported_expression(expression);
             };
+            if !shape.constructible {
+                return located_failure(
+                    "frontend.python.dagcert.source-import-record-not-imported",
+                    format!(
+                        "record {:?} is present only as a transitive field type and cannot be constructed without importing it",
+                        constructor.id
+                    ),
+                    expression,
+                );
+            }
             if !call.keywords.is_empty() || call.args.len() != shape.fields.len() {
                 return located_failure(
                     "frontend.python.dagcert.record-constructor-shape-mismatch",

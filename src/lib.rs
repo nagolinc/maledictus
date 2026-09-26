@@ -101,6 +101,29 @@ struct ResolvedHeapSourceImports {
     >,
 }
 
+struct ResolvedOperationSourceImports {
+    by_path: BTreeMap<
+        String,
+        Result<
+            Vec<dagcert_operations::ImportedOperationModule>,
+            dagcert_operations::OperationFailure,
+        >,
+    >,
+}
+
+#[derive(Clone)]
+enum OperationSourceModuleState {
+    Visiting,
+    Done(Result<dagcert_operations::ImportedOperationModule, dagcert_operations::OperationFailure>),
+}
+
+struct OperationSourceModuleResolver<'a> {
+    units: BTreeMap<String, PythonSourceUnit>,
+    requested_symbols: BTreeMap<String, Vec<String>>,
+    callable_bindings: &'a BTreeMap<String, Vec<dagcert_operations::ResolvedCallableBinding>>,
+    states: BTreeMap<String, OperationSourceModuleState>,
+}
+
 #[derive(Clone)]
 enum SourceModuleState {
     Visiting,
@@ -424,6 +447,8 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                 return response;
             }
         };
+    let operation_source_imports =
+        resolve_operation_source_imports(&root, request, &python_callable_bindings.by_consumer);
 
     // Fold/Unfold position checking needs the exact predicate identities exported by source
     // providers. Resolve and verify those providers first, then pass only their sealed predicate
@@ -594,6 +619,37 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                         || reference_source_imports.contains_key(&source.path)
                         || heap_source_imports.contains_key(&source.path)
                     {
+                        let mut operation_error = None;
+                        if let Some(resolved) = operation_source_imports.by_path.get(&source.path) {
+                            match resolved {
+                                Ok(imports) => {
+                                    let bindings = python_callable_bindings
+                                        .by_consumer
+                                        .get(&source.path)
+                                        .map_or(&[][..], Vec::as_slice);
+                                    match dagcert_operations::verify_and_export_operation_module_with_imports(
+                                        text,
+                                        &source.path,
+                                        &python_module_name(&source.path).unwrap_or_else(|_| source.path.clone()),
+                                        &source.symbols,
+                                        bindings,
+                                        imports,
+                                    ) {
+                                        Ok(_) => {
+                                            if let Some(file) = response.files.last_mut() {
+                                                file.result = ProofStatus::Proved;
+                                                file.fragment = Some(
+                                                    fragments::DAGCERT_CLOSED_TYPED_OPERATIONS.to_owned(),
+                                                );
+                                            }
+                                            continue;
+                                        }
+                                        Err(error) => operation_error = Some(error),
+                                    }
+                                }
+                                Err(error) => operation_error = Some(error.clone()),
+                            }
+                        }
                         let scalar_error = match source_imports.get(&source.path) {
                             Some(Ok(imports)) => {
                                 match python_contracts::verify_contract_module_with_imports(
@@ -721,6 +777,11 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                         }
                         if let Some(error) = terminal_scalar_error {
                             fallback_error = error;
+                        } else if let Some(error) = operation_error {
+                            fallback_error = python_contracts::ContractFailure {
+                                code: error.code,
+                                message: error.message,
+                            };
                         }
                         response.diagnostics.push(Diagnostic::file_error(
                             fallback_error.code,
@@ -1441,6 +1502,125 @@ fn collect_python_source_units(
         }
     }
     Ok(units)
+}
+
+fn resolve_operation_source_imports(
+    root: &Path,
+    request: &ProofRequest,
+    callable_bindings: &BTreeMap<String, Vec<dagcert_operations::ResolvedCallableBinding>>,
+) -> ResolvedOperationSourceImports {
+    let Ok(units) = collect_python_source_units(root, request) else {
+        // The ordinary source resolvers report path and module-name failures before this
+        // operation-specific resolver is consulted.
+        return ResolvedOperationSourceImports {
+            by_path: BTreeMap::new(),
+        };
+    };
+    let requested_symbols = request
+        .files
+        .iter()
+        .filter(|source| source.language == "python")
+        .map(|source| (source.path.clone(), source.symbols.clone()))
+        .collect();
+    let mut resolver = OperationSourceModuleResolver {
+        units,
+        requested_symbols,
+        callable_bindings,
+        states: BTreeMap::new(),
+    };
+    let paths = resolver
+        .units
+        .values()
+        .map(|unit| (unit.path.clone(), unit.source.clone()))
+        .collect::<Vec<_>>();
+    let mut by_path = BTreeMap::new();
+    for (path, source) in paths {
+        let Ok(bindings) = python_contracts::source_contract_import_bindings(&source, &path) else {
+            continue;
+        };
+        let imported_modules = bindings
+            .iter()
+            .filter(|binding| resolver.units.contains_key(&binding.module))
+            .map(|binding| binding.module.clone())
+            .collect::<BTreeSet<_>>();
+        if imported_modules.is_empty() {
+            continue;
+        }
+        let resolved = imported_modules
+            .iter()
+            .map(|module| resolver.resolve_module(module))
+            .collect();
+        by_path.insert(path, resolved);
+    }
+    ResolvedOperationSourceImports { by_path }
+}
+
+impl OperationSourceModuleResolver<'_> {
+    fn resolve_module(
+        &mut self,
+        module: &str,
+    ) -> Result<dagcert_operations::ImportedOperationModule, dagcert_operations::OperationFailure>
+    {
+        if let Some(state) = self.states.get(module) {
+            return match state {
+                OperationSourceModuleState::Visiting => Err(dagcert_operations::OperationFailure {
+                    code: "frontend.python.dagcert.source-import-cycle",
+                    message: format!(
+                        "Dagcert operation source import graph contains a cycle through module {module:?}"
+                    ),
+                    byte_offset: None,
+                }),
+                OperationSourceModuleState::Done(result) => result.clone(),
+            };
+        }
+        self.states
+            .insert(module.to_owned(), OperationSourceModuleState::Visiting);
+        let unit = self
+            .units
+            .get(module)
+            .expect("operation source resolution starts from registered modules")
+            .clone();
+        let result = (|| {
+            let bindings =
+                python_contracts::source_contract_import_bindings(&unit.source, &unit.path)
+                    .map_err(|error| dagcert_operations::OperationFailure {
+                        code: error.code,
+                        message: error.message,
+                        byte_offset: None,
+                    })?;
+            let imported_modules = bindings
+                .iter()
+                .filter(|binding| self.units.contains_key(&binding.module))
+                .map(|binding| binding.module.clone())
+                .collect::<BTreeSet<_>>()
+                .iter()
+                .map(|imported| self.resolve_module(imported))
+                .collect::<Result<Vec<_>, _>>()?;
+            let requested = self
+                .requested_symbols
+                .get(&unit.path)
+                .map_or(&[][..], Vec::as_slice);
+            let callable_bindings = self
+                .callable_bindings
+                .get(&unit.path)
+                .map_or(&[][..], Vec::as_slice);
+            let (_, exported) =
+                dagcert_operations::verify_and_export_operation_module_with_imports(
+                    &unit.source,
+                    &unit.path,
+                    &unit.module,
+                    requested,
+                    callable_bindings,
+                    &imported_modules,
+                )?;
+            Ok(exported)
+        })();
+        self.states.insert(
+            module.to_owned(),
+            OperationSourceModuleState::Done(result.clone()),
+        );
+        result
+    }
 }
 
 impl SourceModuleResolver<'_> {

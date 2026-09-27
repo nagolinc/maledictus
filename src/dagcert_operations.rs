@@ -12,8 +12,12 @@ enum ValueType {
     Bool,
     Str,
     Bytes,
+    /// The result of `str.split`. It is kept distinct from an arbitrary list because index zero
+    /// is total for every split result, while general list indexing is partial.
+    StringSplitResult,
     VariadicTuple(Box<ValueType>),
     Record(String),
+    RecordUnion(BTreeSet<String>),
     Callable(CallableSignature),
 }
 
@@ -44,7 +48,14 @@ pub(crate) struct RecordShape {
 pub(crate) struct ImportedOperationModule {
     pub module: String,
     records: BTreeMap<String, RecordShape>,
-    exports: BTreeSet<String>,
+    record_exports: BTreeSet<String>,
+    operations: BTreeMap<String, OperationShape>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct OperationShape {
+    input_record: String,
+    outcomes: BTreeSet<String>,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -98,6 +109,23 @@ pub fn verify_operation_module_with_bindings(
     .map(|(verification, _)| verification)
 }
 
+pub(crate) fn is_operation_module_candidate(source: &str, path: &str) -> bool {
+    let Ok(suite) = ast::Suite::parse(source, path) else {
+        return false;
+    };
+    let Ok(markers) = imported_markers(&suite) else {
+        return false;
+    };
+    suite.iter().any(|statement| {
+        let ast::Stmt::FunctionDef(function) = statement else {
+            return false;
+        };
+        function.decorator_list.iter().any(|decorator| {
+            matches!(decorator, ast::Expr::Name(name) if markers.operations.contains(name.id.as_str()))
+        })
+    })
+}
+
 pub(crate) fn verify_and_export_operation_module_with_imports(
     source: &str,
     path: &str,
@@ -143,6 +171,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
     let mut records = BTreeMap::new();
     let mut record_origins = BTreeMap::new();
     let mut imported_record_names = BTreeSet::new();
+    let mut imported_operations = BTreeMap::new();
     for statement in &suite {
         let ast::Stmt::ImportFrom(import) = statement else {
             continue;
@@ -178,12 +207,10 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
         }
         for alias in &import.names {
             let imported_name = alias.name.as_str();
-            if imported_name == "*" || !imported_module.exports.contains(imported_name) {
+            if imported_name == "*" {
                 return failure(
                     "frontend.python.dagcert.source-import-symbol-unproved",
-                    format!(
-                        "module {imported_module_name:?} does not export proved operation record {imported_name:?}"
-                    ),
+                    "Dagcert operation source imports must name each proved record or operation",
                 );
             }
             let local_name = alias
@@ -191,6 +218,27 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
                 .as_ref()
                 .map_or(imported_name, |name| name.as_str())
                 .to_owned();
+            if let Some(operation) = imported_module.operations.get(imported_name) {
+                if records.contains_key(&local_name)
+                    || imported_operations
+                        .insert(local_name.clone(), operation.clone())
+                        .is_some()
+                {
+                    return failure(
+                        "frontend.python.dagcert.source-import-name-collision",
+                        format!("imported operation name {local_name:?} is ambiguous"),
+                    );
+                }
+                continue;
+            }
+            if !imported_module.record_exports.contains(imported_name) {
+                return failure(
+                    "frontend.python.dagcert.source-import-symbol-unproved",
+                    format!(
+                        "module {imported_module_name:?} does not export proved operation record or function {imported_name:?}"
+                    ),
+                );
+            }
             let mut shape = imported_module.records.get(imported_name).cloned().ok_or_else(|| {
                 OperationFailure {
                     code: "frontend.python.dagcert.source-import-symbol-unproved",
@@ -203,6 +251,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             if record_origins
                 .get(&local_name)
                 .is_some_and(|origin| origin != imported_module_name)
+                || imported_operations.contains_key(&local_name)
                 || !imported_record_names.insert(local_name.clone())
             {
                 return failure(
@@ -286,6 +335,34 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             "Dagcert operation fragment requires frozen record types and at least one operation",
         );
     }
+    let mut local_operation_shapes = BTreeMap::new();
+    for function in &functions {
+        if imported_operations.contains_key(function.name.as_str())
+            || local_operation_shapes
+                .insert(
+                    function.name.to_string(),
+                    operation_shape(
+                        function,
+                        &markers.operations,
+                        &markers.unions,
+                        &markers.callables,
+                        &records,
+                    )?,
+                )
+                .is_some()
+        {
+            return failure(
+                "frontend.python.dagcert.operation-name-collision",
+                format!(
+                    "operation name {:?} is declared or imported more than once",
+                    function.name
+                ),
+            );
+        }
+    }
+    // Only already-proved operations from acyclic provider modules are callable here. Local
+    // operation calls would require a separate termination/call-graph proof and remain refused.
+    let available_operations = imported_operations;
     let mut operations = Vec::new();
     for function in functions {
         verify_operation(
@@ -294,6 +371,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             &markers.unions,
             &markers.callables,
             &records,
+            &available_operations,
             callable_bindings,
         )?;
         operations.push(function.name.to_string());
@@ -330,7 +408,8 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
         ImportedOperationModule {
             module: module.to_owned(),
             records,
-            exports: local_class_names,
+            record_exports: local_class_names,
+            operations: local_operation_shapes,
         },
     ))
 }
@@ -651,8 +730,67 @@ fn verify_operation(
     union_names: &BTreeSet<String>,
     callable_names: &BTreeSet<String>,
     records: &BTreeMap<String, RecordShape>,
+    operations: &BTreeMap<String, OperationShape>,
     callable_bindings: &[ResolvedCallableBinding],
 ) -> Result<(), OperationFailure> {
+    let shape = operation_shape(
+        function,
+        operation_names,
+        union_names,
+        callable_names,
+        records,
+    )?;
+    let parameter = &function.args.args[0].def;
+    let input_record = shape.input_record;
+    let outcome_names = shape.outcomes;
+    validate_operation_callable_bindings(
+        function.name.as_str(),
+        &input_record,
+        records,
+        callable_bindings,
+    )?;
+    let context = OperationBodyContext {
+        input_name: parameter.arg.as_str(),
+        input_record: &input_record,
+        outcomes: &outcome_names,
+        records,
+        operations,
+        operation_name: function.name.as_str(),
+        callable_bindings,
+    };
+    let effects = verify_statements(&function.body, &context, &mut BTreeMap::new())?;
+    if !effects.normal_path_returns || !effects.raised_exceptions.is_empty() {
+        let exception_detail = if effects.raised_exceptions.is_empty() {
+            String::new()
+        } else {
+            format!(
+                "; uncaught callback outcomes: {}",
+                effects
+                    .raised_exceptions
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+        };
+        return failure(
+            "frontend.python.dagcert.operation-not-total",
+            format!(
+                "operation {:?} has a reachable missing-return or exceptional path{}",
+                function.name, exception_detail
+            ),
+        );
+    }
+    Ok(())
+}
+
+fn operation_shape(
+    function: &ast::StmtFunctionDef,
+    operation_names: &BTreeSet<String>,
+    union_names: &BTreeSet<String>,
+    callable_names: &BTreeSet<String>,
+    records: &BTreeMap<String, RecordShape>,
+) -> Result<OperationShape, OperationFailure> {
     if function.decorator_list.len() != 1
         || !matches!(&function.decorator_list[0], ast::Expr::Name(name) if operation_names.contains(name.id.as_str()))
         || !function.type_params.is_empty()
@@ -689,12 +827,6 @@ fn verify_operation(
             "operation input must be one frozen source record",
         );
     };
-    validate_operation_callable_bindings(
-        function.name.as_str(),
-        &input_record,
-        records,
-        callable_bindings,
-    )?;
     let return_annotation = function
         .returns
         .as_deref()
@@ -727,38 +859,10 @@ fn verify_operation(
             );
         }
     }
-    let context = OperationBodyContext {
-        input_name: parameter.arg.as_str(),
-        input_record: &input_record,
-        outcomes: &outcome_names,
-        records,
-        operation_name: function.name.as_str(),
-        callable_bindings,
-    };
-    let effects = verify_statements(&function.body, &context, &mut BTreeMap::new())?;
-    if !effects.normal_path_returns || !effects.raised_exceptions.is_empty() {
-        let exception_detail = if effects.raised_exceptions.is_empty() {
-            String::new()
-        } else {
-            format!(
-                "; uncaught callback outcomes: {}",
-                effects
-                    .raised_exceptions
-                    .iter()
-                    .cloned()
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )
-        };
-        return failure(
-            "frontend.python.dagcert.operation-not-total",
-            format!(
-                "operation {:?} has a reachable missing-return or exceptional path{}",
-                function.name, exception_detail
-            ),
-        );
-    }
-    Ok(())
+    Ok(OperationShape {
+        input_record,
+        outcomes: outcome_names,
+    })
 }
 
 fn validate_operation_callable_bindings(
@@ -864,6 +968,7 @@ struct OperationBodyContext<'a> {
     input_record: &'a str,
     outcomes: &'a BTreeSet<String>,
     records: &'a BTreeMap<String, RecordShape>,
+    operations: &'a BTreeMap<String, OperationShape>,
     operation_name: &'a str,
     callable_bindings: &'a [ResolvedCallableBinding],
 }
@@ -913,6 +1018,7 @@ fn verify_statements(
                     context.input_name,
                     context.input_record,
                     context.records,
+                    context.operations,
                     context.operation_name,
                     context.callable_bindings,
                     locals,
@@ -946,6 +1052,7 @@ fn verify_statements(
                     context.input_name,
                     context.input_record,
                     context.records,
+                    context.operations,
                     context.operation_name,
                     context.callable_bindings,
                     locals,
@@ -975,6 +1082,7 @@ fn verify_statements(
                     context.input_name,
                     context.input_record,
                     context.records,
+                    context.operations,
                     context.operation_name,
                     context.callable_bindings,
                     locals,
@@ -987,8 +1095,14 @@ fn verify_statements(
                     );
                 }
                 let mut then_locals = locals.clone();
-                let then_returns = verify_statements(&branch.body, context, &mut then_locals)?;
                 let mut else_locals = locals.clone();
+                narrow_isinstance_branches(
+                    &branch.test,
+                    context.records,
+                    &mut then_locals,
+                    &mut else_locals,
+                )?;
+                let then_returns = verify_statements(&branch.body, context, &mut then_locals)?;
                 let else_returns = if branch.orelse.is_empty() {
                     StatementEffects::default()
                 } else {
@@ -1062,6 +1176,53 @@ fn verify_statements(
         normal_path_returns: returned,
         raised_exceptions,
     })
+}
+
+fn narrow_isinstance_branches(
+    test: &ast::Expr,
+    records: &BTreeMap<String, RecordShape>,
+    then_locals: &mut BTreeMap<String, ValueType>,
+    else_locals: &mut BTreeMap<String, ValueType>,
+) -> Result<(), OperationFailure> {
+    let ast::Expr::Call(call) = test else {
+        return Ok(());
+    };
+    if !matches!(call.func.as_ref(), ast::Expr::Name(name) if name.id.as_str() == "isinstance")
+        || call.args.len() != 2
+    {
+        return Ok(());
+    }
+    let (ast::Expr::Name(local), ast::Expr::Name(record)) = (&call.args[0], &call.args[1]) else {
+        return Ok(());
+    };
+    if !records.contains_key(record.id.as_str()) {
+        return Ok(());
+    }
+    let Some(ValueType::RecordUnion(outcomes)) = then_locals.get(local.id.as_str()).cloned() else {
+        return Ok(());
+    };
+    if !outcomes.contains(record.id.as_str()) {
+        return Ok(());
+    }
+    then_locals.insert(
+        local.id.to_string(),
+        ValueType::Record(record.id.to_string()),
+    );
+    let mut remaining = outcomes;
+    remaining.remove(record.id.as_str());
+    let remaining_type = match remaining.len() {
+        0 => {
+            return located_failure(
+                "frontend.python.dagcert.isinstance-unreachable-else",
+                "isinstance exhausts the only possible record outcome",
+                test,
+            );
+        }
+        1 => ValueType::Record(remaining.first().expect("one remaining outcome").clone()),
+        _ => ValueType::RecordUnion(remaining),
+    };
+    else_locals.insert(local.id.to_string(), remaining_type);
+    Ok(())
 }
 
 fn bind_operation_local(
@@ -1250,6 +1411,7 @@ fn verify_outcome_constructor(
             context.input_name,
             context.input_record,
             context.records,
+            context.operations,
             context.operation_name,
             context.callable_bindings,
             locals,
@@ -1270,6 +1432,7 @@ fn infer_operation_expression(
     input_name: &str,
     input_record: &str,
     records: &BTreeMap<String, RecordShape>,
+    operations: &BTreeMap<String, OperationShape>,
     operation_name: &str,
     callable_bindings: &[ResolvedCallableBinding],
     locals: &BTreeMap<String, ValueType>,
@@ -1287,6 +1450,101 @@ fn infer_operation_expression(
     ) {
         return infer_expression(expression, input_name, input_record, records, locals)
             .map(|value_type| (value_type, BTreeSet::new()));
+    }
+    if matches!(call.func.as_ref(), ast::Expr::Name(name) if name.id.as_str() == "isinstance") {
+        if !call.keywords.is_empty() || call.args.len() != 2 {
+            return located_failure(
+                "frontend.python.dagcert.isinstance-shape-unsupported",
+                "isinstance narrowing requires exactly one value and one direct record type",
+                expression,
+            );
+        }
+        let tested = infer_expression(&call.args[0], input_name, input_record, records, locals)?;
+        let ast::Expr::Name(record_name) = &call.args[1] else {
+            return located_failure(
+                "frontend.python.dagcert.isinstance-type-unsupported",
+                "isinstance narrowing requires a direct source record type",
+                &call.args[1],
+            );
+        };
+        if !records.contains_key(record_name.id.as_str())
+            || !matches!(
+                tested,
+                ValueType::Record(ref name) if name == record_name.id.as_str()
+            ) && !matches!(
+                tested,
+                ValueType::RecordUnion(ref names) if names.contains(record_name.id.as_str())
+            )
+        {
+            return located_failure(
+                "frontend.python.dagcert.isinstance-type-mismatch",
+                format!(
+                    "isinstance target {:?} is not a possible source-record outcome of {tested:?}",
+                    record_name.id
+                ),
+                expression,
+            );
+        }
+        return Ok((ValueType::Bool, BTreeSet::new()));
+    }
+    if let ast::Expr::Name(callee) = call.func.as_ref()
+        && let Some(shape) = operations.get(callee.id.as_str())
+    {
+        if callee.id.as_str() == operation_name {
+            return located_failure(
+                "frontend.python.dagcert.operation-recursion-unsupported",
+                "Dagcert operations may not call themselves recursively",
+                expression,
+            );
+        }
+        if !call.keywords.is_empty() || call.args.len() != 1 {
+            return located_failure(
+                "frontend.python.dagcert.operation-call-shape-mismatch",
+                format!(
+                    "operation {:?} requires exactly one positional input",
+                    callee.id
+                ),
+                expression,
+            );
+        }
+        let (actual, raised) = infer_operation_expression(
+            &call.args[0],
+            input_name,
+            input_record,
+            records,
+            operations,
+            operation_name,
+            callable_bindings,
+            locals,
+        )?;
+        let expected = ValueType::Record(shape.input_record.clone());
+        if actual != expected {
+            return located_failure(
+                "frontend.python.dagcert.operation-call-input-type-mismatch",
+                format!(
+                    "operation {:?} expects {expected:?}, received {actual:?}",
+                    callee.id
+                ),
+                &call.args[0],
+            );
+        }
+        let value_type = if shape.outcomes.len() == 1 {
+            ValueType::Record(
+                shape
+                    .outcomes
+                    .first()
+                    .expect("one-outcome operation")
+                    .clone(),
+            )
+        } else {
+            ValueType::RecordUnion(shape.outcomes.clone())
+        };
+        return Ok((value_type, raised));
+    }
+    if let Some(value_type) =
+        infer_total_string_method_call(call, expression, input_name, input_record, records, locals)?
+    {
+        return Ok((value_type, BTreeSet::new()));
     }
     if !call.keywords.is_empty() {
         return located_failure(
@@ -1387,6 +1645,84 @@ fn infer_operation_expression(
         signature.return_type.as_ref().clone(),
         binding.contract.raised_exceptions.clone(),
     ))
+}
+
+fn infer_total_string_method_call(
+    call: &ast::ExprCall,
+    expression: &ast::Expr,
+    input_name: &str,
+    input_record: &str,
+    records: &BTreeMap<String, RecordShape>,
+    locals: &BTreeMap<String, ValueType>,
+) -> Result<Option<ValueType>, OperationFailure> {
+    let ast::Expr::Attribute(attribute) = call.func.as_ref() else {
+        return Ok(None);
+    };
+    let receiver = infer_expression(&attribute.value, input_name, input_record, records, locals)?;
+    if receiver != ValueType::Str {
+        return Ok(None);
+    }
+    if !call.keywords.is_empty() {
+        return located_failure(
+            "frontend.python.dagcert.string-method-keyword-unsupported",
+            "proved string methods currently require positional arguments",
+            expression,
+        );
+    }
+    match attribute.attr.as_str() {
+        "strip" | "lower" if call.args.is_empty() => Ok(Some(ValueType::Str)),
+        "startswith" if call.args.len() == 1 => {
+            let prefix =
+                infer_expression(&call.args[0], input_name, input_record, records, locals)?;
+            if prefix != ValueType::Str {
+                return located_failure(
+                    "frontend.python.dagcert.string-method-argument-type-mismatch",
+                    "str.startswith requires one str prefix",
+                    &call.args[0],
+                );
+            }
+            Ok(Some(ValueType::Bool))
+        }
+        "split" if call.args.is_empty() => Ok(Some(ValueType::StringSplitResult)),
+        "split" if matches!(call.args.len(), 1 | 2) => {
+            let separator =
+                infer_expression(&call.args[0], input_name, input_record, records, locals)?;
+            if separator != ValueType::Str {
+                return located_failure(
+                    "frontend.python.dagcert.string-method-argument-type-mismatch",
+                    "str.split separator must be str",
+                    &call.args[0],
+                );
+            }
+            if !matches!(
+                &call.args[0],
+                ast::Expr::Constant(value)
+                    if matches!(&value.value, ast::Constant::Str(text) if !text.is_empty())
+            ) {
+                return located_failure(
+                    "frontend.python.dagcert.string-split-separator-may-be-empty",
+                    "str.split with an explicit separator is total only when the separator is a nonempty literal",
+                    &call.args[0],
+                );
+            }
+            if call.args.len() == 2
+                && infer_expression(&call.args[1], input_name, input_record, records, locals)?
+                    != ValueType::Int
+            {
+                return located_failure(
+                    "frontend.python.dagcert.string-method-argument-type-mismatch",
+                    "str.split maxsplit must be int",
+                    &call.args[1],
+                );
+            }
+            Ok(Some(ValueType::StringSplitResult))
+        }
+        method => located_failure(
+            "frontend.python.dagcert.string-method-unsupported",
+            format!("string method {method:?} or its argument shape is not proved total"),
+            expression,
+        ),
+    }
 }
 
 fn signature_from_contract(contract: &CallableContract) -> CallableSignature {
@@ -1498,6 +1834,16 @@ fn infer_expression(
                 })
         }
         ast::Expr::Call(call) => {
+            if let Some(value_type) = infer_total_string_method_call(
+                call,
+                expression,
+                input_name,
+                input_record,
+                records,
+                locals,
+            )? {
+                return Ok(value_type);
+            }
             let ast::Expr::Name(constructor) = call.func.as_ref() else {
                 return unsupported_expression(expression);
             };
@@ -1539,6 +1885,25 @@ fn infer_expression(
                 }
             }
             Ok(ValueType::Record(constructor.id.to_string()))
+        }
+        ast::Expr::Subscript(subscript) => {
+            let collection =
+                infer_expression(&subscript.value, input_name, input_record, records, locals)?;
+            if collection == ValueType::StringSplitResult
+                && matches!(
+                    subscript.slice.as_ref(),
+                    ast::Expr::Constant(value)
+                        if matches!(&value.value, ast::Constant::Int(index) if index.to_string() == "0")
+                )
+            {
+                Ok(ValueType::Str)
+            } else {
+                located_failure(
+                    "frontend.python.dagcert.partial-or-unsupported-subscript",
+                    "only index zero of a proved str.split result is currently total",
+                    expression,
+                )
+            }
         }
         ast::Expr::UnaryOp(operation) => {
             let operand = infer_expression(
@@ -1603,6 +1968,7 @@ fn infer_expression(
             )?;
             if matches!(comparison.ops[0], ast::CmpOp::In | ast::CmpOp::NotIn) {
                 return match right {
+                    ValueType::Str if left == ValueType::Str => Ok(ValueType::Bool),
                     ValueType::VariadicTuple(element) if left == *element => Ok(ValueType::Bool),
                     ValueType::VariadicTuple(element) => failure(
                         "frontend.python.dagcert.membership-type-mismatch",
@@ -1763,6 +2129,25 @@ mod tests {
         let result =
             verify_operation_module(source, "payload.py", &["classify".to_owned()]).unwrap();
         assert_eq!(result.operations, ["classify"]);
+    }
+
+    #[test]
+    fn proves_total_string_normalization_methods_and_safe_split_head() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass RawReference:\n    value: str\n\n@dataclass(frozen=True)\nclass LocalReference:\n    value: str\n\n@dataclass(frozen=True)\nclass Rejected:\n    reason: str\n\n@operation\ndef validate(request: RawReference) -> LocalReference | Rejected:\n    normalized = request.value.strip()\n    if not normalized:\n        return Rejected('empty')\n    lower_value = normalized.lower()\n    if '://' in normalized or lower_value.startswith('data:') or lower_value.startswith('file:') or normalized.startswith('//'):\n        return Rejected('remote')\n    path = normalized.split('#', 1)[0].split('?', 1)[0]\n    if not path:\n        return Rejected('no path')\n    return LocalReference(path)\n";
+        let result =
+            verify_operation_module(source, "references.py", &["validate".to_owned()]).unwrap();
+        assert_eq!(result.operations, ["validate"]);
+    }
+
+    #[test]
+    fn refuses_possibly_empty_explicit_string_split_separator() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    value: str\n    separator: str\n\n@dataclass(frozen=True)\nclass Result:\n    value: str\n\n@operation\ndef split_head(request: Request) -> Result:\n    head = request.value.split(request.separator, 1)[0]\n    return Result(head)\n";
+        let error = verify_operation_module(source, "references.py", &["split_head".to_owned()])
+            .unwrap_err();
+        assert_eq!(
+            error.code,
+            "frontend.python.dagcert.string-split-separator-may-be-empty"
+        );
     }
 
     #[test]

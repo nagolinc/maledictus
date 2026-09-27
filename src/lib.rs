@@ -1535,6 +1535,9 @@ fn resolve_operation_source_imports(
         .collect::<Vec<_>>();
     let mut by_path = BTreeMap::new();
     for (path, source) in paths {
+        if !dagcert_operations::is_operation_module_candidate(&source, &path) {
+            continue;
+        }
         let Ok(bindings) = python_contracts::source_contract_import_bindings(&source, &path) else {
             continue;
         };
@@ -1612,7 +1615,21 @@ impl OperationSourceModuleResolver<'_> {
                     requested,
                     callable_bindings,
                     &imported_modules,
-                )?;
+                )
+                .map_err(|error| {
+                    let location = error.byte_offset.map_or_else(String::new, |offset| {
+                        let (line, column) = source_location(&unit.source, offset);
+                        format!(":{line}:{column}")
+                    });
+                    dagcert_operations::OperationFailure {
+                        code: error.code,
+                        message: format!(
+                            "imported operation provider {:?}{location}: {}",
+                            unit.path, error.message
+                        ),
+                        byte_offset: None,
+                    }
+                })?;
             Ok(exported)
         })();
         self.states.insert(

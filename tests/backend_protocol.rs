@@ -2924,6 +2924,110 @@ fn verifier_composes_dagcert_operation_records_across_source_modules() {
 }
 
 #[test]
+fn verifier_composes_total_dagcert_operation_calls_across_source_modules() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("references.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass RawReference:\n    value: str\n\n@dataclass(frozen=True)\nclass LocalReference:\n    value: str\n\n@dataclass(frozen=True)\nclass ReferenceRejected:\n    reason: str\n\n@operation\ndef validate_reference(request: RawReference) -> LocalReference | ReferenceRejected:\n    normalized = request.value.strip()\n    if not normalized:\n        return ReferenceRejected('empty')\n    lower_value = normalized.lower()\n    if '://' in normalized or lower_value.startswith('data:') or lower_value.startswith('file:') or normalized.startswith('//'):\n        return ReferenceRejected('remote')\n    path = normalized.split('#', 1)[0].split('?', 1)[0]\n    if not path:\n        return ReferenceRejected('no path')\n    return LocalReference(path)\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("observe.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\nfrom references import LocalReference, RawReference, ReferenceRejected, validate_reference\n\n@dataclass(frozen=True)\nclass ObserveRequest:\n    image_ref: str\n\n@dataclass(frozen=True)\nclass Observed:\n    image: LocalReference\n\n@dataclass(frozen=True)\nclass ObservationFailed:\n    reason: str\n\n@operation\ndef observe(request: ObserveRequest) -> Observed | ObservationFailed:\n    image = validate_reference(RawReference(request.image_ref))\n    if isinstance(image, ReferenceRejected):\n        return ObservationFailed(image.reason)\n    return Observed(image)\n",
+    )
+    .unwrap();
+    let request = ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "references.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["validate_reference".to_owned()],
+            },
+            SourceFile {
+                path: "observe.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["observe".to_owned()],
+            },
+        ],
+        external_contract_overlays: Vec::new(),
+        python_callable_bindings: Vec::new(),
+        cross_language_bindings: Vec::new(),
+    };
+
+    let response = maledictus::verify(&request);
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert!(response.diagnostics.is_empty(), "{response:#?}");
+    assert_eq!(response.source_imports.len(), 1, "{response:#?}");
+    assert_eq!(response.source_imports[0].importer_path, "observe.py");
+    assert_eq!(response.source_imports[0].provider_path, "references.py");
+    assert_eq!(
+        response.source_imports[0].imported_symbols,
+        [
+            "LocalReference",
+            "RawReference",
+            "ReferenceRejected",
+            "validate_reference",
+        ]
+    );
+}
+
+#[test]
+fn imported_dagcert_operation_failure_names_provider_and_location() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("provider.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    value: str\n\n@dataclass(frozen=True)\nclass Produced:\n    value: str\n\n@operation\ndef produce(request: Request) -> Produced:\n    value = request.value.upper()\n    return Produced(value)\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("consumer.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import operation\nfrom provider import Produced\n\n@dataclass(frozen=True)\nclass ConsumeRequest:\n    produced: Produced\n\n@dataclass(frozen=True)\nclass Consumed:\n    value: str\n\n@operation\ndef consume(request: ConsumeRequest) -> Consumed:\n    return Consumed(request.produced.value)\n",
+    )
+    .unwrap();
+    let response = maledictus::verify(&ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "provider.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["produce".to_owned()],
+            },
+            SourceFile {
+                path: "consumer.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["consume".to_owned()],
+            },
+        ],
+        external_contract_overlays: Vec::new(),
+        python_callable_bindings: Vec::new(),
+        cross_language_bindings: Vec::new(),
+    });
+
+    assert!(
+        matches!(response.status, ProofStatus::Refused),
+        "{response:#?}"
+    );
+    assert!(
+        response.diagnostics.iter().any(|diagnostic| {
+            diagnostic
+                .message
+                .contains("imported operation provider \"provider.py\":14:")
+        }),
+        "{response:#?}"
+    );
+}
+
+#[test]
 fn verifier_refuses_unproved_cross_module_operation_record() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(

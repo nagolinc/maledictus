@@ -1936,7 +1936,7 @@ fn checked_external_heap_contract_reaches_json_backend_with_permission_effects()
     assert!(matches!(response.status, ProofStatus::Proved));
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("checked-external-heap-contracts/v5")
+        Some("checked-external-heap-contracts/v6")
     );
     assert_eq!(response.external_contracts[0].heap_types, ["provider.Cell"]);
     assert!(response.external_contracts[0].nominal_types.is_empty());
@@ -1950,6 +1950,62 @@ fn checked_external_heap_contract_reaches_json_backend_with_permission_effects()
             .obligations
             .iter()
             .any(|item| { item.id.contains(":method-call-precondition:get:") && item.satisfied() })
+    );
+}
+
+#[test]
+fn checked_external_heap_factory_reaches_json_backend_as_one_application_function() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("app.py"),
+        "import provider\n\ndef run(initial: int) -> None:\n    with provider.open_resource(initial) as resource:\n        observed = resource.read()\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("provider_contract.py"),
+        "from nagini_contracts.contracts import *\n\nclass Resource:\n    value: int\n\n    @ContractOnly\n    def __init__(self, value: int) -> None:\n        Ensures(Acc(self.value))\n        ...\n\n    @ContractOnly\n    def __enter__(self) -> \"Resource\":\n        Requires(Acc(self.value))\n        Ensures(Acc(self.value))\n        Ensures(Result() is self)\n        ...\n\n    @ContractOnly\n    def __exit__(self, exception_type: object, exception: object, traceback: object) -> bool:\n        Requires(Acc(self.value))\n        Ensures(Acc(self.value))\n        ...\n\n    @ContractOnly\n    def read(self) -> str:\n        Requires(Acc(self.value))\n        Ensures(Acc(self.value))\n        ...\n\nclass ProviderError(Exception):\n    pass\n\nclass StatusError(Exception):\n    response: Resource\n\n@ContractOnly\ndef open_resource(value: int) -> Resource:\n    Ensures(Acc(Result().value))\n    Ensures(Result().value == value)\n    ...\n",
+    )
+    .unwrap();
+    let request = ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![SourceFile {
+            path: "app.py".to_owned(),
+            language: "python".to_owned(),
+            symbols: vec!["run".to_owned()],
+        }],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "app.py".to_owned(),
+            module: "provider".to_owned(),
+            stub_path: "provider_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::AssumeNoException,
+        }],
+    };
+
+    let response = maledictus::verify(&request);
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{:#?}",
+        response.diagnostics
+    );
+    assert_eq!(
+        response.files[0].fragment.as_deref(),
+        Some("checked-external-heap-contracts/v6")
+    );
+    assert_eq!(response.external_contracts[0].functions, ["open_resource"]);
+    assert_eq!(
+        response.external_contracts[0].heap_types,
+        ["provider.Resource"]
+    );
+    assert!(
+        response.external_contracts[0]
+            .scope
+            .contains("heap-returning-factory")
     );
 }
 
@@ -6891,7 +6947,7 @@ fn verifier_proves_a_checked_external_nominal_argument_to_a_source_setter() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("checked-external-heap-contracts/v5")
+        Some("checked-external-heap-contracts/v6")
     );
     assert_eq!(
         response.external_contracts[0].heap_types,

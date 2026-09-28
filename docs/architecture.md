@@ -1538,13 +1538,16 @@ the provider has completed and the ordinary and guarded executors select the sam
 summary. The combined checked-external variant may retain unrelated provider assumptions but
 cannot authorize v44's source-only effect dispatch. Lean models only the supplied transition and
 exact finite-path algebra, not import/frontend correspondence or provider truth.
-`checked-external-heap-contracts/v5` uses the identical `ClassShape` representation for a
+`checked-external-heap-contracts/v6` uses the identical `ClassShape` representation for a
 hash-bound provider stub. It requires explicit fields, a constructor contract, contract-only
-method bodies, and permission-neutral callable methods. Because a stub has no executable body and
-v2 has no frame-clause syntax, every external method conservatively invalidates all declared field
-values before applying its postconditions. Protocol output separates these classes in `heap_types`;
-no external body is described as verified source. Version 5 carries the cumulative current heap
-semantics and source-wellformedness gate; it does not weaken the conservative external-call rule.
+method bodies, and explicit permission effects. Version 6 also admits contract-only functions and
+methods returning one declared non-optional heap type. The contract must grant every permission on
+the returned object; Maledictus never manufactures field ownership or reference identity. A
+context manager is composed as factory, `__enter__`, body, and `__exit__` inside the application
+function, including pending-return and exception-suppression semantics. Because a stub has no
+executable body and no frame-clause syntax, every external method conservatively invalidates all
+declared field values before applying its postconditions. Protocol output separates factories in
+`functions` and classes in `heap_types`; no external body is described as verified source.
 The current Python fragments prove source symbol bodies after function entry; they do not claim to
 prove module import execution. The response therefore reports `all-source-symbol-bodies`, never
 `complete-file`.

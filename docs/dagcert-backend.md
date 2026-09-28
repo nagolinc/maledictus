@@ -831,10 +831,13 @@ the active build and capabilities. They remain historical provenance only: the c
 is the cap-free Aeneas extraction of the production binder and its universal allocator-aware Lean
 refinement theorem. Dagcert must not report the retired bounded identity as an active gate.
 
-`checked-external-heap-contracts/v5` records its module-qualified classes in
-`heap_types` and keeps provider conformance explicit. Source summaries carry verified transitive
-field-write sets; opaque external calls conservatively invalidate every declared field before
-their postconditions are applied. Unsupported source receives a refusal. The current fragments report
+`checked-external-heap-contracts/v6` records module-qualified classes in `heap_types`, heap-returning
+provider functions in `functions`, and keeps provider conformance explicit. A factory or method
+may return a declared heap object only when its contract supplies the corresponding Result()
+permissions. Direct and module-qualified calls are supported, and a one-item context manager is
+composed inside the surrounding application function instead of becoming an artificial proof-task
+boundary. Source summaries carry verified transitive field-write sets; opaque external calls
+conservatively invalidate every declared field before their postconditions are applied. Unsupported source receives a refusal. The current fragments report
 scope `all-source-symbol-bodies`: source hashes cover the whole file and supported module-level
 initialization is checked. The pinned conformance resolver discovers parent package initializers;
 the production JSON protocol instead requires every source provider to be explicitly enumerated

@@ -1053,6 +1053,7 @@ fn callable_annotation_type(
     }))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn verify_operation(
     function: &ast::StmtFunctionDef,
     operation_names: &BTreeSet<String>,
@@ -1807,6 +1808,7 @@ fn verify_outcome_constructor(
     Ok(raised_exceptions)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn infer_operation_expression(
     expression: &ast::Expr,
     input_name: &str,

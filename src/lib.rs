@@ -2736,18 +2736,19 @@ fn resolve_external_contracts(
                             ));
                         }
                         let heap_types = contract.qualified_class_names();
+                        let functions = contract.factory_names();
                         results.push(ExternalContractResult {
                             adapter_path: overlay.adapter_path.clone(),
                             module: overlay.module.clone(),
                             stub_path: overlay.stub_path.clone(),
                             sha256: hex_digest(&bytes),
-                            functions: Vec::new(),
+                            functions,
                             nominal_types: Vec::new(),
                             heap_types,
                             exception_types: Vec::new(),
                             exception_policy: overlay.exception_policy.clone(),
                             declared_exceptions: Vec::new(),
-                            scope: "provider-import-and-heap-contract-conformance-assumed; class-layout-constructor-method-and-permission-effects-checked-at-adapter".to_owned(),
+                            scope: "provider-import-and-heap-contract-conformance-assumed; heap-returning-factory-binding-class-layout-method-and-permission-effects-checked-at-adapter".to_owned(),
                         });
                         heap_modules
                             .entry(overlay.adapter_path.clone())

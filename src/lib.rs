@@ -635,37 +635,56 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                         || reference_source_imports.contains_key(&source.path)
                         || heap_source_imports.contains_key(&source.path)
                     {
-                        let mut operation_error = None;
-                        if let Some(resolved) = operation_source_imports.by_path.get(&source.path) {
-                            match resolved {
-                                Ok(imports) => {
-                                    let bindings = python_callable_bindings
-                                        .by_consumer
-                                        .get(&source.path)
-                                        .map_or(&[][..], Vec::as_slice);
-                                    match dagcert_operations::verify_and_export_operation_module_with_imports(
+                        let operation_result = match operation_source_imports
+                            .by_path
+                            .get(&source.path)
+                        {
+                            Some(Ok(imports)) => Some({
+                                let bindings = python_callable_bindings
+                                    .by_consumer
+                                    .get(&source.path)
+                                    .map_or(&[][..], Vec::as_slice);
+                                dagcert_operations::verify_and_export_operation_module_with_imports(
+                                    text,
+                                    &source.path,
+                                    &python_module_name(&source.path)
+                                        .unwrap_or_else(|_| source.path.clone()),
+                                    &source.symbols,
+                                    bindings,
+                                    imports,
+                                )
+                                .map(|_| ())
+                            }),
+                            Some(Err(error)) => Some(Err(error.clone())),
+                            None if source.symbols.is_empty()
+                                && dagcert_operations::is_operation_module_candidate(
+                                    text,
+                                    &source.path,
+                                ) =>
+                            {
+                                Some(
+                                    dagcert_operations::verify_operation_module(
                                         text,
                                         &source.path,
-                                        &python_module_name(&source.path).unwrap_or_else(|_| source.path.clone()),
                                         &source.symbols,
-                                        bindings,
-                                        imports,
-                                    ) {
-                                        Ok(_) => {
-                                            if let Some(file) = response.files.last_mut() {
-                                                file.result = ProofStatus::Proved;
-                                                file.fragment = Some(
-                                                    fragments::DAGCERT_CLOSED_TYPED_OPERATIONS.to_owned(),
-                                                );
-                                            }
-                                            continue;
-                                        }
-                                        Err(error) => operation_error = Some(error),
-                                    }
-                                }
-                                Err(error) => operation_error = Some(error.clone()),
+                                    )
+                                    .map(|_| ()),
+                                )
                             }
-                        }
+                            None => None,
+                        };
+                        let operation_error = match operation_result {
+                            Some(Ok(())) => {
+                                if let Some(file) = response.files.last_mut() {
+                                    file.result = ProofStatus::Proved;
+                                    file.fragment =
+                                        Some(fragments::DAGCERT_CLOSED_TYPED_OPERATIONS.to_owned());
+                                }
+                                continue;
+                            }
+                            Some(Err(error)) => Some(error),
+                            None => None,
+                        };
                         let scalar_error = match source_imports.get(&source.path) {
                             Some(Ok(imports)) => {
                                 match python_contracts::verify_contract_module_with_imports(

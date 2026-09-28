@@ -841,6 +841,14 @@ the production JSON protocol instead requires every source provider to be explic
 and hash-bound by the request. Dagcert must not reinterpret a refusal as an observational check or
 silently fall back to Nagini after issuance begins.
 
+Dagcert may enumerate a reachable application helper with an empty `symbols` list when that file
+is proof-only rather than a contract task. Maledictus still verifies every supported operation body
+in that module and exports its summaries to importing task roots. If a requested package
+initializer causes the heap-import resolver to inspect a sibling operation module, the ordinary
+Dagcert-operation proof is attempted independently; an unrelated heap classification failure may
+not suppress a successful closed-operation proof. The package initializer is proved separately and
+all files and explicit source-import edges remain hash-bound in the response.
+
 The bounded heap sequence-pattern frontend verifies fixed and single-star patterns over
 source-typed `List[bool]`, `List[int]`, and `List[str]`. Fixed patterns require exact length;
 single-star patterns require the prefix-plus-suffix minimum, and every head/suffix read is guarded

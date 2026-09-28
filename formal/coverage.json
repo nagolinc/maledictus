@@ -9,8 +9,8 @@
   "root": {
     "symbol": "maledictus::verify_internal",
     "invocation": "verify_internal(request, issuance=true)",
-    "source_tree_sha256": "87bfab4e3d80fa2303208a4ec14080ad3f95b264f663aa10dfb2a5f3e31f9e01",
-    "callgraph_sha256": "466790061f27d230c6e04cd10f508a9a0d52c546517b7feed8236b34344c84f6",
+    "source_tree_sha256": "d1930f0d25ada914706739aa84894b7ec5fa0e2459de8806d932f0d3d458dcf3",
+    "callgraph_sha256": "2e29003228e335d1b06defca29860926ece80ae4dd3be977fec0600810b5337b",
     "composition_proved": false
   },
   "reachability": {
@@ -12521,22 +12521,6 @@
       ]
     },
     {
-      "id": "040d6f2fed003bfe0f1a9b60b865b70174784553a5f74603291013f56d59b00e",
-      "symbol": "maledictus::callable_primitive_from_sort",
-      "name": "callable_primitive_from_sort",
-      "file": "src/lib.rs",
-      "line_start": 2507,
-      "line_end": 2520,
-      "source_sha256": "8f9c641b80d5c1a18016a4a319356eabd673d62592714af155be7ef126787514",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "error"
-      ]
-    },
-    {
       "id": "0419edbf8b42893c3a7e77c245641fc28d41afe017e9772e30024ceccd1ac7d9",
       "symbol": "maledictus::python_int_enum::enum_descriptor",
       "name": "enum_descriptor",
@@ -13291,32 +13275,6 @@
       ]
     },
     {
-      "id": "085061cf0144afb0b8eab9c91a0ccd975e2fafc18666530a92d8a1eb2ba4de0f",
-      "symbol": "maledictus::record_reference_verification",
-      "name": "record_reference_verification",
-      "file": "src/lib.rs",
-      "line_start": 2836,
-      "line_end": 2882,
-      "source_sha256": "ff72b61687c9aae0d17405c6e2e454dfd60ada196849fd91663243c11d437b4b",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Some",
-        "cloned",
-        "collect",
-        "contains",
-        "extend",
-        "filter",
-        "identity",
-        "iter",
-        "last_mut",
-        "located_error",
-        "push",
-        "satisfied",
-        "to_owned"
-      ]
-    },
-    {
       "id": "086b03d3b05e4185fdf0474add54e13aa5ac6c9a8084c3a4bfbb0b3ce41f1aab",
       "symbol": "maledictus::python_heap_contracts::obligation_with_expectation",
       "name": "obligation_with_expectation",
@@ -13934,27 +13892,6 @@
       ]
     },
     {
-      "id": "0b52a2166b6f405a3f0e0c651dae238bd1bc821c16b8456e8fb04e6f686e0083",
-      "symbol": "maledictus::verifier_identity",
-      "name": "verifier_identity",
-      "file": "src/lib.rs",
-      "line_start": 2985,
-      "line_end": 3001,
-      "source_sha256": "551d9c5ebd96661a20d410f311b583e7341efe6f8b082d7936f88489469ed777",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "bundle_digest",
-        "current_exe",
-        "frontend_bundle_sources",
-        "hex_digest",
-        "kernel_bundle_sources",
-        "map_err",
-        "read"
-      ]
-    },
-    {
       "id": "0b60b58be149001e7aeb8b8aa97f248dcc2c92f51411cff6026168c05e3fda45",
       "symbol": "maledictus::python_contracts::closed_recursive_termination_class",
       "name": "closed_recursive_termination_class",
@@ -14208,6 +14145,21 @@
         "range",
         "to_owned",
         "to_string"
+      ]
+    },
+    {
+      "id": "0c781339470b5492bc25bc3e67de6a0c886b253974e1ef10de24c4a8e4fc90cc",
+      "symbol": "maledictus::verify_effects",
+      "name": "verify_effects",
+      "file": "src/lib.rs",
+      "line_start": 2850,
+      "line_end": 2853,
+      "source_sha256": "e4f995e7907a9b895acd58bb81ec842f27cd6507c99b30a89dccff91110e4a69",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "check_exit_effects",
+        "is_ok"
       ]
     },
     {
@@ -15282,32 +15234,6 @@
       ]
     },
     {
-      "id": "10ce46a32985c277cbe9c729b3c72f394bbf5adf2233b317fe82f995dfe992fb",
-      "symbol": "maledictus::record_heap_verification",
-      "name": "record_heap_verification",
-      "file": "src/lib.rs",
-      "line_start": 2884,
-      "line_end": 2957,
-      "source_sha256": "561e2c47726e22b27d27181634d3a4b52207b53e278789c0200bd20b9d884eed",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Some",
-        "cloned",
-        "collect",
-        "contains",
-        "extend",
-        "filter",
-        "identity",
-        "iter",
-        "last_mut",
-        "located_error",
-        "push",
-        "satisfied",
-        "to_owned"
-      ]
-    },
-    {
       "id": "10f51e33a6e6f04db1b138e6a3a608a85e5f46d4ba13456407901bf5b1f5f5ca",
       "symbol": "maledictus::python_persistent_collections::<Evaluator<'_>>::verify_function",
       "name": "verify_function",
@@ -15774,30 +15700,6 @@
       ]
     },
     {
-      "id": "1415639193c1830365464beb54567b30e9da06f650b05a0ee28e95ba233b769b",
-      "symbol": "maledictus::<SourceModuleResolver<'_>>::resolve_module",
-      "name": "resolve_module",
-      "file": "src/lib.rs",
-      "line_start": 1857,
-      "line_end": 1894,
-      "source_sha256": "4e3deb8f6ad96155551ddd36435d73a96aa459dc6691c3dd9c0e085f7723a422",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Done",
-        "Err",
-        "Ok",
-        "clone",
-        "expect",
-        "get",
-        "insert",
-        "resolve_imports_for_path",
-        "source_contract_imports",
-        "to_owned",
-        "verify_and_export_source_contract_module"
-      ]
-    },
-    {
       "id": "14242e30f5f9f271dc5ba51864a2c2df1f496c176b1c34edc84704477492a199",
       "symbol": "maledictus::python_contracts::contract_decreases",
       "name": "contract_decreases",
@@ -15982,6 +15884,29 @@
         "ok",
         "parse",
         "to_string"
+      ]
+    },
+    {
+      "id": "14e237574f144753c74f43ea27b81d1621c4b954cec404687fa8901db56bf345",
+      "symbol": "maledictus::resolve_source_path",
+      "name": "resolve_source_path",
+      "file": "src/lib.rs",
+      "line_start": 2978,
+      "line_end": 2997,
+      "source_sha256": "d0573f2a51296b82c72e6653e98986f5b56ba98fc84c7351f3e68b830b2696ee",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "any",
+        "canonicalize",
+        "components",
+        "is_absolute",
+        "join",
+        "map_err",
+        "new",
+        "starts_with"
       ]
     },
     {
@@ -16300,6 +16225,44 @@
       "calls": []
     },
     {
+      "id": "168991cd5a053ae0b2a7baf6441a51c95efbc1d996891e21dc0fee5b4ad02402",
+      "symbol": "maledictus::resolve_embedded_external_calls",
+      "name": "resolve_embedded_external_calls",
+      "file": "src/lib.rs",
+      "line_start": 1424,
+      "line_end": 1580,
+      "source_sha256": "346a9029712705e85c54cc455ce5f88e191ac2ec3180b8c7785f48287eaad44a",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "any",
+        "as_str",
+        "clone",
+        "collect",
+        "contains",
+        "export_external_boundary_module",
+        "file_error",
+        "from_ref",
+        "from_utf8",
+        "get",
+        "hex_digest",
+        "insert",
+        "iter",
+        "map",
+        "map_err",
+        "new",
+        "push",
+        "python_module_name",
+        "read",
+        "resolve_source_path",
+        "to_owned",
+        "to_string",
+        "validate_embedded_external_call"
+      ]
+    },
+    {
       "id": "16a777db57a829a904e2d039498522696d4052e109726f5094d1cacb719012ac",
       "symbol": "maledictus::python_contract_positions::declared_exception_types",
       "name": "declared_exception_types",
@@ -16372,6 +16335,21 @@
         "transpose",
         "unwrap_or",
         "zip"
+      ]
+    },
+    {
+      "id": "16e96588cac6dea7aa24a837f81b0149462b5f67a76334332eb6ba3048315f98",
+      "symbol": "maledictus::is_python_package_initializer",
+      "name": "is_python_package_initializer",
+      "file": "src/lib.rs",
+      "line_start": 2271,
+      "line_end": 2274,
+      "source_sha256": "f7548ce16741c6231d65685f8e26a3af7f1dee308a81f511890e62aba9ebd544",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "ends_with",
+        "replace"
       ]
     },
     {
@@ -17528,32 +17506,6 @@
       ]
     },
     {
-      "id": "1bcbcd10f445680d7dd5944d5a01081bcc7ae17f548263981afbe5027c55c48a",
-      "symbol": "maledictus::resolve_reference_source_imports",
-      "name": "resolve_reference_source_imports",
-      "file": "src/lib.rs",
-      "line_start": 1897,
-      "line_end": 1931,
-      "source_sha256": "fe5683e089cbf48f566b4ca2a6399a4ec4f6f83f7a2cd8a841c42bb0b8307804",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "any",
-        "clone",
-        "collect",
-        "collect_python_source_units",
-        "contains_key",
-        "insert",
-        "iter",
-        "map",
-        "new",
-        "resolve_imports_for_path",
-        "source_contract_imports",
-        "values"
-      ]
-    },
-    {
       "id": "1bd53cfa70e40046e51c8e746a8b19f7d833934bb2a491d0d5c59c891056de92",
       "symbol": "maledictus::python_heap_contracts::location",
       "name": "location",
@@ -18506,6 +18458,30 @@
       ]
     },
     {
+      "id": "1fa74d018ca19476d8366500bcaecc04a2b33d98ae70fdbd6ec4a40780694087",
+      "symbol": "maledictus::<SourceModuleResolver<'_>>::resolve_module",
+      "name": "resolve_module",
+      "file": "src/lib.rs",
+      "line_start": 1876,
+      "line_end": 1913,
+      "source_sha256": "4e3deb8f6ad96155551ddd36435d73a96aa459dc6691c3dd9c0e085f7723a422",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Done",
+        "Err",
+        "Ok",
+        "clone",
+        "expect",
+        "get",
+        "insert",
+        "resolve_imports_for_path",
+        "source_contract_imports",
+        "to_owned",
+        "verify_and_export_source_contract_module"
+      ]
+    },
+    {
       "id": "1fe566ea55a2403444584778331189b3e37ecccb64eaeff32195d0c36f0f2ee7",
       "symbol": "maledictus::python_private_fields::<PrivateFieldAccessCollector<'_>>::visit_expr_attribute",
       "name": "visit_expr_attribute",
@@ -18677,33 +18653,6 @@
         "collect_assignment_target_names",
         "insert",
         "to_string"
-      ]
-    },
-    {
-      "id": "216aab5d106ca0cc7b47f4260634ca0303aa5d719978f7f516c8ca320e75d7d5",
-      "symbol": "maledictus::<HeapSourceModuleResolver<'_>>::verify_parent_package_initializers",
-      "name": "verify_parent_package_initializers",
-      "file": "src/lib.rs",
-      "line_start": 2122,
-      "line_end": 2170,
-      "source_sha256": "d31d281d79289119fe5642219f66216dc3e7b09f065be0161eef1ab0d8e593ae",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "collect",
-        "ends_with",
-        "exists",
-        "get",
-        "join",
-        "len",
-        "push",
-        "replace",
-        "split",
-        "to_path_buf",
-        "verify_package_initializer",
-        "with_extension"
       ]
     },
     {
@@ -19466,6 +19415,107 @@
         "iter",
         "map",
         "or_else"
+      ]
+    },
+    {
+      "id": "25277fc8ea9ea3dc13b5e62167a84d2378b630ed9fb7c9d252819ccce3966c3f",
+      "symbol": "maledictus::verify_internal",
+      "name": "verify_internal",
+      "file": "src/lib.rs",
+      "line_start": 280,
+      "line_end": 1409,
+      "source_sha256": "eb605b591413eeef40c768296c32cd542e1669b02687ae10b7d92d74d8be414e",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Some",
+        "advertised_for_language",
+        "all",
+        "analyze_module",
+        "and_then",
+        "any",
+        "as_deref",
+        "as_ref",
+        "as_str",
+        "bytes",
+        "canonicalize",
+        "clone",
+        "cloned",
+        "collect",
+        "contains",
+        "contains_key",
+        "entry",
+        "enumerate",
+        "error",
+        "extend",
+        "file_error",
+        "filter",
+        "filter_map",
+        "find",
+        "flatten",
+        "from_utf8",
+        "get",
+        "hex_digest",
+        "identity",
+        "into_iter",
+        "is_ascii_hexdigit",
+        "is_empty",
+        "is_operation_module_candidate",
+        "is_python_package_initializer",
+        "iter",
+        "last_mut",
+        "len",
+        "located_error",
+        "map",
+        "map_or",
+        "module",
+        "new",
+        "ok",
+        "or_default",
+        "passed",
+        "prove_caught_callable_fragment",
+        "prove_closed_fragment",
+        "push",
+        "python_module_name",
+        "read",
+        "record_heap_verification",
+        "record_reference_verification",
+        "record_scalar_verification",
+        "refused",
+        "resolve",
+        "resolve_embedded_external_calls",
+        "resolve_external_contracts",
+        "resolve_heap_source_imports",
+        "resolve_operation_source_imports",
+        "resolve_python_callable_bindings",
+        "resolve_reference_source_imports",
+        "resolve_source_imports",
+        "resolve_source_path",
+        "satisfied",
+        "source_has_heap_statement_condition_feature",
+        "source_location",
+        "source_predicate_names",
+        "take",
+        "then",
+        "to_owned",
+        "to_string",
+        "typecheck_request_sources_with_interfaces",
+        "unwrap_or_else",
+        "validate_contract_positions_with_source_predicates",
+        "verified_leaf_interfaces",
+        "verifier_identity",
+        "verify_and_export_operation_module_with_imports",
+        "verify_closed_javascript_module",
+        "verify_closed_module",
+        "verify_contract_module",
+        "verify_contract_module_with_imports",
+        "verify_heap_module",
+        "verify_heap_module_with_imports",
+        "verify_heap_package_initializer_with_imports",
+        "verify_operation_module",
+        "verify_operation_module_with_bindings",
+        "verify_reference_module_with_imports"
       ]
     },
     {
@@ -20559,30 +20609,6 @@
       ]
     },
     {
-      "id": "2bc28870277078fc1995e695fed4b066132f76766b780ca6a756c94fd5c82709",
-      "symbol": "maledictus::<HeapSourceModuleResolver<'_>>::verify_package_initializer",
-      "name": "verify_package_initializer",
-      "file": "src/lib.rs",
-      "line_start": 2172,
-      "line_end": 2218,
-      "source_sha256": "35853cf4151d91c431f2537ee3d7962655f01789aa1d70de32a84f02d841c1f9",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Done",
-        "Err",
-        "Ok",
-        "clone",
-        "expect",
-        "get",
-        "insert",
-        "resolve_imports_for_path",
-        "source_contract_imports",
-        "to_owned",
-        "verify_heap_package_initializer_with_imports"
-      ]
-    },
-    {
       "id": "2bcafa50b0112fbc2f502f09af6126c0571f8cd83cfa0023ec8f1e4d2b3dc0cf",
       "symbol": "maledictus::python_io_wellformedness::function_local_names",
       "name": "function_local_names",
@@ -21619,6 +21645,18 @@
       ]
     },
     {
+      "id": "33474cbd522752ccfb2d73d37efdbe047ce86fb229df762814b541530432d052",
+      "symbol": "maledictus::kernel_bundle_sources",
+      "name": "kernel_bundle_sources",
+      "file": "src/lib.rs",
+      "line_start": 3054,
+      "line_end": 3061,
+      "source_sha256": "465d10750fd8aabc134b22b3e993e9d25b193346c02e8f6a4e04dc2b442b8774",
+      "basis": "unproved",
+      "proof": null,
+      "calls": []
+    },
+    {
       "id": "334dfc9eb8bdd24a7b0aa816aaced4fa18f27e465f983b6d1856edf83ada4e4b",
       "symbol": "maledictus::python::walk_statement",
       "name": "walk_statement",
@@ -21874,18 +21912,6 @@
         "insert",
         "source_candidate_reaches"
       ]
-    },
-    {
-      "id": "347d3b1c5decd1914da710450c2172ea5cd9821cc778e94db3b49552c057a05f",
-      "symbol": "maledictus::frontend_bundle_sources",
-      "name": "frontend_bundle_sources",
-      "file": "src/lib.rs",
-      "line_start": 3003,
-      "line_end": 3033,
-      "source_sha256": "5f24eba54825e1829cc0ff851128041261c23a1e3e53bc7fb7b7af1aee612ce1",
-      "basis": "unproved",
-      "proof": null,
-      "calls": []
     },
     {
       "id": "348273896dea330b3789c5299766919b1199ef9fde72df6c8b14a7fc6e184a11",
@@ -23197,27 +23223,6 @@
       ]
     },
     {
-      "id": "3cac22578c918061ab22480aba7095ed0c81bf1efe82c60b580524e47ee47d99",
-      "symbol": "maledictus::bundle_digest",
-      "name": "bundle_digest",
-      "file": "src/lib.rs",
-      "line_start": 3044,
-      "line_end": 3055,
-      "source_sha256": "133c4907c5f03863191f0f99b5cbd748377929bb41bdb127a8532edfacfa2a06",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "collect",
-        "finalize",
-        "iter",
-        "len",
-        "map",
-        "new",
-        "to_be_bytes",
-        "update"
-      ]
-    },
-    {
       "id": "3d3ac7bccc060d10ab0a3a0705024d51d6c01c0f6f6eaf7ab46547023db5fe02",
       "symbol": "maledictus::python_contracts::scalar_class_has_inert_body",
       "name": "scalar_class_has_inert_body",
@@ -24174,44 +24179,6 @@
       ]
     },
     {
-      "id": "424bf7a89d2282a34d7b750322e003d0b1cc5eeeff81ca5e2b778331a40b6ad5",
-      "symbol": "maledictus::resolve_embedded_external_calls",
-      "name": "resolve_embedded_external_calls",
-      "file": "src/lib.rs",
-      "line_start": 1405,
-      "line_end": 1561,
-      "source_sha256": "346a9029712705e85c54cc455ce5f88e191ac2ec3180b8c7785f48287eaad44a",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "any",
-        "as_str",
-        "clone",
-        "collect",
-        "contains",
-        "export_external_boundary_module",
-        "file_error",
-        "from_ref",
-        "from_utf8",
-        "get",
-        "hex_digest",
-        "insert",
-        "iter",
-        "map",
-        "map_err",
-        "new",
-        "push",
-        "python_module_name",
-        "read",
-        "resolve_source_path",
-        "to_owned",
-        "to_string",
-        "validate_embedded_external_call"
-      ]
-    },
-    {
       "id": "42c93ef0ea2f6fae9dc2fa33143d9825fb11e352a5c3a059e320359f21ae0425",
       "symbol": "maledictus::python_contract_positions::<ExpressionValidator<'_>>::visit_expr_call",
       "name": "visit_expr_call",
@@ -24461,6 +24428,52 @@
         "validate_heap_function_nominal_return",
         "values",
         "zero_argument_constructor_shape"
+      ]
+    },
+    {
+      "id": "4331da5fcebddde31f906f3ee2c79a4a23098e05eaf1cffd3c4754b205e7b135",
+      "symbol": "maledictus::resolve_python_callable_bindings",
+      "name": "resolve_python_callable_bindings",
+      "file": "src/lib.rs",
+      "line_start": 2276,
+      "line_end": 2524,
+      "source_sha256": "3f9266aa1952644449d222666e313072de9ffe821717f564e5d30e2bead7d9e6",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "Some",
+        "analyze_source_callable",
+        "any",
+        "as_str",
+        "callable_contract",
+        "callable_primitive_from_sort",
+        "clone",
+        "collect",
+        "entry",
+        "file_error",
+        "find",
+        "flatten",
+        "from_utf8",
+        "get",
+        "hex_digest",
+        "insert",
+        "into_iter",
+        "is_empty",
+        "is_plain_python_identifier",
+        "iter",
+        "map",
+        "map_err",
+        "module",
+        "new",
+        "or_default",
+        "push",
+        "read",
+        "resolve_source_path",
+        "split",
+        "to_owned",
+        "to_string"
       ]
     },
     {
@@ -24970,6 +24983,35 @@
         "new",
         "symbolic_field",
         "to_owned"
+      ]
+    },
+    {
+      "id": "455a64f74f77aecb5f18d6feeace9eba34dbaf035b8b81389b53e03dbf37f49b",
+      "symbol": "maledictus::resolve_heap_source_imports",
+      "name": "resolve_heap_source_imports",
+      "file": "src/lib.rs",
+      "line_start": 2029,
+      "line_end": 2065,
+      "source_sha256": "3e1f3fa624f5d32e3c213317f1bf90bccd76ac0c250c5f2a989ca6663fe3d6aa",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "and_then",
+        "any",
+        "clone",
+        "collect",
+        "collect_python_source_units",
+        "contains",
+        "contains_key",
+        "insert",
+        "iter",
+        "map",
+        "new",
+        "resolve_imports_for_path",
+        "source_contract_imports",
+        "values",
+        "verify_parent_package_initializers"
       ]
     },
     {
@@ -26118,6 +26160,23 @@
       ]
     },
     {
+      "id": "4acf42105e2844436a1cfaad3749dab09f921a8ecdd6fda6364a3158889360ec",
+      "symbol": "maledictus::hex_digest",
+      "name": "hex_digest",
+      "file": "src/lib.rs",
+      "line_start": 2999,
+      "line_end": 3002,
+      "source_sha256": "d125bd7d05ad6d901135acd8c5781ed9925605a1864fe3853aef7e7ec78f3de7",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "collect",
+        "digest",
+        "iter",
+        "map"
+      ]
+    },
+    {
       "id": "4afe1ab31f4e3c3252b9c1fd52e8b7814a411f19c1ee4fca58d6e43a44487ce8",
       "symbol": "maledictus::python_io_wellformedness::<NestedIoExistsCollector<'_>>::visit_allowed_statements",
       "name": "visit_allowed_statements",
@@ -27236,6 +27295,32 @@
       ]
     },
     {
+      "id": "5056d475322e25010550d7d8617ec9291229824e56fb57a6a8865c938dd60b46",
+      "symbol": "maledictus::record_reference_verification",
+      "name": "record_reference_verification",
+      "file": "src/lib.rs",
+      "line_start": 2855,
+      "line_end": 2901,
+      "source_sha256": "ff72b61687c9aae0d17405c6e2e454dfd60ada196849fd91663243c11d437b4b",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Some",
+        "cloned",
+        "collect",
+        "contains",
+        "extend",
+        "filter",
+        "identity",
+        "iter",
+        "last_mut",
+        "located_error",
+        "push",
+        "satisfied",
+        "to_owned"
+      ]
+    },
+    {
       "id": "506955c7c0122fa78c0e833df229d6aeae62fdd858c68a53f4c3d026ba25649a",
       "symbol": "maledictus::python_contract_positions::nonextendable_builtin_types",
       "name": "nonextendable_builtin_types",
@@ -27621,6 +27706,32 @@
       ]
     },
     {
+      "id": "5259eec426f83da5be5810db3aa1938c70221625505df35db1e3bcbb27100940",
+      "symbol": "maledictus::resolve_reference_source_imports",
+      "name": "resolve_reference_source_imports",
+      "file": "src/lib.rs",
+      "line_start": 1916,
+      "line_end": 1950,
+      "source_sha256": "fe5683e089cbf48f566b4ca2a6399a4ec4f6f83f7a2cd8a841c42bb0b8307804",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "any",
+        "clone",
+        "collect",
+        "collect_python_source_units",
+        "contains_key",
+        "insert",
+        "iter",
+        "map",
+        "new",
+        "resolve_imports_for_path",
+        "source_contract_imports",
+        "values"
+      ]
+    },
+    {
       "id": "525b45a106fb9c0d6eece868bc7e7be2f042802f6c6eaa8d0e0ec908aed6018b",
       "symbol": "maledictus::python_thread_wellformedness::calls::record",
       "name": "record",
@@ -27803,29 +27914,6 @@
         "try_from",
         "unwrap_or",
         "visit_stmt"
-      ]
-    },
-    {
-      "id": "52e089fa70bdcdd016072c8277b0b116ea35d23a8633e12bc6e8f767167442f9",
-      "symbol": "maledictus::resolve_source_path",
-      "name": "resolve_source_path",
-      "file": "src/lib.rs",
-      "line_start": 2959,
-      "line_end": 2978,
-      "source_sha256": "d0573f2a51296b82c72e6653e98986f5b56ba98fc84c7351f3e68b830b2696ee",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "any",
-        "canonicalize",
-        "components",
-        "is_absolute",
-        "join",
-        "map_err",
-        "new",
-        "starts_with"
       ]
     },
     {
@@ -28482,6 +28570,31 @@
       ]
     },
     {
+      "id": "576924242555bee8be0e74af792508044888ab21be0aaf0c6381ac802cfe282a",
+      "symbol": "maledictus::<HeapSourceModuleResolver<'_>>::resolve_imports_for_path",
+      "name": "resolve_imports_for_path",
+      "file": "src/lib.rs",
+      "line_start": 2068,
+      "line_end": 2096,
+      "source_sha256": "65c3af3206148c691cd085de199024256fc0f0d743f20707472ca6ba972428eb",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "and_then",
+        "clone",
+        "contains_key",
+        "find",
+        "get",
+        "iter",
+        "module",
+        "new",
+        "push",
+        "resolve_module"
+      ]
+    },
+    {
       "id": "578546cec4ef186a4205a8cce88c5f38d627fa2398d3b74e292cc1a4b7c72bc6",
       "symbol": "maledictus::<FrontendAnalysis>::from_response",
       "name": "from_response",
@@ -28673,6 +28786,27 @@
         "unsupported_path_effect_or_legacy_fallback",
         "unwrap_or_else",
         "with_capacity"
+      ]
+    },
+    {
+      "id": "57fb3e5b3023323fa47e3120a35ebb57c9a1dddb4bd5b6d00d45d31c14bfc58a",
+      "symbol": "maledictus::verifier_identity",
+      "name": "verifier_identity",
+      "file": "src/lib.rs",
+      "line_start": 3004,
+      "line_end": 3020,
+      "source_sha256": "551d9c5ebd96661a20d410f311b583e7341efe6f8b082d7936f88489469ed777",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "bundle_digest",
+        "current_exe",
+        "frontend_bundle_sources",
+        "hex_digest",
+        "kernel_bundle_sources",
+        "map_err",
+        "read"
       ]
     },
     {
@@ -29164,6 +29298,32 @@
       "proof": null,
       "calls": [
         "validate_expression"
+      ]
+    },
+    {
+      "id": "5b5b2840a4e174f3145938a6fbaf85a841c67f75d781473a4d0f47748e79fb96",
+      "symbol": "maledictus::record_scalar_verification",
+      "name": "record_scalar_verification",
+      "file": "src/lib.rs",
+      "line_start": 2785,
+      "line_end": 2848,
+      "source_sha256": "e64cb447e3bd5a7e118d027b63387c351e314a9178f95b5f311d903ba97fa2d6",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Some",
+        "cloned",
+        "collect",
+        "contains",
+        "extend",
+        "filter",
+        "identity",
+        "iter",
+        "last_mut",
+        "located_error",
+        "push",
+        "satisfied",
+        "to_owned"
       ]
     },
     {
@@ -30001,6 +30161,29 @@
         "to_owned",
         "try_from",
         "unique"
+      ]
+    },
+    {
+      "id": "5f36c33008245bf17ffb30fa244947929a2c1c3e9c0759d9825bb2b2a02f60e3",
+      "symbol": "maledictus::source_location",
+      "name": "source_location",
+      "file": "src/lib.rs",
+      "line_start": 1411,
+      "line_end": 1422,
+      "source_sha256": "d4f61356aae4496309d727982b760fe4adae2b181980dd4b0816f7a1f78edeab",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "as_bytes",
+        "count",
+        "filter",
+        "iter",
+        "len",
+        "map_or",
+        "min",
+        "rposition",
+        "try_from",
+        "unwrap_or"
       ]
     },
     {
@@ -31082,6 +31265,27 @@
       "calls": []
     },
     {
+      "id": "6550be1ebb897a4632f17b9192a8fe49944588443c9e2077a644c1d85ec17d3d",
+      "symbol": "maledictus::bundle_digest",
+      "name": "bundle_digest",
+      "file": "src/lib.rs",
+      "line_start": 3063,
+      "line_end": 3074,
+      "source_sha256": "133c4907c5f03863191f0f99b5cbd748377929bb41bdb127a8532edfacfa2a06",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "collect",
+        "finalize",
+        "iter",
+        "len",
+        "map",
+        "new",
+        "to_be_bytes",
+        "update"
+      ]
+    },
+    {
       "id": "6557ca30594bdd54381979b4d6a33b69f39fb3600a47bb734d4fb945bd65d343",
       "symbol": "maledictus::python_heap_contracts::collect_heap_local_names",
       "name": "collect_heap_local_names",
@@ -31308,29 +31512,6 @@
         "as_ref",
         "is_none_or",
         "is_some_and"
-      ]
-    },
-    {
-      "id": "67957978f264b384243b01857390f1f19fd2212ab9fec91102bfef1a2dd6d5de",
-      "symbol": "maledictus::source_location",
-      "name": "source_location",
-      "file": "src/lib.rs",
-      "line_start": 1392,
-      "line_end": 1403,
-      "source_sha256": "d4f61356aae4496309d727982b760fe4adae2b181980dd4b0816f7a1f78edeab",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "as_bytes",
-        "count",
-        "filter",
-        "iter",
-        "len",
-        "map_or",
-        "min",
-        "rposition",
-        "try_from",
-        "unwrap_or"
       ]
     },
     {
@@ -31915,23 +32096,6 @@
       ]
     },
     {
-      "id": "6ad4a1bf2530de66069758336908b1298547d6e67e2d2478f8fac4921bdc5c67",
-      "symbol": "maledictus::hex_digest",
-      "name": "hex_digest",
-      "file": "src/lib.rs",
-      "line_start": 2980,
-      "line_end": 2983,
-      "source_sha256": "d125bd7d05ad6d901135acd8c5781ed9925605a1864fe3853aef7e7ec78f3de7",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "collect",
-        "digest",
-        "iter",
-        "map"
-      ]
-    },
-    {
       "id": "6add326e4bee9ca5bd2d30dd3a1c2f52c8493bd304bf686e22b521a30c04b960",
       "symbol": "maledictus::python_sif_contracts::handler_matches",
       "name": "handler_matches",
@@ -32049,33 +32213,6 @@
         "new",
         "ok_or_else",
         "to_owned"
-      ]
-    },
-    {
-      "id": "6b607deaf88a828b7986adc4feeb573aeb88b7db4ffac40fca7cdaa9c59d9cee",
-      "symbol": "maledictus::resolve_operation_source_imports",
-      "name": "resolve_operation_source_imports",
-      "file": "src/lib.rs",
-      "line_start": 1681,
-      "line_end": 1735,
-      "source_sha256": "93c712aafd2a69c859605d8d5a0d84dd84bc831a12e64134885204b516cf7db0",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "clone",
-        "collect",
-        "collect_python_source_units",
-        "contains_key",
-        "filter",
-        "insert",
-        "is_empty",
-        "is_operation_module_candidate",
-        "iter",
-        "map",
-        "new",
-        "resolve_module",
-        "source_contract_import_bindings",
-        "values"
       ]
     },
     {
@@ -32330,38 +32467,6 @@
       "calls": [
         "Some",
         "clone"
-      ]
-    },
-    {
-      "id": "6d29b99da311b1f11a4fa23c9df2d31f1755264f0c608c85c2348da4d7543556",
-      "symbol": "maledictus::resolve_source_imports",
-      "name": "resolve_source_imports",
-      "file": "src/lib.rs",
-      "line_start": 1563,
-      "line_end": 1627,
-      "source_sha256": "56df03940d0683f76e667f01cf38bb3ac4e425fa1e348e19b7b8587af9af379f",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "any",
-        "clone",
-        "collect",
-        "collect_python_source_units",
-        "contains_key",
-        "filter",
-        "get",
-        "insert",
-        "into_iter",
-        "is_some_and",
-        "iter",
-        "map",
-        "module",
-        "new",
-        "push",
-        "resolve_imports_for_path",
-        "source_contract_import_bindings",
-        "values"
       ]
     },
     {
@@ -35849,6 +35954,38 @@
       ]
     },
     {
+      "id": "7d2e24dd3a5c7febc2edb11447adfa13b828d52360d7b9c23038a52ab9ccb4e8",
+      "symbol": "maledictus::resolve_source_imports",
+      "name": "resolve_source_imports",
+      "file": "src/lib.rs",
+      "line_start": 1582,
+      "line_end": 1646,
+      "source_sha256": "56df03940d0683f76e667f01cf38bb3ac4e425fa1e348e19b7b8587af9af379f",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Ok",
+        "any",
+        "clone",
+        "collect",
+        "collect_python_source_units",
+        "contains_key",
+        "filter",
+        "get",
+        "insert",
+        "into_iter",
+        "is_some_and",
+        "iter",
+        "map",
+        "module",
+        "new",
+        "push",
+        "resolve_imports_for_path",
+        "source_contract_import_bindings",
+        "values"
+      ]
+    },
+    {
       "id": "7d78b3acdecb532f8c6a07401f84596b6e08f710bb0844f5916cad111c7feadd",
       "symbol": "maledictus::python_heap_contracts::<GenericUseCollector<'_>>::visit_expr",
       "name": "visit_expr",
@@ -36136,18 +36273,6 @@
         "parse",
         "to_string"
       ]
-    },
-    {
-      "id": "7edc8721c72ae5518b5c3d09c9deb6f99c751a234eeea43199e84b4bebd4bc52",
-      "symbol": "maledictus::kernel_bundle_sources",
-      "name": "kernel_bundle_sources",
-      "file": "src/lib.rs",
-      "line_start": 3035,
-      "line_end": 3042,
-      "source_sha256": "465d10750fd8aabc134b22b3e993e9d25b193346c02e8f6a4e04dc2b442b8774",
-      "basis": "unproved",
-      "proof": null,
-      "calls": []
     },
     {
       "id": "7ef0de52eccfd4f97b55445b33d5a64b9644038f58568019a29ec308da4d2c6c",
@@ -38354,33 +38479,6 @@
       ]
     },
     {
-      "id": "8ca62ea55f1dc145fee27ac1cd0a3324e2a9920baf86c68f513f6c3a1f34f8f4",
-      "symbol": "maledictus::<HeapSourceModuleResolver<'_>>::resolve_module",
-      "name": "resolve_module",
-      "file": "src/lib.rs",
-      "line_start": 2079,
-      "line_end": 2120,
-      "source_sha256": "03185198c207db0c1fadc3111dfc1d415eed28869a56efeabfba34a2dc24edeb",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Done",
-        "Err",
-        "Ok",
-        "as_ref",
-        "clone",
-        "expect",
-        "get",
-        "insert",
-        "new",
-        "resolve_imports_for_path",
-        "source_contract_imports",
-        "to_owned",
-        "verify_and_export_source_heap_module",
-        "verify_parent_package_initializers"
-      ]
-    },
-    {
       "id": "8cbce871784f7c232d9f87c65281ac8477a6b5f5b37a68a831ebaa527f595d4d",
       "symbol": "maledictus::python_contracts::collect_function_local_bindings",
       "name": "collect_function_local_bindings",
@@ -38845,6 +38943,18 @@
       ]
     },
     {
+      "id": "8f3802b6565a85504edc57680bae77b34c96cd4e973053436d314a51f73c8d00",
+      "symbol": "maledictus::frontend_bundle_sources",
+      "name": "frontend_bundle_sources",
+      "file": "src/lib.rs",
+      "line_start": 3022,
+      "line_end": 3052,
+      "source_sha256": "5f24eba54825e1829cc0ff851128041261c23a1e3e53bc7fb7b7af1aee612ce1",
+      "basis": "unproved",
+      "proof": null,
+      "calls": []
+    },
+    {
       "id": "8f518ef7a7c0d90c66afba7fc01f13944bc52d4b64c60b48ff8a53b7de2d7509",
       "symbol": "maledictus::python_heap_contracts::finite_collection_key_expression_is_exact",
       "name": "finite_collection_key_expression_is_exact",
@@ -39095,21 +39205,6 @@
         "map_err",
         "parse",
         "to_string"
-      ]
-    },
-    {
-      "id": "90a6952ce6a6ce7dddf001067e106d504fe112b353de29e2de1b321b6f945311",
-      "symbol": "maledictus::verify_effects",
-      "name": "verify_effects",
-      "file": "src/lib.rs",
-      "line_start": 2831,
-      "line_end": 2834,
-      "source_sha256": "e4f995e7907a9b895acd58bb81ec842f27cd6507c99b30a89dccff91110e4a69",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "check_exit_effects",
-        "is_ok"
       ]
     },
     {
@@ -40347,25 +40442,6 @@
       ]
     },
     {
-      "id": "96dbfb74633d88bd347054291ac8caeb680fe93af1ed74f1084878fd8be4df2d",
-      "symbol": "maledictus::is_plain_python_identifier",
-      "name": "is_plain_python_identifier",
-      "file": "src/lib.rs",
-      "line_start": 2522,
-      "line_end": 2528,
-      "source_sha256": "c2af643fb4e4b0edccecda57ddd4a98e5f245ce6a532bcc5330ce19f1133dc81",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "all",
-        "chars",
-        "is_alphabetic",
-        "is_alphanumeric",
-        "is_some_and",
-        "next"
-      ]
-    },
-    {
       "id": "96f7db850041302182b51e902e9aee8538b57da76212d3872010e6ac532e6720",
       "symbol": "maledictus::python_language_wellformedness::<LanguageRestrictionCollector<'_>>::visit_stmt_try",
       "name": "visit_stmt_try",
@@ -40393,21 +40469,6 @@
       "basis": "unproved",
       "proof": null,
       "calls": []
-    },
-    {
-      "id": "97186a60d68063e7a40434ba79f95093a2c727ff69730aebb4481672858fedec",
-      "symbol": "maledictus::is_python_package_initializer",
-      "name": "is_python_package_initializer",
-      "file": "src/lib.rs",
-      "line_start": 2252,
-      "line_end": 2255,
-      "source_sha256": "f7548ce16741c6231d65685f8e26a3af7f1dee308a81f511890e62aba9ebd544",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "ends_with",
-        "replace"
-      ]
     },
     {
       "id": "9718f9431e32075cf046936b2daf3ea49b7c7bfb0a0b0656946a17b6f6615eba",
@@ -41046,6 +41107,25 @@
         "to_owned",
         "to_string",
         "validate_adt_class"
+      ]
+    },
+    {
+      "id": "99d76221648bcd18f5dfecffb2d193ea32dd00e15a2a39380da8f000cc18eec5",
+      "symbol": "maledictus::is_plain_python_identifier",
+      "name": "is_plain_python_identifier",
+      "file": "src/lib.rs",
+      "line_start": 2541,
+      "line_end": 2547,
+      "source_sha256": "c2af643fb4e4b0edccecda57ddd4a98e5f245ce6a532bcc5330ce19f1133dc81",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "all",
+        "chars",
+        "is_alphabetic",
+        "is_alphanumeric",
+        "is_some_and",
+        "next"
       ]
     },
     {
@@ -41796,31 +41876,6 @@
       ]
     },
     {
-      "id": "9d158f3d8e8d5fbeb00cf8bc923d2d7e5390b22d1613e7d57612180231a6e65e",
-      "symbol": "maledictus::<HeapSourceModuleResolver<'_>>::resolve_imports_for_path",
-      "name": "resolve_imports_for_path",
-      "file": "src/lib.rs",
-      "line_start": 2049,
-      "line_end": 2077,
-      "source_sha256": "65c3af3206148c691cd085de199024256fc0f0d743f20707472ca6ba972428eb",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "and_then",
-        "clone",
-        "contains_key",
-        "find",
-        "get",
-        "iter",
-        "module",
-        "new",
-        "push",
-        "resolve_module"
-      ]
-    },
-    {
       "id": "9d3935107ad4e92d6ca3ec9888503e5fd82751cdd60cde73a259cf49103cb283",
       "symbol": "maledictus::python_heap_contracts::verifier_intrinsic_binding_term",
       "name": "verifier_intrinsic_binding_term",
@@ -42448,35 +42503,6 @@
       ]
     },
     {
-      "id": "a1879398b021f957b7450631b7a56ff7549e401265994b8580988c54fdb6e1ad",
-      "symbol": "maledictus::resolve_heap_source_imports",
-      "name": "resolve_heap_source_imports",
-      "file": "src/lib.rs",
-      "line_start": 2010,
-      "line_end": 2046,
-      "source_sha256": "3e1f3fa624f5d32e3c213317f1bf90bccd76ac0c250c5f2a989ca6663fe3d6aa",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Ok",
-        "and_then",
-        "any",
-        "clone",
-        "collect",
-        "collect_python_source_units",
-        "contains",
-        "contains_key",
-        "insert",
-        "iter",
-        "map",
-        "new",
-        "resolve_imports_for_path",
-        "source_contract_imports",
-        "values",
-        "verify_parent_package_initializers"
-      ]
-    },
-    {
       "id": "a19c012353a811321205877f5873ab3121c1177f2c32aa01a1a91397fe73be0c",
       "symbol": "maledictus::python_heap_contracts::<RaisedExceptionRewriter>::fold_expr",
       "name": "fold_expr",
@@ -42912,6 +42938,32 @@
         "push",
         "qualify_path_obligations",
         "require_bool"
+      ]
+    },
+    {
+      "id": "a43c5e5a0d996a84b8123dfaf039ca14a4360ee7378342cf944388d84bd1d63e",
+      "symbol": "maledictus::record_heap_verification",
+      "name": "record_heap_verification",
+      "file": "src/lib.rs",
+      "line_start": 2903,
+      "line_end": 2976,
+      "source_sha256": "561e2c47726e22b27d27181634d3a4b52207b53e278789c0200bd20b9d884eed",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Some",
+        "cloned",
+        "collect",
+        "contains",
+        "extend",
+        "filter",
+        "identity",
+        "iter",
+        "last_mut",
+        "located_error",
+        "push",
+        "satisfied",
+        "to_owned"
       ]
     },
     {
@@ -45192,6 +45244,68 @@
       ]
     },
     {
+      "id": "ae51eaf39f2f659a9bb3c80aab9cbde531aba3d9e806c977493bb099ac21d736",
+      "symbol": "maledictus::<OperationSourceModuleResolver<'_>>::resolve_module",
+      "name": "resolve_module",
+      "file": "src/lib.rs",
+      "line_start": 1757,
+      "line_end": 1844,
+      "source_sha256": "2c8bdff5b2df0744f0cbbde36cf3ff021542d4254ccec0c0ff4e525e45f55787",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Done",
+        "Err",
+        "Ok",
+        "clone",
+        "cloned",
+        "collect",
+        "contains",
+        "contains_key",
+        "expect",
+        "export_external_boundary_module",
+        "filter",
+        "get",
+        "insert",
+        "iter",
+        "map",
+        "map_err",
+        "map_or",
+        "map_or_else",
+        "resolve_module",
+        "source_contract_import_bindings",
+        "source_location",
+        "to_owned",
+        "unwrap_or_default",
+        "verify_and_export_operation_module_with_imports"
+      ]
+    },
+    {
+      "id": "ae661f82b49784ace788c1d793633785ae6e00d2a7f06ecce2c85b5ecc910dd2",
+      "symbol": "maledictus::<ReferenceSourceModuleResolver<'_>>::resolve_imports_for_path",
+      "name": "resolve_imports_for_path",
+      "file": "src/lib.rs",
+      "line_start": 1953,
+      "line_end": 1981,
+      "source_sha256": "c28a290e520eb4344e34f9a6192fc158b08dcf25880683a7f4925cd27ecb283e",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "and_then",
+        "clone",
+        "contains_key",
+        "find",
+        "get",
+        "iter",
+        "module",
+        "new",
+        "push",
+        "resolve_module"
+      ]
+    },
+    {
       "id": "ae8c079ae6e69a08d8f1a648f8beacfc3c5fd5ed755c178b156582fb309f1ed4",
       "symbol": "maledictus::python_heap_contracts::lower_contextual_comparison_value",
       "name": "lower_contextual_comparison_value",
@@ -46359,6 +46473,84 @@
         "iter",
         "new",
         "to_owned"
+      ]
+    },
+    {
+      "id": "b545b2fe5eb9283973137d4210a7bb66b2479a5862d5c7fc82fe0aee6b0f91d1",
+      "symbol": "maledictus::resolve_external_contracts",
+      "name": "resolve_external_contracts",
+      "file": "src/lib.rs",
+      "line_start": 2549,
+      "line_end": 2783,
+      "source_sha256": "847767996b539df8575d754c0e756538dc62e5976c42524605fff003ad1e86d3",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "as_str",
+        "chain",
+        "clone",
+        "collect",
+        "contains",
+        "contains_key",
+        "declared_exception_types",
+        "entry",
+        "exception_type_names",
+        "file_error",
+        "find",
+        "from",
+        "from_utf8",
+        "function_names",
+        "hex_digest",
+        "insert",
+        "is_empty",
+        "iter",
+        "keys",
+        "map",
+        "map_err",
+        "new",
+        "or_default",
+        "parse_external_contract_module",
+        "parse_external_heap_contract_module",
+        "parse_external_reference_contract_module",
+        "push",
+        "qualified_class_names",
+        "read",
+        "resolve_source_path",
+        "to_owned",
+        "type_names"
+      ]
+    },
+    {
+      "id": "b54a9da64b1f76d1b865f042aebad278cbe49e7c53384db48b3e5cc12e13cb94",
+      "symbol": "maledictus::python_module_name",
+      "name": "python_module_name",
+      "file": "src/lib.rs",
+      "line_start": 2240,
+      "line_end": 2269,
+      "source_sha256": "2a762eccf2987929b99c871a83fcc007198cfc021af68779a4b60cce547eed95",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "all",
+        "any",
+        "chars",
+        "collect",
+        "is_alphabetic",
+        "is_alphanumeric",
+        "is_empty",
+        "is_some_and",
+        "iter",
+        "join",
+        "last",
+        "next",
+        "pop",
+        "replace",
+        "split",
+        "strip_suffix"
       ]
     },
     {
@@ -47612,6 +47804,33 @@
       ]
     },
     {
+      "id": "bd7648de9a1a146b2730d23486c0f0fd933122fa54fa97487f9b77c7bf651ed7",
+      "symbol": "maledictus::resolve_operation_source_imports",
+      "name": "resolve_operation_source_imports",
+      "file": "src/lib.rs",
+      "line_start": 1700,
+      "line_end": 1754,
+      "source_sha256": "93c712aafd2a69c859605d8d5a0d84dd84bc831a12e64134885204b516cf7db0",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "clone",
+        "collect",
+        "collect_python_source_units",
+        "contains_key",
+        "filter",
+        "insert",
+        "is_empty",
+        "is_operation_module_candidate",
+        "iter",
+        "map",
+        "new",
+        "resolve_module",
+        "source_contract_import_bindings",
+        "values"
+      ]
+    },
+    {
       "id": "bd91a36cdd501408e774f55561c5a532ee76da962b26c3be19cdb8393c702a2b",
       "symbol": "maledictus::typescript::<SourceLanguage>::name",
       "name": "name",
@@ -48074,6 +48293,22 @@
       "calls": []
     },
     {
+      "id": "c1e0242388c2140f8ec56182b8f04450a87fb9becea55418b8903f3af9227ef4",
+      "symbol": "maledictus::callable_primitive_from_sort",
+      "name": "callable_primitive_from_sort",
+      "file": "src/lib.rs",
+      "line_start": 2526,
+      "line_end": 2539,
+      "source_sha256": "8f9c641b80d5c1a18016a4a319356eabd673d62592714af155be7ef126787514",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "error"
+      ]
+    },
+    {
       "id": "c1ebe6da3449474a1b13f992a69f3b83c6c76040f69afb68eb8157634710c7af",
       "symbol": "maledictus::python_io_wellformedness::reject_nested_io_exists",
       "name": "reject_nested_io_exists",
@@ -48132,31 +48367,6 @@
         "Err",
         "Ok",
         "failure"
-      ]
-    },
-    {
-      "id": "c211a822e825b6f359992241e466d03e04cf3f5d3f4fd23ecea672e696b51ce2",
-      "symbol": "maledictus::<SourceModuleResolver<'_>>::resolve_imports_for_path",
-      "name": "resolve_imports_for_path",
-      "file": "src/lib.rs",
-      "line_start": 1829,
-      "line_end": 1855,
-      "source_sha256": "d47d64d5dfddcfbdd720510961c5772ef3fe5dfadd7fb5c39d3ad3caefbb9d10",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "and_then",
-        "clone",
-        "contains_key",
-        "find",
-        "get",
-        "iter",
-        "module",
-        "new",
-        "push",
-        "resolve_module"
       ]
     },
     {
@@ -49720,32 +49930,6 @@
       ]
     },
     {
-      "id": "cb856899f75db90434f8feddb44474b65133cf69d88652fc577c52d854e23186",
-      "symbol": "maledictus::record_scalar_verification",
-      "name": "record_scalar_verification",
-      "file": "src/lib.rs",
-      "line_start": 2766,
-      "line_end": 2829,
-      "source_sha256": "e64cb447e3bd5a7e118d027b63387c351e314a9178f95b5f311d903ba97fa2d6",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Some",
-        "cloned",
-        "collect",
-        "contains",
-        "extend",
-        "filter",
-        "identity",
-        "iter",
-        "last_mut",
-        "located_error",
-        "push",
-        "satisfied",
-        "to_owned"
-      ]
-    },
-    {
       "id": "cba0b875613b24cfc947533db609c4d947cbc2cd1d2c59b5835dab7538a3af67",
       "symbol": "maledictus::python_contracts::is_canonical_obligations_star_import",
       "name": "is_canonical_obligations_star_import",
@@ -49952,68 +50136,6 @@
         "is_some_and",
         "is_zero_step_range_call",
         "iter"
-      ]
-    },
-    {
-      "id": "cc5807ea89049e4d222b8df55a55cc91721c6a558959f94bf06cd7ccd820949e",
-      "symbol": "maledictus::<OperationSourceModuleResolver<'_>>::resolve_module",
-      "name": "resolve_module",
-      "file": "src/lib.rs",
-      "line_start": 1738,
-      "line_end": 1825,
-      "source_sha256": "2c8bdff5b2df0744f0cbbde36cf3ff021542d4254ccec0c0ff4e525e45f55787",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Done",
-        "Err",
-        "Ok",
-        "clone",
-        "cloned",
-        "collect",
-        "contains",
-        "contains_key",
-        "expect",
-        "export_external_boundary_module",
-        "filter",
-        "get",
-        "insert",
-        "iter",
-        "map",
-        "map_err",
-        "map_or",
-        "map_or_else",
-        "resolve_module",
-        "source_contract_import_bindings",
-        "source_location",
-        "to_owned",
-        "unwrap_or_default",
-        "verify_and_export_operation_module_with_imports"
-      ]
-    },
-    {
-      "id": "cc595dfed83bed76994d99d996b705dd2dc017a22d352e3d619950e635926063",
-      "symbol": "maledictus::<ReferenceSourceModuleResolver<'_>>::resolve_imports_for_path",
-      "name": "resolve_imports_for_path",
-      "file": "src/lib.rs",
-      "line_start": 1934,
-      "line_end": 1962,
-      "source_sha256": "c28a290e520eb4344e34f9a6192fc158b08dcf25880683a7f4925cd27ecb283e",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "and_then",
-        "clone",
-        "contains_key",
-        "find",
-        "get",
-        "iter",
-        "module",
-        "new",
-        "push",
-        "resolve_module"
       ]
     },
     {
@@ -52576,105 +52698,6 @@
       ]
     },
     {
-      "id": "d87895920a7a65eab331a83593dc13d39b6c9bb0f3c60cac32df08a94c6b469d",
-      "symbol": "maledictus::verify_internal",
-      "name": "verify_internal",
-      "file": "src/lib.rs",
-      "line_start": 280,
-      "line_end": 1390,
-      "source_sha256": "f27d540628aaff834a23e88427f209bdd8bc5915d64067e08d7a75bcd8ac4ac5",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Some",
-        "advertised_for_language",
-        "all",
-        "analyze_module",
-        "and_then",
-        "any",
-        "as_deref",
-        "as_ref",
-        "as_str",
-        "bytes",
-        "canonicalize",
-        "clone",
-        "cloned",
-        "collect",
-        "contains",
-        "contains_key",
-        "entry",
-        "enumerate",
-        "error",
-        "extend",
-        "file_error",
-        "filter",
-        "filter_map",
-        "find",
-        "flatten",
-        "from_utf8",
-        "get",
-        "hex_digest",
-        "identity",
-        "into_iter",
-        "is_ascii_hexdigit",
-        "is_empty",
-        "is_python_package_initializer",
-        "iter",
-        "last_mut",
-        "len",
-        "located_error",
-        "map",
-        "map_or",
-        "module",
-        "new",
-        "ok",
-        "or_default",
-        "passed",
-        "prove_caught_callable_fragment",
-        "prove_closed_fragment",
-        "push",
-        "python_module_name",
-        "read",
-        "record_heap_verification",
-        "record_reference_verification",
-        "record_scalar_verification",
-        "refused",
-        "resolve",
-        "resolve_embedded_external_calls",
-        "resolve_external_contracts",
-        "resolve_heap_source_imports",
-        "resolve_operation_source_imports",
-        "resolve_python_callable_bindings",
-        "resolve_reference_source_imports",
-        "resolve_source_imports",
-        "resolve_source_path",
-        "satisfied",
-        "source_has_heap_statement_condition_feature",
-        "source_location",
-        "source_predicate_names",
-        "take",
-        "then",
-        "to_owned",
-        "to_string",
-        "typecheck_request_sources_with_interfaces",
-        "unwrap_or_else",
-        "validate_contract_positions_with_source_predicates",
-        "verified_leaf_interfaces",
-        "verifier_identity",
-        "verify_and_export_operation_module_with_imports",
-        "verify_closed_javascript_module",
-        "verify_closed_module",
-        "verify_contract_module",
-        "verify_contract_module_with_imports",
-        "verify_heap_module",
-        "verify_heap_module_with_imports",
-        "verify_heap_package_initializer_with_imports",
-        "verify_operation_module",
-        "verify_operation_module_with_bindings",
-        "verify_reference_module_with_imports"
-      ]
-    },
-    {
       "id": "d887642712aebf1a418472c0634b0ce6d1d9855fcb686c47fa289f9e4d29d0a5",
       "symbol": "maledictus::python_heap_contracts::finite_dict_contains_term",
       "name": "finite_dict_contains_term",
@@ -52893,53 +52916,6 @@
       "proof": null,
       "calls": [
         "Ok"
-      ]
-    },
-    {
-      "id": "da0ac84173825cc56e2d37f63dbd1bfd71acb3ff1332def013e463741c680d4d",
-      "symbol": "maledictus::resolve_external_contracts",
-      "name": "resolve_external_contracts",
-      "file": "src/lib.rs",
-      "line_start": 2530,
-      "line_end": 2764,
-      "source_sha256": "847767996b539df8575d754c0e756538dc62e5976c42524605fff003ad1e86d3",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "as_str",
-        "chain",
-        "clone",
-        "collect",
-        "contains",
-        "contains_key",
-        "declared_exception_types",
-        "entry",
-        "exception_type_names",
-        "file_error",
-        "find",
-        "from",
-        "from_utf8",
-        "function_names",
-        "hex_digest",
-        "insert",
-        "is_empty",
-        "iter",
-        "keys",
-        "map",
-        "map_err",
-        "new",
-        "or_default",
-        "parse_external_contract_module",
-        "parse_external_heap_contract_module",
-        "parse_external_reference_contract_module",
-        "push",
-        "qualified_class_names",
-        "read",
-        "resolve_source_path",
-        "to_owned",
-        "type_names"
       ]
     },
     {
@@ -53988,52 +53964,6 @@
       ]
     },
     {
-      "id": "e12a5629458f340164417430093823300f1c20c25f0d853a37bd208933127bf2",
-      "symbol": "maledictus::resolve_python_callable_bindings",
-      "name": "resolve_python_callable_bindings",
-      "file": "src/lib.rs",
-      "line_start": 2257,
-      "line_end": 2505,
-      "source_sha256": "3f9266aa1952644449d222666e313072de9ffe821717f564e5d30e2bead7d9e6",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "Some",
-        "analyze_source_callable",
-        "any",
-        "as_str",
-        "callable_contract",
-        "callable_primitive_from_sort",
-        "clone",
-        "collect",
-        "entry",
-        "file_error",
-        "find",
-        "flatten",
-        "from_utf8",
-        "get",
-        "hex_digest",
-        "insert",
-        "into_iter",
-        "is_empty",
-        "is_plain_python_identifier",
-        "iter",
-        "map",
-        "map_err",
-        "module",
-        "new",
-        "or_default",
-        "push",
-        "read",
-        "resolve_source_path",
-        "split",
-        "to_owned",
-        "to_string"
-      ]
-    },
-    {
       "id": "e12e88b3fa93e0abe7d6ddbd0011d292ec78a435c077e849adede32035983c0f",
       "symbol": "maledictus::python_persistent_collections::require_compatible_kinds_typed",
       "name": "require_compatible_kinds_typed",
@@ -54456,6 +54386,33 @@
         "Err",
         "Ok",
         "to_owned"
+      ]
+    },
+    {
+      "id": "e2d09229df446cfad33ca3074bcd8d791246617ee69c073510c59c6aef55b265",
+      "symbol": "maledictus::<HeapSourceModuleResolver<'_>>::verify_parent_package_initializers",
+      "name": "verify_parent_package_initializers",
+      "file": "src/lib.rs",
+      "line_start": 2141,
+      "line_end": 2189,
+      "source_sha256": "d31d281d79289119fe5642219f66216dc3e7b09f065be0161eef1ab0d8e593ae",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "collect",
+        "ends_with",
+        "exists",
+        "get",
+        "join",
+        "len",
+        "push",
+        "replace",
+        "split",
+        "to_path_buf",
+        "verify_package_initializer",
+        "with_extension"
       ]
     },
     {
@@ -56144,34 +56101,6 @@
       ]
     },
     {
-      "id": "e9943bb8a5518f0ee944fe9adda6248d4299efec6bc3e8848e9b816b745b5ca3",
-      "symbol": "maledictus::collect_python_source_units",
-      "name": "collect_python_source_units",
-      "file": "src/lib.rs",
-      "line_start": 1629,
-      "line_end": 1679,
-      "source_sha256": "17e0ff6e162c572ef1cff03e2792cb4903364c723d6992fb78ca758955f4b2e0",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "clone",
-        "file_error",
-        "filter",
-        "from_utf8",
-        "hex_digest",
-        "insert",
-        "iter",
-        "map_err",
-        "new",
-        "python_module_name",
-        "read",
-        "resolve_source_path",
-        "to_owned"
-      ]
-    },
-    {
       "id": "e9a01376c2c6403e3b5034d881666233d2270474ced635213255ee6ff6bbf458",
       "symbol": "maledictus::python_proof_irrelevant_bindings::rejection_for",
       "name": "rejection_for",
@@ -56279,13 +56208,13 @@
       ]
     },
     {
-      "id": "ea836b0ac1037aa4dc94d73013bf8abab9af0405b0afe40874da587f1d159c48",
-      "symbol": "maledictus::<ReferenceSourceModuleResolver<'_>>::resolve_module",
-      "name": "resolve_module",
+      "id": "ea78dbdd2e5130c43149777628936464b2e856d56e0ff06b40bcd1b7a64e8c09",
+      "symbol": "maledictus::<HeapSourceModuleResolver<'_>>::verify_package_initializer",
+      "name": "verify_package_initializer",
       "file": "src/lib.rs",
-      "line_start": 1964,
-      "line_end": 2007,
-      "source_sha256": "9df98281fce8e7144c56869bd8447d19f8d9cec3c72ce8f4e51c82297cbc8b51",
+      "line_start": 2191,
+      "line_end": 2237,
+      "source_sha256": "35853cf4151d91c431f2537ee3d7962655f01789aa1d70de32a84f02d841c1f9",
       "basis": "unproved",
       "proof": null,
       "calls": [
@@ -56299,7 +56228,7 @@
         "resolve_imports_for_path",
         "source_contract_imports",
         "to_owned",
-        "verify_and_export_source_reference_module"
+        "verify_heap_package_initializer_with_imports"
       ]
     },
     {
@@ -56859,6 +56788,34 @@
         "success",
         "to_owned",
         "trim"
+      ]
+    },
+    {
+      "id": "ee2ab19ac00488945dfa23e8f54988199aeb58975a75b5549aa5acf135b0d13d",
+      "symbol": "maledictus::collect_python_source_units",
+      "name": "collect_python_source_units",
+      "file": "src/lib.rs",
+      "line_start": 1648,
+      "line_end": 1698,
+      "source_sha256": "17e0ff6e162c572ef1cff03e2792cb4903364c723d6992fb78ca758955f4b2e0",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "clone",
+        "file_error",
+        "filter",
+        "from_utf8",
+        "hex_digest",
+        "insert",
+        "iter",
+        "map_err",
+        "new",
+        "python_module_name",
+        "read",
+        "resolve_source_path",
+        "to_owned"
       ]
     },
     {
@@ -58610,37 +58567,6 @@
       ]
     },
     {
-      "id": "f68b52dbf8a729fd3a155eacfb07cfee72fb544fe7019d3331ac2845a77e811a",
-      "symbol": "maledictus::python_module_name",
-      "name": "python_module_name",
-      "file": "src/lib.rs",
-      "line_start": 2221,
-      "line_end": 2250,
-      "source_sha256": "2a762eccf2987929b99c871a83fcc007198cfc021af68779a4b60cce547eed95",
-      "basis": "unproved",
-      "proof": null,
-      "calls": [
-        "Err",
-        "Ok",
-        "all",
-        "any",
-        "chars",
-        "collect",
-        "is_alphabetic",
-        "is_alphanumeric",
-        "is_empty",
-        "is_some_and",
-        "iter",
-        "join",
-        "last",
-        "next",
-        "pop",
-        "replace",
-        "split",
-        "strip_suffix"
-      ]
-    },
-    {
       "id": "f6931c15150e2db83755ff23b846683b6cc01294dee634a969784f57c7520eec",
       "symbol": "maledictus::python_heap_contracts::validate_abstract_contract_body",
       "name": "validate_abstract_contract_body",
@@ -58809,6 +58735,31 @@
       ]
     },
     {
+      "id": "f793675accb7c3b3258a3923e9b3b962250ce085a00abf4f45a96f84bdaad9b9",
+      "symbol": "maledictus::<SourceModuleResolver<'_>>::resolve_imports_for_path",
+      "name": "resolve_imports_for_path",
+      "file": "src/lib.rs",
+      "line_start": 1848,
+      "line_end": 1874,
+      "source_sha256": "d47d64d5dfddcfbdd720510961c5772ef3fe5dfadd7fb5c39d3ad3caefbb9d10",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Err",
+        "Ok",
+        "and_then",
+        "clone",
+        "contains_key",
+        "find",
+        "get",
+        "iter",
+        "module",
+        "new",
+        "push",
+        "resolve_module"
+      ]
+    },
+    {
       "id": "f79c11114b32e92678325db4282d8afa8724225433f69773edc85b8a970f4526",
       "symbol": "maledictus::python_heap_contracts::contract",
       "name": "contract",
@@ -58961,6 +58912,30 @@
         "is_empty",
         "is_some",
         "len"
+      ]
+    },
+    {
+      "id": "f882df5a9b749375abc1d1b0266cc91a57de2feeaa834d357db34ea8c30f555a",
+      "symbol": "maledictus::<ReferenceSourceModuleResolver<'_>>::resolve_module",
+      "name": "resolve_module",
+      "file": "src/lib.rs",
+      "line_start": 1983,
+      "line_end": 2026,
+      "source_sha256": "9df98281fce8e7144c56869bd8447d19f8d9cec3c72ce8f4e51c82297cbc8b51",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Done",
+        "Err",
+        "Ok",
+        "clone",
+        "expect",
+        "get",
+        "insert",
+        "resolve_imports_for_path",
+        "source_contract_imports",
+        "to_owned",
+        "verify_and_export_source_reference_module"
       ]
     },
     {
@@ -59895,6 +59870,33 @@
       "basis": "unproved",
       "proof": null,
       "calls": []
+    },
+    {
+      "id": "fe0ae7a798810aa6dca6720a5ef0353965f0f7a8b033fca549e3cf07b4df61a5",
+      "symbol": "maledictus::<HeapSourceModuleResolver<'_>>::resolve_module",
+      "name": "resolve_module",
+      "file": "src/lib.rs",
+      "line_start": 2098,
+      "line_end": 2139,
+      "source_sha256": "03185198c207db0c1fadc3111dfc1d415eed28869a56efeabfba34a2dc24edeb",
+      "basis": "unproved",
+      "proof": null,
+      "calls": [
+        "Done",
+        "Err",
+        "Ok",
+        "as_ref",
+        "clone",
+        "expect",
+        "get",
+        "insert",
+        "new",
+        "resolve_imports_for_path",
+        "source_contract_imports",
+        "to_owned",
+        "verify_and_export_source_heap_module",
+        "verify_parent_package_initializers"
+      ]
     },
     {
       "id": "fe211c28f75af6bec53e2491774c5a8bfaee2e1e203a79dca21581ab84a77151",

@@ -5477,6 +5477,69 @@ fn verifier_composes_transitive_source_module_contracts() {
 }
 
 #[test]
+fn verifier_proves_operation_helper_beside_requested_package_initializer() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::create_dir(directory.path().join("pkg")).unwrap();
+    fs::write(
+        directory.path().join("pkg/__init__.py"),
+        "\"\"\"Application package.\"\"\"\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("pkg/helper.py"),
+        "from dataclasses import dataclass\n\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass HelperInput:\n    value: int\n\n@dataclass(frozen=True)\nclass Prepared:\n    value: int\n\n@operation\ndef prepare(request: HelperInput) -> Prepared:\n    return Prepared(request.value + 1)\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("worker.py"),
+        "from dataclasses import dataclass\n\nfrom dagcert.runtime import operation\nfrom pkg.helper import HelperInput, prepare\n\n@dataclass(frozen=True)\nclass WorkInput:\n    value: int\n\n@dataclass(frozen=True)\nclass WorkCompleted:\n    value: int\n\n@operation\ndef run_once(request: WorkInput) -> WorkCompleted:\n    prepared = prepare(HelperInput(request.value))\n    return WorkCompleted(prepared.value)\n",
+    )
+    .unwrap();
+    let request = ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "worker.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["run_once".to_owned()],
+            },
+            SourceFile {
+                path: "pkg/helper.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "pkg/__init__.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+        ],
+        external_contract_overlays: Vec::new(),
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+    };
+
+    let response = maledictus::verify(&request);
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert!(response.diagnostics.is_empty());
+    assert_eq!(
+        response.files[1].fragment.as_deref(),
+        Some("dagcert-closed-typed-operations/v3")
+    );
+    assert_eq!(
+        response.files[2].fragment.as_deref(),
+        Some("heap-method-contracts/v76")
+    );
+}
+
+#[test]
 fn verifier_composes_typed_tuples_across_source_module_edges() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(

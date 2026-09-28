@@ -2,6 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use rustpython_ast::Visitor;
 use rustpython_parser::ast::Ranged;
 use rustpython_parser::{Parse, ast};
 
@@ -18,6 +19,10 @@ enum ValueType {
     VariadicTuple(Box<ValueType>),
     Record(String),
     RecordUnion(BTreeSet<String>),
+    ExternalResult {
+        success_type: Box<ValueType>,
+        variants: BTreeSet<String>,
+    },
     Callable(CallableSignature),
 }
 
@@ -50,12 +55,20 @@ pub(crate) struct ImportedOperationModule {
     records: BTreeMap<String, RecordShape>,
     record_exports: BTreeSet<String>,
     operations: BTreeMap<String, OperationShape>,
+    external_boundaries: BTreeMap<String, ExternalBoundaryShape>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct OperationShape {
     input_record: String,
     outcomes: BTreeSet<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct ExternalBoundaryShape {
+    boundary_id: String,
+    parameters: Vec<ValueType>,
+    success_type: ValueType,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -70,6 +83,8 @@ struct ImportedMarkers {
     dataclasses: BTreeSet<String>,
     unions: BTreeSet<String>,
     callables: BTreeSet<String>,
+    external_boundaries: BTreeSet<String>,
+    external_result_types: BTreeMap<String, String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -126,6 +141,277 @@ pub(crate) fn is_operation_module_candidate(source: &str, path: &str) -> bool {
     })
 }
 
+pub(crate) fn export_external_boundary_module(
+    source: &str,
+    path: &str,
+    module: &str,
+    requested_symbols: &[String],
+) -> Result<ImportedOperationModule, OperationFailure> {
+    let suite = ast::Suite::parse(source, path).map_err(|error| OperationFailure {
+        code: "frontend.python.dagcert.parse-error",
+        message: error.to_string(),
+        byte_offset: None,
+    })?;
+    let markers = imported_markers(&suite)?;
+    if markers.external_boundaries.is_empty() {
+        return failure(
+            "frontend.python.dagcert.external-boundary-marker-missing",
+            "embedded external adapter must import external_boundary from dagcert.runtime",
+        );
+    }
+    let mut external_boundaries = BTreeMap::new();
+    for statement in &suite {
+        let ast::Stmt::FunctionDef(function) = statement else {
+            continue;
+        };
+        if !requested_symbols
+            .iter()
+            .any(|symbol| symbol == function.name.as_str())
+        {
+            continue;
+        }
+        if function.decorator_list.len() != 1
+            || !function.type_params.is_empty()
+            || function.args.vararg.is_some()
+            || function.args.kwarg.is_some()
+            || !function.args.kwonlyargs.is_empty()
+        {
+            return failure(
+                "frontend.python.dagcert.external-boundary-signature-unsupported",
+                "embedded external adapter must be one nongeneric synchronous typed function",
+            );
+        }
+        let ast::Expr::Call(decorator) = &function.decorator_list[0] else {
+            return located_failure(
+                "frontend.python.dagcert.external-boundary-decorator-invalid",
+                "embedded external adapter requires @external_boundary(\"literal-id\")",
+                &function.decorator_list[0],
+            );
+        };
+        let ast::Expr::Name(decorator_name) = decorator.func.as_ref() else {
+            return located_failure(
+                "frontend.python.dagcert.external-boundary-decorator-invalid",
+                "embedded external adapter decorator must be the trusted imported marker",
+                &function.decorator_list[0],
+            );
+        };
+        if !markers
+            .external_boundaries
+            .contains(decorator_name.id.as_str())
+            || decorator.args.len() != 1
+            || !decorator.keywords.is_empty()
+        {
+            return located_failure(
+                "frontend.python.dagcert.external-boundary-decorator-invalid",
+                "embedded external adapter requires @external_boundary(\"literal-id\")",
+                &function.decorator_list[0],
+            );
+        }
+        let ast::Expr::Constant(identifier) = &decorator.args[0] else {
+            return located_failure(
+                "frontend.python.dagcert.external-boundary-id-not-literal",
+                "external boundary ID must be a nonempty string literal",
+                &decorator.args[0],
+            );
+        };
+        let ast::Constant::Str(boundary_id) = &identifier.value else {
+            return located_failure(
+                "frontend.python.dagcert.external-boundary-id-not-literal",
+                "external boundary ID must be a nonempty string literal",
+                &decorator.args[0],
+            );
+        };
+        if boundary_id.trim().is_empty() {
+            return located_failure(
+                "frontend.python.dagcert.external-boundary-id-empty",
+                "external boundary ID must be nonempty",
+                &decorator.args[0],
+            );
+        }
+        let mut parameters = Vec::new();
+        for parameter in function.args.posonlyargs.iter().chain(&function.args.args) {
+            if parameter.default.is_some() {
+                return failure(
+                    "frontend.python.dagcert.external-boundary-default-unsupported",
+                    "embedded external adapter parameters may not have defaults",
+                );
+            }
+            let Some(annotation) = parameter.def.annotation.as_deref() else {
+                return failure(
+                    "frontend.python.dagcert.external-boundary-type-missing",
+                    "embedded external adapter parameters require source annotations",
+                );
+            };
+            parameters.push(external_annotation_type(annotation)?);
+        }
+        let Some(return_annotation) = function.returns.as_deref() else {
+            return failure(
+                "frontend.python.dagcert.external-boundary-type-missing",
+                "embedded external adapter requires a source return annotation",
+            );
+        };
+        let shape = ExternalBoundaryShape {
+            boundary_id: boundary_id.to_string(),
+            parameters,
+            success_type: external_annotation_type(return_annotation)?,
+        };
+        if external_boundaries
+            .insert(function.name.to_string(), shape)
+            .is_some()
+        {
+            return failure(
+                "frontend.python.dagcert.external-boundary-symbol-duplicate",
+                format!("external boundary symbol {:?} is duplicated", function.name),
+            );
+        }
+    }
+    let missing = requested_symbols
+        .iter()
+        .filter(|symbol| !external_boundaries.contains_key(symbol.as_str()))
+        .cloned()
+        .collect::<Vec<_>>();
+    if !missing.is_empty() {
+        return failure(
+            "frontend.python.dagcert.external-boundary-symbol-missing",
+            format!("requested embedded external boundary symbols are missing: {missing:?}"),
+        );
+    }
+    Ok(ImportedOperationModule {
+        module: module.to_owned(),
+        records: BTreeMap::new(),
+        record_exports: BTreeSet::new(),
+        operations: BTreeMap::new(),
+        external_boundaries,
+    })
+}
+
+pub(crate) fn validate_embedded_external_call(
+    consumer_source: &str,
+    consumer_path: &str,
+    operation_symbol: &str,
+    adapter_module: &str,
+    adapter_symbol: &str,
+    boundary_id: &str,
+    adapter: &ImportedOperationModule,
+) -> Result<(), OperationFailure> {
+    let Some(shape) = adapter.external_boundaries.get(adapter_symbol) else {
+        return failure(
+            "frontend.python.dagcert.embedded-external-adapter-symbol-missing",
+            format!("adapter does not export boundary symbol {adapter_symbol:?}"),
+        );
+    };
+    if shape.boundary_id != boundary_id {
+        return failure(
+            "frontend.python.dagcert.embedded-external-boundary-id-mismatch",
+            format!(
+                "adapter symbol {adapter_symbol:?} declares boundary {:?}, expected {boundary_id:?}",
+                shape.boundary_id
+            ),
+        );
+    }
+    let suite =
+        ast::Suite::parse(consumer_source, consumer_path).map_err(|error| OperationFailure {
+            code: "frontend.python.dagcert.parse-error",
+            message: error.to_string(),
+            byte_offset: None,
+        })?;
+    let imported_names = suite
+        .iter()
+        .filter_map(|statement| match statement {
+            ast::Stmt::ImportFrom(import)
+                if import.level.is_none_or(|level| level == 0_u32)
+                    && import
+                        .module
+                        .as_ref()
+                        .is_some_and(|module| module.as_str() == adapter_module) =>
+            {
+                Some(import)
+            }
+            _ => None,
+        })
+        .flat_map(|import| &import.names)
+        .filter(|alias| alias.name.as_str() == adapter_symbol)
+        .map(|alias| {
+            alias
+                .asname
+                .as_ref()
+                .map_or(alias.name.as_str(), |name| name.as_str())
+                .to_owned()
+        })
+        .collect::<BTreeSet<_>>();
+    if imported_names.len() != 1 {
+        return failure(
+            "frontend.python.dagcert.embedded-external-import-missing",
+            format!(
+                "operation module must import {adapter_symbol:?} exactly once from {adapter_module:?}"
+            ),
+        );
+    }
+    let Some(function) = suite.iter().find_map(|statement| match statement {
+        ast::Stmt::FunctionDef(function) if function.name.as_str() == operation_symbol => {
+            Some(function)
+        }
+        _ => None,
+    }) else {
+        return failure(
+            "frontend.python.dagcert.embedded-external-operation-missing",
+            format!("operation symbol {operation_symbol:?} is missing"),
+        );
+    };
+    let imported_name = imported_names
+        .first()
+        .expect("one imported boundary name")
+        .clone();
+    let mut collector = DirectCallCollector {
+        callee: imported_name.as_str(),
+        count: 0,
+    };
+    for statement in &function.body {
+        collector.visit_stmt(statement.clone());
+    }
+    if collector.count == 0 {
+        return failure(
+            "frontend.python.dagcert.embedded-external-call-missing",
+            format!(
+                "operation {operation_symbol:?} does not directly call imported boundary {adapter_symbol:?}"
+            ),
+        );
+    }
+    Ok(())
+}
+
+struct DirectCallCollector<'a> {
+    callee: &'a str,
+    count: usize,
+}
+
+impl Visitor for DirectCallCollector<'_> {
+    fn visit_expr_call(&mut self, node: ast::ExprCall) {
+        if matches!(node.func.as_ref(), ast::Expr::Name(name) if name.id.as_str() == self.callee) {
+            self.count += 1;
+        }
+        self.generic_visit_expr_call(node);
+    }
+}
+
+fn external_annotation_type(annotation: &ast::Expr) -> Result<ValueType, OperationFailure> {
+    let ast::Expr::Name(name) = annotation else {
+        return located_failure(
+            "frontend.python.dagcert.external-boundary-type-unsupported",
+            "embedded external adapter annotations must be direct primitive or nominal names",
+            annotation,
+        );
+    };
+    Ok(match name.id.as_str() {
+        "int" => ValueType::Int,
+        "float" => ValueType::Float,
+        "bool" => ValueType::Bool,
+        "str" => ValueType::Str,
+        "bytes" => ValueType::Bytes,
+        nominal => ValueType::Record(nominal.to_owned()),
+    })
+}
+
 pub(crate) fn verify_and_export_operation_module_with_imports(
     source: &str,
     path: &str,
@@ -146,6 +432,8 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
         .chain(&markers.dataclasses)
         .chain(&markers.unions)
         .chain(&markers.callables)
+        .chain(&markers.external_boundaries)
+        .chain(markers.external_result_types.keys())
         .map(String::as_str)
         .collect::<BTreeSet<_>>();
     if let Some(shadowed) = suite.iter().find_map(|statement| {
@@ -172,6 +460,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
     let mut record_origins = BTreeMap::new();
     let mut imported_record_names = BTreeSet::new();
     let mut imported_operations = BTreeMap::new();
+    let mut imported_external_boundaries = BTreeMap::new();
     for statement in &suite {
         let ast::Stmt::ImportFrom(import) = statement else {
             continue;
@@ -231,6 +520,20 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
                 }
                 continue;
             }
+            if let Some(boundary) = imported_module.external_boundaries.get(imported_name) {
+                if records.contains_key(&local_name)
+                    || imported_operations.contains_key(&local_name)
+                    || imported_external_boundaries
+                        .insert(local_name.clone(), boundary.clone())
+                        .is_some()
+                {
+                    return failure(
+                        "frontend.python.dagcert.source-import-name-collision",
+                        format!("imported external boundary name {local_name:?} is ambiguous"),
+                    );
+                }
+                continue;
+            }
             if !imported_module.record_exports.contains(imported_name) {
                 return failure(
                     "frontend.python.dagcert.source-import-symbol-unproved",
@@ -252,6 +555,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
                 .get(&local_name)
                 .is_some_and(|origin| origin != imported_module_name)
                 || imported_operations.contains_key(&local_name)
+                || imported_external_boundaries.contains_key(&local_name)
                 || !imported_record_names.insert(local_name.clone())
             {
                 return failure(
@@ -372,6 +676,8 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             &markers.callables,
             &records,
             &available_operations,
+            &imported_external_boundaries,
+            &markers.external_result_types,
             callable_bindings,
         )?;
         operations.push(function.name.to_string());
@@ -410,6 +716,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             records,
             record_exports: local_class_names,
             operations: local_operation_shapes,
+            external_boundaries: BTreeMap::new(),
         },
     ))
 }
@@ -419,6 +726,8 @@ fn imported_markers(suite: &[ast::Stmt]) -> Result<ImportedMarkers, OperationFai
     let mut dataclasses = BTreeSet::new();
     let mut unions = BTreeSet::new();
     let mut callables = BTreeSet::new();
+    let mut external_boundaries = BTreeSet::new();
+    let mut external_result_types = BTreeMap::new();
     for statement in suite {
         let ast::Stmt::ImportFrom(import) = statement else {
             continue;
@@ -428,14 +737,23 @@ fn imported_markers(suite: &[ast::Stmt]) -> Result<ImportedMarkers, OperationFai
         };
         if module == "dagcert" || module == "dagcert.runtime" {
             for alias in &import.names {
-                if alias.name.as_str() == "operation" {
-                    operations.insert(
-                        alias
-                            .asname
-                            .as_ref()
-                            .map_or(alias.name.as_str(), |name| name.as_str())
-                            .to_owned(),
-                    );
+                let imported = alias.name.as_str();
+                let local = alias
+                    .asname
+                    .as_ref()
+                    .map_or(imported, |name| name.as_str())
+                    .to_owned();
+                match imported {
+                    "operation" => {
+                        operations.insert(local);
+                    }
+                    "external_boundary" => {
+                        external_boundaries.insert(local);
+                    }
+                    "ExternalSuccess" | "ExternalRaised" | "ExternalTypeViolation" => {
+                        external_result_types.insert(local, imported.to_owned());
+                    }
+                    _ => {}
                 }
             }
         } else if module == "dataclasses" {
@@ -472,10 +790,12 @@ fn imported_markers(suite: &[ast::Stmt]) -> Result<ImportedMarkers, OperationFai
             }
         }
     }
-    if operations.is_empty() || dataclasses.is_empty() {
+    if (operations.is_empty() && external_boundaries.is_empty())
+        || (!operations.is_empty() && dataclasses.is_empty())
+    {
         return failure(
             "frontend.python.dagcert.marker-import-missing",
-            "operation and dataclass decorators must be imported from dagcert(.runtime) and dataclasses",
+            "operation modules require operation and dataclass imports; external adapters require external_boundary",
         );
     }
     Ok(ImportedMarkers {
@@ -483,6 +803,8 @@ fn imported_markers(suite: &[ast::Stmt]) -> Result<ImportedMarkers, OperationFai
         dataclasses,
         unions,
         callables,
+        external_boundaries,
+        external_result_types,
     })
 }
 
@@ -505,9 +827,16 @@ fn allowed_import(import: &ast::StmtImportFrom) -> bool {
             .iter()
             .all(|alias| matches!(alias.name.as_str(), "Union" | "Callable"));
     }
+    if module == "dagcert" || module == "dagcert.runtime" {
+        return import.names.iter().all(|alias| {
+            matches!(
+                alias.name.as_str(),
+                "operation" | "ExternalSuccess" | "ExternalRaised" | "ExternalTypeViolation"
+            )
+        });
+    }
     let allowed = match module {
         "dataclasses" => "dataclass",
-        "dagcert" | "dagcert.runtime" => "operation",
         _ => return false,
     };
     import
@@ -731,6 +1060,8 @@ fn verify_operation(
     callable_names: &BTreeSet<String>,
     records: &BTreeMap<String, RecordShape>,
     operations: &BTreeMap<String, OperationShape>,
+    external_boundaries: &BTreeMap<String, ExternalBoundaryShape>,
+    external_result_types: &BTreeMap<String, String>,
     callable_bindings: &[ResolvedCallableBinding],
 ) -> Result<(), OperationFailure> {
     let shape = operation_shape(
@@ -755,6 +1086,8 @@ fn verify_operation(
         outcomes: &outcome_names,
         records,
         operations,
+        external_boundaries,
+        external_result_types,
         operation_name: function.name.as_str(),
         callable_bindings,
     };
@@ -969,6 +1302,8 @@ struct OperationBodyContext<'a> {
     outcomes: &'a BTreeSet<String>,
     records: &'a BTreeMap<String, RecordShape>,
     operations: &'a BTreeMap<String, OperationShape>,
+    external_boundaries: &'a BTreeMap<String, ExternalBoundaryShape>,
+    external_result_types: &'a BTreeMap<String, String>,
     operation_name: &'a str,
     callable_bindings: &'a [ResolvedCallableBinding],
 }
@@ -1019,6 +1354,8 @@ fn verify_statements(
                     context.input_record,
                     context.records,
                     context.operations,
+                    context.external_boundaries,
+                    context.external_result_types,
                     context.operation_name,
                     context.callable_bindings,
                     locals,
@@ -1053,6 +1390,8 @@ fn verify_statements(
                     context.input_record,
                     context.records,
                     context.operations,
+                    context.external_boundaries,
+                    context.external_result_types,
                     context.operation_name,
                     context.callable_bindings,
                     locals,
@@ -1083,6 +1422,8 @@ fn verify_statements(
                     context.input_record,
                     context.records,
                     context.operations,
+                    context.external_boundaries,
+                    context.external_result_types,
                     context.operation_name,
                     context.callable_bindings,
                     locals,
@@ -1099,6 +1440,7 @@ fn verify_statements(
                 narrow_isinstance_branches(
                     &branch.test,
                     context.records,
+                    context.external_result_types,
                     &mut then_locals,
                     &mut else_locals,
                 )?;
@@ -1181,6 +1523,7 @@ fn verify_statements(
 fn narrow_isinstance_branches(
     test: &ast::Expr,
     records: &BTreeMap<String, RecordShape>,
+    external_result_types: &BTreeMap<String, String>,
     then_locals: &mut BTreeMap<String, ValueType>,
     else_locals: &mut BTreeMap<String, ValueType>,
 ) -> Result<(), OperationFailure> {
@@ -1195,6 +1538,41 @@ fn narrow_isinstance_branches(
     let (ast::Expr::Name(local), ast::Expr::Name(record)) = (&call.args[0], &call.args[1]) else {
         return Ok(());
     };
+    if let Some(canonical) = external_result_types.get(record.id.as_str()) {
+        let Some(ValueType::ExternalResult {
+            success_type,
+            variants,
+        }) = then_locals.get(local.id.as_str()).cloned()
+        else {
+            return Ok(());
+        };
+        if !variants.contains(canonical) {
+            return Ok(());
+        }
+        then_locals.insert(
+            local.id.to_string(),
+            ValueType::ExternalResult {
+                success_type: success_type.clone(),
+                variants: BTreeSet::from([canonical.clone()]),
+            },
+        );
+        let mut remaining = variants;
+        remaining.remove(canonical);
+        if remaining.is_empty() {
+            // The source may retain a defensive fallback after exhaustively checking the sealed
+            // runtime union. Keep that impossible path conservatively typed instead of requiring
+            // users to delete production diagnostics merely to fit the proof frontend.
+            return Ok(());
+        }
+        else_locals.insert(
+            local.id.to_string(),
+            ValueType::ExternalResult {
+                success_type,
+                variants: remaining,
+            },
+        );
+        return Ok(());
+    }
     if !records.contains_key(record.id.as_str()) {
         return Ok(());
     }
@@ -1412,6 +1790,8 @@ fn verify_outcome_constructor(
             context.input_record,
             context.records,
             context.operations,
+            context.external_boundaries,
+            context.external_result_types,
             context.operation_name,
             context.callable_bindings,
             locals,
@@ -1433,6 +1813,8 @@ fn infer_operation_expression(
     input_record: &str,
     records: &BTreeMap<String, RecordShape>,
     operations: &BTreeMap<String, OperationShape>,
+    external_boundaries: &BTreeMap<String, ExternalBoundaryShape>,
+    external_result_types: &BTreeMap<String, String>,
     operation_name: &str,
     callable_bindings: &[ResolvedCallableBinding],
     locals: &BTreeMap<String, ValueType>,
@@ -1467,6 +1849,22 @@ fn infer_operation_expression(
                 &call.args[1],
             );
         };
+        if let Some(canonical) = external_result_types.get(record_name.id.as_str()) {
+            if !matches!(
+                tested,
+                ValueType::ExternalResult { ref variants, .. } if variants.contains(canonical)
+            ) {
+                return located_failure(
+                    "frontend.python.dagcert.isinstance-type-mismatch",
+                    format!(
+                        "isinstance target {:?} is not a possible external-boundary outcome of {tested:?}",
+                        record_name.id
+                    ),
+                    expression,
+                );
+            }
+            return Ok((ValueType::Bool, BTreeSet::new()));
+        }
         if !records.contains_key(record_name.id.as_str())
             || !matches!(
                 tested,
@@ -1486,6 +1884,57 @@ fn infer_operation_expression(
             );
         }
         return Ok((ValueType::Bool, BTreeSet::new()));
+    }
+    if let ast::Expr::Name(callee) = call.func.as_ref()
+        && let Some(shape) = external_boundaries.get(callee.id.as_str())
+    {
+        if !call.keywords.is_empty() || call.args.len() != shape.parameters.len() {
+            return located_failure(
+                "frontend.python.dagcert.external-boundary-call-shape-mismatch",
+                format!(
+                    "external boundary {:?} ({:?}) requires {} positional arguments",
+                    callee.id,
+                    shape.boundary_id,
+                    shape.parameters.len(),
+                ),
+                expression,
+            );
+        }
+        for (argument, expected) in call.args.iter().zip(&shape.parameters) {
+            let (actual, raised) = infer_operation_expression(
+                argument,
+                input_name,
+                input_record,
+                records,
+                operations,
+                external_boundaries,
+                external_result_types,
+                operation_name,
+                callable_bindings,
+                locals,
+            )?;
+            if !raised.is_empty() || &actual != expected {
+                return located_failure(
+                    "frontend.python.dagcert.external-boundary-call-input-type-mismatch",
+                    format!(
+                        "external boundary {:?} expects {expected:?}, received {actual:?}",
+                        callee.id
+                    ),
+                    argument,
+                );
+            }
+        }
+        return Ok((
+            ValueType::ExternalResult {
+                success_type: Box::new(shape.success_type.clone()),
+                variants: BTreeSet::from([
+                    "ExternalSuccess".to_owned(),
+                    "ExternalRaised".to_owned(),
+                    "ExternalTypeViolation".to_owned(),
+                ]),
+            },
+            BTreeSet::new(),
+        ));
     }
     if let ast::Expr::Name(callee) = call.func.as_ref()
         && let Some(shape) = operations.get(callee.id.as_str())
@@ -1513,6 +1962,8 @@ fn infer_operation_expression(
             input_record,
             records,
             operations,
+            external_boundaries,
+            external_result_types,
             operation_name,
             callable_bindings,
             locals,
@@ -1816,6 +2267,37 @@ fn infer_expression(
         ast::Expr::Attribute(attribute) => {
             let receiver =
                 infer_expression(&attribute.value, input_name, input_record, records, locals)?;
+            if let ValueType::ExternalResult {
+                success_type,
+                variants,
+            } = receiver
+            {
+                if variants == BTreeSet::from(["ExternalSuccess".to_owned()])
+                    && attribute.attr.as_str() == "value"
+                {
+                    return Ok(*success_type);
+                }
+                if variants.len() == 1
+                    && variants.iter().all(|variant| {
+                        matches!(variant.as_str(), "ExternalRaised" | "ExternalTypeViolation")
+                    })
+                    && matches!(
+                        attribute.attr.as_str(),
+                        "boundary_id"
+                            | "exception_type"
+                            | "message"
+                            | "expected_type"
+                            | "observed_type"
+                    )
+                {
+                    return Ok(ValueType::Str);
+                }
+                return located_failure(
+                    "frontend.python.dagcert.external-boundary-outcome-not-narrowed",
+                    "external-boundary result fields require an exhaustive isinstance branch",
+                    expression,
+                );
+            }
             let ValueType::Record(record) = receiver else {
                 return failure(
                     "frontend.python.dagcert.field-receiver-unsupported",
@@ -2321,5 +2803,28 @@ mod tests {
                 "unsupported provider unexpectedly verified:\n{source}"
             );
         }
+    }
+
+    #[test]
+    fn proves_one_operation_with_local_work_around_an_imported_external_boundary() {
+        let adapter = "from dagcert.runtime import external_boundary\n\n@external_boundary('stdlib.text.normalize')\ndef normalize_external(value: str) -> str:\n    return value\n";
+        let imported = export_external_boundary_module(
+            adapter,
+            "adapter.py",
+            "adapter",
+            &["normalize_external".to_owned()],
+        )
+        .unwrap();
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import ExternalRaised, ExternalSuccess, ExternalTypeViolation, operation\nfrom adapter import normalize_external\n\n@dataclass(frozen=True)\nclass Request:\n    value: str\n\n@dataclass(frozen=True)\nclass Completed:\n    value: str\n\n@dataclass(frozen=True)\nclass Failed:\n    message: str\n\n@operation\ndef complete(request: Request) -> Completed | Failed:\n    prepared = request.value.strip()\n    result = normalize_external(prepared)\n    if isinstance(result, ExternalSuccess):\n        return Completed(result.value.lower())\n    if isinstance(result, ExternalRaised):\n        return Failed(result.message)\n    return Failed(result.message)\n";
+        let (verification, _) = verify_and_export_operation_module_with_imports(
+            source,
+            "app.py",
+            "app",
+            &["complete".to_owned()],
+            &[],
+            &[imported],
+        )
+        .unwrap();
+        assert_eq!(verification.operations, ["complete"]);
     }
 }

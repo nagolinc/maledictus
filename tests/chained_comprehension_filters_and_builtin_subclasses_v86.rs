@@ -34,6 +34,7 @@ fn analyze(source: &str) -> maledictus::FrontendAnalysis {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     })
 }

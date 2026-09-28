@@ -1,5 +1,5 @@
 {
-  "schema": "maledictus-verification-request/v4",
+  "schema": "maledictus-verification-request/v5",
   "source_root": "examples",
   "source_fingerprint": "e0a565b45a987dae84121bd69df00cc95c40ebd4a911953e1cecd6444a7ceef8",
   "proof_obligation": "no-undeclared-exceptional-exit",

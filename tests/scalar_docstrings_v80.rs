@@ -21,6 +21,7 @@ fn issue(source: &str) -> maledictus::protocol::ProofResponse {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     })
 }
@@ -102,6 +103,7 @@ fn transitive_source_modules_preserve_docstring_semantics() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -150,6 +152,7 @@ fn checked_external_stubs_and_adapters_preserve_docstring_semantics() {
             exception_policy: ExternalExceptionPolicy::AssumeNoException,
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 

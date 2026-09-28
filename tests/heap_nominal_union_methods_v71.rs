@@ -84,6 +84,7 @@ fn public_issuance_advertises_the_union_dispatch_fragment() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -131,6 +132,7 @@ fn transitive_source_issuance_preserves_union_dispatch() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 

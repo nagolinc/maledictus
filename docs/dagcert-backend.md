@@ -49,11 +49,21 @@ explicit hashed runtime dependency for TypeScript and checkJs JavaScript proofs.
 executable/kernel identities; it must not search Cargo build directories or mutate `PATH` during
 verification.
 
-The request schema is `maledictus-verification-request/v4`. It carries the source root and
+The request schema is `maledictus-verification-request/v5`. It carries the source root and
 fingerprint, the proof obligation, source-relative files and symbols, their languages, and explicit
 external-contract overlays plus concrete Python callable provenance edges. Maledictus reads and
 hashes source and stub files itself and derives callable contracts from them; a caller cannot
 provide a trusted signature or effect summary.
+
+Request v5 also supports `embedded_external_calls`. This is for an ordinary external-library call
+inside one logical Dagcert operation, not a separately scheduled DAG node. Each entry binds the
+consumer file and operation symbol to a source-owned adapter, the adapter's literal
+`@external_boundary` ID, and its provider overlay. Maledictus verifies the real source import and
+direct call, proves the local statements before and after that call as part of the same operation,
+and requires the operation to close the adapter's
+`ExternalSuccess | ExternalRaised | ExternalTypeViolation` result. The v8 response seals both
+source hashes and the exact operation-to-adapter edge. A caller cannot turn an unrelated adapter
+proof into evidence for an operation that never calls it.
 
 Each Python overlay names an exact requested adapter, an external dotted module name, and a
 source-root-confined `@ContractOnly` stub. The stub may contain only fully annotated scalar
@@ -67,7 +77,7 @@ those branches to the adapter, and assumes no outcome outside that finite union.
 policy/contract mismatch refuses. The provider implementation is not represented as verified
 source.
 
-The response schema is `maledictus-verification-result/v7`. It reports `proved`, `refuted`, or
+The response schema is `maledictus-verification-result/v8`. It reports `proved`, `refuted`, or
 `refused`, exact file hashes, verifier version, proof obligation, and diagnostics with stable codes
 and optional source locations. `external_contracts` retains each module, adapter, stub hash,
 exported functions, checked exception classes, actual `Exsures` outcome types, and assumption

@@ -62,6 +62,7 @@ fn malformed_operation_declarations_precede_uses_of_their_outputs() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
     assert!(

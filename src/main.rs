@@ -36,7 +36,7 @@ fn run() -> Result<ExitCode, String> {
                     "schema": "maledictus-capabilities/v1",
                     "verifier": "maledictus",
                     "version": maledictus::VERSION,
-                    "protocols": ["maledictus-verification-request/v4"],
+                    "protocols": ["maledictus-verification-request/v5"],
                     "proof_obligations": ["no-undeclared-exceptional-exit"],
                     "implementation_refinements": [
                         {

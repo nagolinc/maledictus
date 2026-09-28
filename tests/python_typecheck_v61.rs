@@ -101,6 +101,7 @@ fn strict_type_errors_are_located_and_block_proof_issuance() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -290,6 +291,7 @@ fn non_issuing_analysis_is_explicit_and_cannot_bypass_verify() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -334,6 +336,7 @@ fn protocol_and_verify_cli_reject_an_analysis_mode_switch() {
         files: vec![python_file("app.py")],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
     let mut encoded = serde_json::to_value(&request).unwrap();

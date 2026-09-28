@@ -26,6 +26,7 @@ fn verify_source_modules(app: &str, provider: &str) -> maledictus::protocol::Pro
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     })
 }
@@ -53,6 +54,7 @@ fn analyze_source_modules(app: &str, provider: &str) -> FrontendAnalysis {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     })
 }

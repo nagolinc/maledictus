@@ -39,9 +39,9 @@ use std::path::{Component, Path, PathBuf};
 
 use kernel::{ExitEffect, check_exit_effects};
 use protocol::{
-    Diagnostic, ExternalContractResult, FileResult, PROTOCOL_SCHEMA, ProofRequest, ProofResponse,
-    ProofStatus, PythonCallableBindingResult, PythonCallableProvider, PythonCallableProviderResult,
-    SolverIdentity, SourceImportResult, VerifierIdentity,
+    Diagnostic, EmbeddedExternalCallResult, ExternalContractResult, FileResult, PROTOCOL_SCHEMA,
+    ProofRequest, ProofResponse, ProofStatus, PythonCallableBindingResult, PythonCallableProvider,
+    PythonCallableProviderResult, SolverIdentity, SourceImportResult, VerifierIdentity,
 };
 pub use python_contract_positions::{
     ContractPositionFailure, InformationFlowVerificationProfile, validate_contract_positions,
@@ -121,6 +121,7 @@ struct OperationSourceModuleResolver<'a> {
     units: BTreeMap<String, PythonSourceUnit>,
     requested_symbols: BTreeMap<String, Vec<String>>,
     callable_bindings: &'a BTreeMap<String, Vec<dagcert_operations::ResolvedCallableBinding>>,
+    external_adapter_paths: BTreeSet<String>,
     states: BTreeMap<String, OperationSourceModuleState>,
 }
 
@@ -366,6 +367,13 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
         }
     };
     response.python_callable_bindings = python_callable_bindings.results.clone();
+    response.embedded_external_calls = match resolve_embedded_external_calls(&root, request) {
+        Ok(results) => results,
+        Err(diagnostic) => {
+            response.diagnostics.push(diagnostic);
+            return response;
+        }
+    };
     let mixed_language = match mixed_language::resolve(&root, request) {
         Ok(resolved) => resolved,
         Err(error) => {
@@ -447,8 +455,16 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                 return response;
             }
         };
-    let operation_source_imports =
-        resolve_operation_source_imports(&root, request, &python_callable_bindings.by_consumer);
+    let operation_source_imports = resolve_operation_source_imports(
+        &root,
+        request,
+        &python_callable_bindings.by_consumer,
+        &request
+            .external_contract_overlays
+            .iter()
+            .map(|overlay| overlay.adapter_path.clone())
+            .collect(),
+    );
 
     // Fold/Unfold position checking needs the exact predicate identities exported by source
     // providers. Resolve and verify those providers first, then pass only their sealed predicate
@@ -1386,6 +1402,164 @@ fn source_location(source: &str, byte_offset: u32) -> (u32, u32) {
     (line, column)
 }
 
+fn resolve_embedded_external_calls(
+    root: &Path,
+    request: &ProofRequest,
+) -> Result<Vec<EmbeddedExternalCallResult>, Diagnostic> {
+    let requested = request
+        .files
+        .iter()
+        .map(|file| (file.path.as_str(), file))
+        .collect::<BTreeMap<_, _>>();
+    let overlay_paths = request
+        .external_contract_overlays
+        .iter()
+        .map(|overlay| overlay.adapter_path.as_str())
+        .collect::<BTreeSet<_>>();
+    let mut identities = BTreeSet::new();
+    let mut results = Vec::new();
+    for binding in &request.embedded_external_calls {
+        let identity = (
+            binding.consumer_path.clone(),
+            binding.operation_symbol.clone(),
+            binding.boundary_id.clone(),
+        );
+        if !identities.insert(identity) {
+            return Err(Diagnostic::file_error(
+                "embedded-external-call.duplicate",
+                "embedded external call bindings must be unique per operation and boundary",
+                &binding.consumer_path,
+            ));
+        }
+        let Some(consumer_request) = requested.get(binding.consumer_path.as_str()) else {
+            return Err(Diagnostic::file_error(
+                "embedded-external-call.consumer-not-requested",
+                "embedded external call consumer must be a requested source file",
+                &binding.consumer_path,
+            ));
+        };
+        let Some(adapter_request) = requested.get(binding.adapter_path.as_str()) else {
+            return Err(Diagnostic::file_error(
+                "embedded-external-call.adapter-not-requested",
+                "embedded external call adapter must be a requested source file",
+                &binding.adapter_path,
+            ));
+        };
+        if consumer_request.language != "python" || adapter_request.language != "python" {
+            return Err(Diagnostic::file_error(
+                "embedded-external-call.language-unsupported",
+                "embedded external calls currently require Python consumer and adapter files",
+                &binding.consumer_path,
+            ));
+        }
+        if !consumer_request
+            .symbols
+            .iter()
+            .any(|symbol| symbol == &binding.operation_symbol)
+        {
+            return Err(Diagnostic::file_error(
+                "embedded-external-call.operation-not-requested",
+                "embedded external call operation symbol must be requested for proof",
+                &binding.consumer_path,
+            ));
+        }
+        if !adapter_request
+            .symbols
+            .iter()
+            .any(|symbol| symbol == &binding.adapter_symbol)
+            || !overlay_paths.contains(binding.adapter_path.as_str())
+        {
+            return Err(Diagnostic::file_error(
+                "embedded-external-call.adapter-unsealed",
+                "embedded adapter symbol must be requested and covered by an external overlay",
+                &binding.adapter_path,
+            ));
+        }
+        let consumer_path =
+            resolve_source_path(root, &binding.consumer_path).map_err(|message| {
+                Diagnostic::file_error(
+                    "embedded-external-call.consumer-path-invalid",
+                    message,
+                    &binding.consumer_path,
+                )
+            })?;
+        let adapter_path = resolve_source_path(root, &binding.adapter_path).map_err(|message| {
+            Diagnostic::file_error(
+                "embedded-external-call.adapter-path-invalid",
+                message,
+                &binding.adapter_path,
+            )
+        })?;
+        let consumer_bytes = fs::read(&consumer_path).map_err(|error| {
+            Diagnostic::file_error(
+                "embedded-external-call.consumer-unreadable",
+                error.to_string(),
+                &binding.consumer_path,
+            )
+        })?;
+        let adapter_bytes = fs::read(&adapter_path).map_err(|error| {
+            Diagnostic::file_error(
+                "embedded-external-call.adapter-unreadable",
+                error.to_string(),
+                &binding.adapter_path,
+            )
+        })?;
+        let consumer_source = std::str::from_utf8(&consumer_bytes).map_err(|error| {
+            Diagnostic::file_error(
+                "embedded-external-call.consumer-not-utf8",
+                error.to_string(),
+                &binding.consumer_path,
+            )
+        })?;
+        let adapter_source = std::str::from_utf8(&adapter_bytes).map_err(|error| {
+            Diagnostic::file_error(
+                "embedded-external-call.adapter-not-utf8",
+                error.to_string(),
+                &binding.adapter_path,
+            )
+        })?;
+        let adapter_module = python_module_name(&binding.adapter_path).map_err(|message| {
+            Diagnostic::file_error(
+                "embedded-external-call.adapter-module-invalid",
+                message,
+                &binding.adapter_path,
+            )
+        })?;
+        let exported = dagcert_operations::export_external_boundary_module(
+            adapter_source,
+            &binding.adapter_path,
+            &adapter_module,
+            std::slice::from_ref(&binding.adapter_symbol),
+        )
+        .map_err(|error| {
+            Diagnostic::file_error(error.code, error.message, &binding.adapter_path)
+        })?;
+        dagcert_operations::validate_embedded_external_call(
+            consumer_source,
+            &binding.consumer_path,
+            &binding.operation_symbol,
+            &adapter_module,
+            &binding.adapter_symbol,
+            &binding.boundary_id,
+            &exported,
+        )
+        .map_err(|error| {
+            Diagnostic::file_error(error.code, error.message, &binding.consumer_path)
+        })?;
+        results.push(EmbeddedExternalCallResult {
+            consumer_path: binding.consumer_path.clone(),
+            consumer_sha256: hex_digest(&consumer_bytes),
+            operation_symbol: binding.operation_symbol.clone(),
+            boundary_id: binding.boundary_id.clone(),
+            adapter_path: binding.adapter_path.clone(),
+            adapter_sha256: hex_digest(&adapter_bytes),
+            adapter_symbol: binding.adapter_symbol.clone(),
+            scope: "source-import-and-direct-call-bound-to-typed-external-outcome-union".to_owned(),
+        });
+    }
+    Ok(results)
+}
+
 fn resolve_source_imports(
     root: &Path,
     request: &ProofRequest,
@@ -1508,6 +1682,7 @@ fn resolve_operation_source_imports(
     root: &Path,
     request: &ProofRequest,
     callable_bindings: &BTreeMap<String, Vec<dagcert_operations::ResolvedCallableBinding>>,
+    external_adapter_paths: &BTreeSet<String>,
 ) -> ResolvedOperationSourceImports {
     let Ok(units) = collect_python_source_units(root, request) else {
         // The ordinary source resolvers report path and module-name failures before this
@@ -1526,6 +1701,7 @@ fn resolve_operation_source_imports(
         units,
         requested_symbols,
         callable_bindings,
+        external_adapter_paths: external_adapter_paths.clone(),
         states: BTreeMap::new(),
     };
     let paths = resolver
@@ -1584,6 +1760,19 @@ impl OperationSourceModuleResolver<'_> {
             .expect("operation source resolution starts from registered modules")
             .clone();
         let result = (|| {
+            let requested = self
+                .requested_symbols
+                .get(&unit.path)
+                .cloned()
+                .unwrap_or_default();
+            if self.external_adapter_paths.contains(&unit.path) {
+                return dagcert_operations::export_external_boundary_module(
+                    &unit.source,
+                    &unit.path,
+                    &unit.module,
+                    &requested,
+                );
+            }
             let bindings =
                 python_contracts::source_contract_import_bindings(&unit.source, &unit.path)
                     .map_err(|error| dagcert_operations::OperationFailure {
@@ -1599,10 +1788,6 @@ impl OperationSourceModuleResolver<'_> {
                 .iter()
                 .map(|imported| self.resolve_module(imported))
                 .collect::<Result<Vec<_>, _>>()?;
-            let requested = self
-                .requested_symbols
-                .get(&unit.path)
-                .map_or(&[][..], Vec::as_slice);
             let callable_bindings = self
                 .callable_bindings
                 .get(&unit.path)
@@ -1612,7 +1797,7 @@ impl OperationSourceModuleResolver<'_> {
                     &unit.source,
                     &unit.path,
                     &unit.module,
-                    requested,
+                    &requested,
                     callable_bindings,
                     &imported_modules,
                 )

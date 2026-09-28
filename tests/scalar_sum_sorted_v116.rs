@@ -28,6 +28,7 @@ fn production_issuance_uses_the_new_direct_scalar_fragment_identity() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 

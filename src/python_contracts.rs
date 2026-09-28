@@ -1289,6 +1289,7 @@ fn verify_contract_module_internal(
         code: "frontend.python.parse-error",
         message: error.to_string(),
     })?;
+    let external_boundary_markers = trusted_external_boundary_markers(&suite)?;
     if imported_modules.is_empty()
         && let Some(shape) = closed_recursive_termination_module(&suite)
     {
@@ -1350,6 +1351,11 @@ fn verify_contract_module_internal(
                 // The scalar fragment resolves annotations itself. Imported typing names are
                 // accepted at module scope, but using an unsupported annotation still refuses in
                 // `annotation_sort`, and using one as a runtime value still refuses in lowering.
+            }
+            ast::Stmt::ImportFrom(import) if is_trusted_external_boundary_import(import) => {
+                // Runtime monitoring wraps this function after its source body is checked. The
+                // decorator is proof metadata here; its typed result union is composed by the
+                // Dagcert operation frontend at the importing call site.
             }
             ast::Stmt::ImportFrom(import) if is_canonical_ellipsis_type_import(import) => {
                 // `types.EllipsisType` is a CPython-defined type object. The source-bound
@@ -1530,6 +1536,7 @@ fn verify_contract_module_internal(
         &exception_hierarchy,
         selected_symbols,
         &folded_predicates,
+        &external_boundary_markers,
     )?;
     install_scalar_int_subclass_constructors(&suite, &mut inline_functions)?;
     for (name, summary) in imported_external_functions {
@@ -1683,6 +1690,7 @@ fn verify_contract_module_internal(
             global_environment,
             &exception_hierarchy,
             conformance_mode,
+            &external_boundary_markers,
         )?;
         functions.push(function.name.to_string());
         for obligation in lowered.specification_safety {
@@ -6159,11 +6167,13 @@ pub fn verify_and_export_source_contract_module(
     let folded_predicates = closed_module_folded_int_update(&suite)
         .map(|shape| BTreeSet::from([shape.predicate]))
         .unwrap_or_default();
+    let external_boundary_markers = trusted_external_boundary_markers(&suite)?;
     let mut module_functions = build_inline_functions(
         &declarations,
         &exception_hierarchy,
         None,
         &folded_predicates,
+        &external_boundary_markers,
     )?;
     install_scalar_int_subclass_constructors(&suite, &mut module_functions)?;
     let imported_by_name = imported_modules
@@ -6462,11 +6472,79 @@ fn collect_assignment_lines(
     }
 }
 
+fn is_trusted_external_boundary_import(import: &ast::StmtImportFrom) -> bool {
+    import.level.is_none_or(|level| level == 0_u32)
+        && import
+            .module
+            .as_ref()
+            .is_some_and(|module| module.as_str() == "dagcert.runtime")
+        && !import.names.is_empty()
+        && import
+            .names
+            .iter()
+            .all(|alias| alias.name.as_str() == "external_boundary")
+}
+
+fn trusted_external_boundary_markers(
+    suite: &[ast::Stmt],
+) -> Result<BTreeSet<String>, ContractFailure> {
+    let markers = suite
+        .iter()
+        .filter_map(|statement| match statement {
+            ast::Stmt::ImportFrom(import) if is_trusted_external_boundary_import(import) => {
+                Some(import)
+            }
+            _ => None,
+        })
+        .flat_map(|import| import.names.iter())
+        .map(|alias| {
+            alias
+                .asname
+                .as_ref()
+                .map_or(alias.name.as_str(), |name| name.as_str())
+                .to_owned()
+        })
+        .collect::<BTreeSet<_>>();
+    for statement in suite {
+        let declared = match statement {
+            ast::Stmt::FunctionDef(function) => Some(function.name.as_str()),
+            ast::Stmt::AsyncFunctionDef(function) => Some(function.name.as_str()),
+            ast::Stmt::ClassDef(class) => Some(class.name.as_str()),
+            _ => None,
+        };
+        if declared.is_some_and(|name| markers.contains(name)) {
+            return failure(
+                "frontend.python.contracts.external-boundary-marker-shadowed",
+                "source declaration shadows the trusted external_boundary import",
+            );
+        }
+    }
+    Ok(markers)
+}
+
+fn is_trusted_external_boundary_decorator(
+    decorator: &ast::Expr,
+    markers: &BTreeSet<String>,
+) -> bool {
+    let ast::Expr::Call(call) = decorator else {
+        return false;
+    };
+    matches!(call.func.as_ref(), ast::Expr::Name(name) if markers.contains(name.id.as_str()))
+        && call.args.len() == 1
+        && call.keywords.is_empty()
+        && matches!(
+            &call.args[0],
+            ast::Expr::Constant(constant)
+                if matches!(&constant.value, ast::Constant::Str(identifier) if !identifier.trim().is_empty())
+        )
+}
+
 fn build_inline_functions(
     declarations: &[&ast::StmtFunctionDef],
     exception_hierarchy: &ExceptionHierarchy,
     selected_symbols: Option<&BTreeSet<String>>,
     folded_predicates: &BTreeSet<String>,
+    external_boundary_markers: &BTreeSet<String>,
 ) -> Result<BTreeMap<String, InlineFunction>, ContractFailure> {
     let mut functions = BTreeMap::new();
     for function in declarations {
@@ -6481,6 +6559,7 @@ fn build_inline_functions(
                 if matches!(name.id.as_str(), "Pure" | "Ghost" | "Opaque")
                     || (name.id.as_str() == "Predicate"
                         && folded_predicates.contains(function.name.as_str())))
+                || is_trusted_external_boundary_decorator(decorator, external_boundary_markers)
         }) {
             return failure(
                 "frontend.python.contracts.decorator-unsupported",
@@ -6576,11 +6655,18 @@ fn lower_function(
     global_environment: &BTreeMap<String, Term>,
     exception_hierarchy: &ExceptionHierarchy,
     conformance_mode: bool,
+    external_boundary_markers: &BTreeSet<String>,
 ) -> Result<LoweredFunction, ContractFailure> {
     if !function
         .decorator_list
         .iter()
-        .all(|decorator| matches!(decorator, ast::Expr::Name(name) if matches!(name.id.as_str(), "Pure" | "Ghost" | "Opaque")))
+        .all(|decorator| {
+            matches!(decorator, ast::Expr::Name(name) if matches!(name.id.as_str(), "Pure" | "Ghost" | "Opaque"))
+                || is_trusted_external_boundary_decorator(
+                    decorator,
+                    external_boundary_markers,
+                )
+        })
         || !function.type_params.is_empty()
     {
         return failure(

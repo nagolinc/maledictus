@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::VERSION;
 
-pub const PROTOCOL_SCHEMA: &str = "maledictus-verification-request/v4";
-pub const RESPONSE_SCHEMA: &str = "maledictus-verification-result/v7";
+pub const PROTOCOL_SCHEMA: &str = "maledictus-verification-request/v5";
+pub const RESPONSE_SCHEMA: &str = "maledictus-verification-result/v8";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -19,6 +19,31 @@ pub struct ProofRequest {
     pub cross_language_bindings: Vec<CrossLanguageBinding>,
     #[serde(default)]
     pub python_callable_bindings: Vec<PythonCallableBinding>,
+    #[serde(default)]
+    pub embedded_external_calls: Vec<EmbeddedExternalCall>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct EmbeddedExternalCall {
+    pub consumer_path: String,
+    pub operation_symbol: String,
+    pub boundary_id: String,
+    pub adapter_path: String,
+    pub adapter_symbol: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct EmbeddedExternalCallResult {
+    pub consumer_path: String,
+    pub consumer_sha256: String,
+    pub operation_symbol: String,
+    pub boundary_id: String,
+    pub adapter_path: String,
+    pub adapter_sha256: String,
+    pub adapter_symbol: String,
+    pub scope: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -323,6 +348,7 @@ pub struct ProofResponse {
     pub external_contracts: Vec<ExternalContractResult>,
     pub cross_language_bindings: Vec<CrossLanguageBindingResult>,
     pub python_callable_bindings: Vec<PythonCallableBindingResult>,
+    pub embedded_external_calls: Vec<EmbeddedExternalCallResult>,
     pub obligations: Vec<crate::vc::ObligationResult>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub verifier_identity: Option<VerifierIdentity>,
@@ -349,6 +375,7 @@ impl ProofResponse {
             external_contracts: Vec::new(),
             cross_language_bindings: Vec::new(),
             python_callable_bindings: Vec::new(),
+            embedded_external_calls: Vec::new(),
             obligations: Vec::new(),
             verifier_identity: None,
             typescript_toolchain: None,

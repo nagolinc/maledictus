@@ -32,6 +32,7 @@ fn source_request(
             },
         ],
         external_contract_overlays: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         python_callable_bindings: if with_binding {
             vec![PythonCallableBinding {
@@ -165,6 +166,7 @@ fn explicit_external_contract_supplies_signature_and_exception_union() {
             stub_path: "provider_contract.py".to_owned(),
             exception_policy: ExternalExceptionPolicy::DeclaredByExsures,
         }],
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         python_callable_bindings: vec![PythonCallableBinding {
             id: "external-enhancer".to_owned(),
@@ -230,6 +232,7 @@ fn every_callable_field_binding_is_validated_even_when_the_field_is_not_invoked(
             },
         ],
         external_contract_overlays: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         python_callable_bindings: vec![PythonCallableBinding {
             id: "unused-but-bound".to_owned(),
@@ -270,6 +273,7 @@ fn same_file_source_callback_identity_is_checked_without_treating_glue_as_an_ope
             symbols: vec!["enhance".to_owned(), "prepare".to_owned()],
         }],
         external_contract_overlays: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         python_callable_bindings: vec![PythonCallableBinding {
             id: "same-file-enhancer".to_owned(),
@@ -363,6 +367,7 @@ fn passed_at_construction_dependencies_compose_across_multiple_typed_local_resul
         proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
         files,
         external_contract_overlays: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         python_callable_bindings: bindings,
     };
@@ -417,6 +422,7 @@ fn callable_values_cannot_be_aliased_escaped_mutated_or_invoked_as_floating_effe
                 },
             ],
             external_contract_overlays: Vec::new(),
+            embedded_external_calls: Vec::new(),
             cross_language_bindings: Vec::new(),
             python_callable_bindings: vec![PythonCallableBinding {
                 id: "closed-enhancer".to_owned(),
@@ -468,6 +474,7 @@ fn external_callbacks_require_a_real_overlay_and_refuse_unproved_preconditions()
             symbols: vec!["prepare".to_owned()],
         }],
         external_contract_overlays: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         python_callable_bindings: vec![binding.clone()],
     };

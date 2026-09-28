@@ -44,6 +44,7 @@ fn request(
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: vec![CrossLanguageBinding {
             id: "primary_bridge".to_owned(),
             caller_path: "caller.py".to_owned(),

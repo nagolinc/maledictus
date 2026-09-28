@@ -19,6 +19,7 @@ fn request(source: &str) -> (tempfile::TempDir, ProofRequest) {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
     (directory, request)

@@ -342,7 +342,7 @@ foreach ($requestFile in $requests) {
         throw "packaged verifier failed $($requestFile.Name) with exit code $exitCode"
     }
     $response = $rawResponse | Out-String | ConvertFrom-Json
-    if ($response.schema -ne "maledictus-verification-result/v7" -or $response.status -ne "proved") {
+    if ($response.schema -ne "maledictus-verification-result/v8" -or $response.status -ne "proved") {
         throw "packaged verifier did not prove $($requestFile.Name): schema=$($response.schema), status=$($response.status)"
     }
     if ($response.proof_obligation -ne $request.proof_obligation -or

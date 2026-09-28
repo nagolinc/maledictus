@@ -54,6 +54,7 @@ fn verify_predicate_program(source: &str) -> ProofResponse {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     })
 }
@@ -186,6 +187,7 @@ fn verify_heap_program(source: &str, symbols: &[&str]) -> ProofResponse {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     })
 }
@@ -250,6 +252,7 @@ fn verifier_proves_real_source_in_closed_total_fragment() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -293,6 +296,7 @@ fn verifier_refuses_an_unresolved_call() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -324,6 +328,7 @@ fn verifier_proves_exhaustively_caught_callable_dataclass_boundary() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -360,6 +365,7 @@ fn verifier_refuses_non_exhaustive_callable_exception_handler() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -391,6 +397,7 @@ fn verifier_proves_scalar_nagini_contracts_with_smt() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -435,6 +442,7 @@ fn verifier_proves_finite_iteration_and_membership_through_json_backend() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -470,6 +478,7 @@ fn verifier_proves_static_slices_through_json_backend() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -509,6 +518,7 @@ fn verifier_proves_symbolic_bytes_operations_through_json_backend() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -544,6 +554,7 @@ fn verifier_proves_integer_builtins_through_json_backend() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -579,6 +590,7 @@ fn verifier_proves_typed_lambda_postcondition_and_guarded_tuple_index() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -614,6 +626,7 @@ fn verifier_reports_uncaught_sequence_index_error_as_application_precondition() 
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -645,6 +658,7 @@ fn verifier_reports_zero_step_range_as_a_typed_application_precondition() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -697,6 +711,7 @@ fn verifier_selects_scalar_fragment_semantically_without_contract_text() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -732,6 +747,7 @@ fn verifier_serializes_refute_polarity_and_reports_a_provable_refutation() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -767,6 +783,7 @@ fn verifier_distinguishes_refutation_from_unsupported_source() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -800,6 +817,7 @@ fn verifier_rejects_path_escape() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -821,6 +839,7 @@ fn empty_request_is_not_a_vacuous_proof() {
         files: Vec::new(),
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -853,6 +872,7 @@ fn checked_external_contract_proves_adapter_and_records_assumption() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -882,6 +902,74 @@ fn checked_external_contract_proves_adapter_and_records_assumption() {
 }
 
 #[test]
+fn embedded_external_call_keeps_pre_and_post_work_in_one_operation() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("boundary.py"),
+        "from urllib.parse import unquote\nfrom dagcert.runtime import external_boundary\n\n@external_boundary('stdlib.url.unquote')\ndef decode(value: str) -> str:\n    return unquote(value)\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("app.py"),
+        "from dataclasses import dataclass\nfrom dagcert.runtime import ExternalRaised, ExternalSuccess, ExternalTypeViolation, operation\nfrom boundary import decode\n\n@dataclass(frozen=True)\nclass Request:\n    value: str\n\n@dataclass(frozen=True)\nclass Completed:\n    value: str\n\n@dataclass(frozen=True)\nclass Failed:\n    reason: str\n\n@operation\ndef normalize(request: Request) -> Completed | Failed:\n    prepared = request.value.strip()\n    result = decode(prepared)\n    if isinstance(result, ExternalSuccess):\n        return Completed(result.value.lower())\n    if isinstance(result, ExternalRaised):\n        return Failed(result.exception_type)\n    if isinstance(result, ExternalTypeViolation):\n        return Failed(result.observed_type)\n    return Failed('unrecognized external outcome')\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("urllib_contract.py"),
+        "from nagini_contracts.contracts import ContractOnly\n\n@ContractOnly\ndef unquote(value: str) -> str:\n    pass\n",
+    )
+    .unwrap();
+    let request = ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "app.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["normalize".to_owned()],
+            },
+            SourceFile {
+                path: "boundary.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["decode".to_owned()],
+            },
+        ],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: vec![maledictus::protocol::EmbeddedExternalCall {
+            consumer_path: "app.py".to_owned(),
+            operation_symbol: "normalize".to_owned(),
+            boundary_id: "stdlib.url.unquote".to_owned(),
+            adapter_path: "boundary.py".to_owned(),
+            adapter_symbol: "decode".to_owned(),
+        }],
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "boundary.py".to_owned(),
+            module: "urllib.parse".to_owned(),
+            stub_path: "urllib_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::AssumeNoException,
+        }],
+    };
+
+    let response = maledictus::verify(&request);
+
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert!(response.diagnostics.is_empty());
+    assert_eq!(response.files.len(), 2);
+    assert_eq!(response.external_contracts.len(), 1);
+    assert_eq!(response.embedded_external_calls.len(), 1);
+    assert_eq!(
+        response.embedded_external_calls[0].scope,
+        "source-import-and-direct-call-bound-to-typed-external-outcome-union"
+    );
+}
+
+#[test]
 fn checked_external_contract_preserves_fixed_tuple_element_types() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(
@@ -905,6 +993,7 @@ fn checked_external_contract_preserves_fixed_tuple_element_types() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -947,6 +1036,7 @@ fn checked_external_contract_preserves_variadic_tuple_types_and_length() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -992,6 +1082,7 @@ fn checked_external_contract_preserves_homogeneous_list_types_and_length() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1031,6 +1122,7 @@ fn checked_external_contract_refutes_violated_call_precondition() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1073,6 +1165,7 @@ fn checked_external_contract_refuses_an_unused_or_mismatched_overlay() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1114,6 +1207,7 @@ fn checked_external_contract_propagates_declared_exsures_outcomes() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1161,6 +1255,7 @@ fn external_exsures_requires_explicit_declared_outcome_policy() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1202,6 +1297,7 @@ fn adapter_can_exhaustively_handle_external_typed_exception() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1246,6 +1342,7 @@ fn adapter_catches_external_custom_subclass_through_checked_base_type() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1291,6 +1388,7 @@ fn checked_external_nominal_reference_contract_reaches_json_backend() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1342,6 +1440,7 @@ fn optional_external_nominal_return_is_refuted_by_nonnull_assertion() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1405,6 +1504,7 @@ fn verifier_composes_transitive_source_nominal_reference_contracts() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -1453,6 +1553,7 @@ fn verifier_composes_transitive_source_heap_permission_contracts() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -1520,6 +1621,7 @@ fn protocol_package_heap_request(
         files,
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     }
 }
@@ -1641,6 +1743,7 @@ fn verifier_composes_properties_and_pure_results_across_a_source_heap_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -1709,6 +1812,7 @@ fn verifier_transfers_non_neutral_permissions_across_a_source_heap_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -1765,6 +1869,7 @@ fn verifier_composes_nominal_method_variance_across_a_source_heap_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -1817,6 +1922,7 @@ fn checked_external_heap_contract_reaches_json_backend_with_permission_effects()
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1886,6 +1992,7 @@ fn verifier_composes_source_and_external_heap_contracts_in_one_adapter() {
             },
         ],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -1941,6 +2048,7 @@ fn verifier_composes_source_and_external_scalar_contracts_in_one_adapter() {
             },
         ],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -2000,6 +2108,7 @@ fn verifier_composes_source_and_external_nominal_reference_contracts_in_one_adap
             },
         ],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -2043,6 +2152,7 @@ fn verifier_uses_real_strict_typescript_compiler_for_closed_functions() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2074,6 +2184,7 @@ fn verifier_returns_the_compiler_derived_primitive_leaf_interface() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2112,6 +2223,7 @@ fn verifier_uses_real_check_js_compiler_for_closed_javascript_functions() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2151,6 +2263,7 @@ fn verifier_refuses_recursive_typescript_call_graph() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2182,6 +2295,7 @@ fn verifier_proves_symbolic_python_string_contracts_through_z3() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2214,6 +2328,7 @@ fn verifier_proves_fixed_typed_python_tuple_contracts_through_z3() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2251,6 +2366,7 @@ fn verifier_proves_homogeneous_typed_python_list_contracts_through_z3() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2280,6 +2396,7 @@ fn verifier_refutes_an_unbounded_list_index_as_undeclared_index_error() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2311,6 +2428,7 @@ fn verifier_refuses_typescript_compiler_error() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2342,6 +2460,7 @@ fn verifier_refuses_javascript_check_js_compiler_error() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2373,6 +2492,7 @@ fn verifier_proves_heap_read_from_real_acc_contract() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2408,6 +2528,7 @@ fn verifier_exposes_constructor_nullability_as_heap_obligations() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2446,6 +2567,7 @@ fn verifier_composes_inherited_properties_and_pure_method_bodies() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2485,6 +2607,7 @@ fn verifier_proves_computed_property_getters_setters_and_chained_receivers() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2528,6 +2651,7 @@ fn verifier_proves_class_typed_heap_function_contracts() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2565,6 +2689,7 @@ fn verifier_proves_inherited_constructor_field_and_method_contracts() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2599,6 +2724,7 @@ fn verifier_proves_a_direct_super_constructor_call() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2633,6 +2759,7 @@ fn verifier_refutes_a_behaviorally_incompatible_override() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2673,6 +2800,7 @@ fn verifier_reports_typed_permission_and_default_override_failures() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2707,6 +2835,7 @@ fn verifier_proves_nominal_variance_and_parameter_field_contracts() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2751,6 +2880,7 @@ fn verifier_refuses_nominal_override_variance_violations() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2791,6 +2921,7 @@ fn verifier_refuses_an_unrelated_nominal_method_argument() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2822,6 +2953,7 @@ fn verifier_refutes_a_source_order_undefined_base_class() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2859,6 +2991,7 @@ fn verifier_proves_real_dagcert_operation_module() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2902,6 +3035,7 @@ fn verifier_composes_dagcert_operation_records_across_source_modules() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -2955,6 +3089,7 @@ fn verifier_composes_total_dagcert_operation_calls_across_source_modules() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -3010,6 +3145,7 @@ fn imported_dagcert_operation_failure_names_provider_and_location() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -3059,6 +3195,7 @@ fn verifier_refuses_unproved_cross_module_operation_record() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -3096,6 +3233,7 @@ fn verifier_proves_dagcert_probability_float_operations() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -3128,6 +3266,7 @@ fn verifier_proves_dagcert_history_selection_over_variadic_tuple() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -3160,6 +3299,7 @@ fn verifier_proves_dagcert_bytes_worker_record_flow() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -3192,6 +3332,7 @@ fn verifier_refuses_partial_expression_inside_dagcert_operation() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -3229,6 +3370,7 @@ fn verifier_proves_inferred_constructor_field_and_module_call_path() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -3679,6 +3821,7 @@ fn verifier_composes_old_identity_across_a_source_module_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -3838,6 +3981,7 @@ fn verifier_refuses_old_in_external_contract_without_exporting_a_proof() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -3970,6 +4114,7 @@ fn verifier_composes_result_field_identity_across_a_source_module_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -4098,6 +4243,7 @@ fn verifier_refuses_result_identity_in_external_contract_without_exporting_a_pro
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -4228,6 +4374,7 @@ fn verifier_composes_late_bound_class_identity_from_a_fully_initialized_provider
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -4284,6 +4431,7 @@ fn verifier_imports_a_class_with_an_internal_completed_provider_dependency() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -4353,6 +4501,7 @@ fn verifier_preserves_canonical_class_identity_across_two_source_provider_edges(
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -4429,6 +4578,7 @@ fn verifier_reexports_an_explicit_source_class_with_its_leaf_canonical_identity(
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -4485,6 +4635,7 @@ fn verifier_does_not_canonicalize_an_external_class_as_a_source_provider_class()
             },
         ],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "b.py".to_owned(),
@@ -4548,6 +4699,7 @@ fn verifier_does_not_reexport_an_external_runtime_class_as_source_owned_completi
             },
         ],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "source.py".to_owned(),
@@ -4769,6 +4921,7 @@ fn verifier_refuses_external_base_allocator_before_assuming_subclass_freshness()
             symbols: vec!["Holder.__init__".to_owned(), "run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -4852,6 +5005,7 @@ fn verifier_proves_class_qualified_and_inherited_static_calls() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -4890,6 +5044,7 @@ fn verifier_proves_dynamic_classmethod_construction_and_dispatch() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -4925,6 +5080,7 @@ fn verifier_proves_predicate_fold_unfold_and_framed_state() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5122,6 +5278,7 @@ fn verifier_matches_nominal_reference_identity_and_call_preconditions() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5165,6 +5322,7 @@ fn verifier_refutes_heap_read_without_permission() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5196,6 +5354,7 @@ fn verifier_refutes_heap_write_without_permission() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5227,6 +5386,7 @@ fn verifier_reports_missing_method_call_permission() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5282,6 +5442,7 @@ fn verifier_composes_transitive_source_module_contracts() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5347,6 +5508,7 @@ fn verifier_composes_typed_tuples_across_source_module_edges() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5392,6 +5554,7 @@ fn verifier_composes_variadic_tuples_across_source_module_edges() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5440,6 +5603,7 @@ fn verifier_composes_typed_lists_across_source_module_edges() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5485,6 +5649,7 @@ fn refuted_source_dependency_cannot_supply_a_caller_contract() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5533,6 +5698,7 @@ fn source_contract_import_cycle_refuses_instead_of_assuming_summaries() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     };
 
@@ -5723,6 +5889,7 @@ fn verifier_refuses_external_reference_chain_hops_without_proof() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -5765,6 +5932,7 @@ fn verifier_refuses_external_reference_chain_hops_without_proof() {
                 symbols,
             }],
             python_callable_bindings: Vec::new(),
+            embedded_external_calls: Vec::new(),
             cross_language_bindings: Vec::new(),
             external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
                 adapter_path: "app.py".to_owned(),
@@ -5954,6 +6122,7 @@ fn verifier_refuses_external_dynamic_or_nonexact_reference_equality_left_operand
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -5996,6 +6165,7 @@ fn verifier_refuses_reference_equality_with_an_external_right_mro() {
             ],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -6284,6 +6454,7 @@ fn verifier_refuses_direct_inherited_or_external_init_subclass_hooks_without_pro
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -6334,6 +6505,7 @@ fn verifier_composes_exact_constructor_field_provenance_across_a_source_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -6640,6 +6812,7 @@ fn verifier_proves_a_checked_external_nominal_argument_to_a_source_setter() {
             symbols: vec!["Target.set_current".to_owned(), "run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -6780,6 +6953,7 @@ fn verifier_composes_a_nested_terminal_call_across_a_source_module_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
     assert!(
@@ -6833,6 +7007,7 @@ fn verifier_refuses_terminal_permission_atoms_owned_by_an_external_base() {
             symbols: vec!["Target.accept".to_owned(), "run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -7042,6 +7217,7 @@ fn verifier_does_not_frame_raw_left_identity_for_an_external_base_root() {
             ],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -7088,6 +7264,7 @@ fn verifier_composes_raw_left_identity_across_a_source_module_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
     assert!(
@@ -7147,6 +7324,7 @@ fn verifier_does_not_launder_custom_eq_through_a_source_module_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
     assert!(
@@ -7315,6 +7493,7 @@ fn verifier_composes_a_pure_nominal_identity_function_across_a_source_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -7372,6 +7551,7 @@ fn verifier_refuses_external_nominal_identity_promotion_without_consumer_proof()
             symbols: vec!["id".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "provider.py".to_owned(),
@@ -7418,6 +7598,7 @@ fn verifier_refuses_a_shadowed_imported_identity_function_in_the_consumer() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -7635,6 +7816,7 @@ fn verifier_refuses_star_import_rebinding_of_the_pure_decorator() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
     assert!(
@@ -7688,6 +7870,7 @@ fn verifier_refutes_the_exact_final_upstream_nested_calls2_assertion_at_line_84(
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -7874,6 +8057,7 @@ fn verifier_refutes_distinct_exact_raw_left_references_across_a_source_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -7922,6 +8106,7 @@ fn verifier_matches_exact_upstream_nullable_receiver_failures() {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -8294,6 +8479,7 @@ fn verifier_preserves_typed_ifexp_joins_across_a_source_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
     assert!(
@@ -8341,6 +8527,7 @@ fn verifier_joins_statement_if_reference_locals_across_a_source_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
     assert!(
@@ -8397,6 +8584,7 @@ fn verifier_joins_checked_external_nominal_values_without_promoting_external_beh
             },
         ],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -8600,6 +8788,7 @@ fn verifier_proves_conditional_early_returns_across_a_source_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
     assert!(
@@ -8846,6 +9035,7 @@ fn verifier_composes_guarded_heap_effect_paths_across_a_source_edge() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
     assert!(
@@ -8988,6 +9178,7 @@ fn verifier_refuses_checked_external_effects_inside_guarded_source_paths() {
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -9338,6 +9529,7 @@ fn verifier_refuses_checked_external_isinstance_narrowing_without_source_proof()
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -9706,6 +9898,7 @@ fn verifier_composes_exact_short_circuit_condition_methods_across_a_source_edge(
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -9774,6 +9967,7 @@ fn verifier_refutes_an_exact_imported_condition_result_but_refuses_open_ingress(
             ],
             external_contract_overlays: Vec::new(),
             python_callable_bindings: Vec::new(),
+            embedded_external_calls: Vec::new(),
             cross_language_bindings: Vec::new(),
         });
 
@@ -9837,6 +10031,7 @@ fn verifier_refuses_checked_external_condition_method_dispatch_without_source_pr
             symbols: vec!["run".to_owned()],
         }],
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
         external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
             adapter_path: "app.py".to_owned(),
@@ -10389,6 +10584,7 @@ fn verifier_composes_static_reference_return_permissions_across_a_source_edge() 
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -10634,6 +10830,7 @@ fn verifier_does_not_rebind_imported_pure_scalar_dependencies_to_consumer_global
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -10685,6 +10882,7 @@ fn verifier_keeps_imported_pure_scalar_globals_in_the_provider_environment() {
         ],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     });
 
@@ -10931,6 +11129,7 @@ fn verify_scalar_module(source: &str, symbols: &[&str]) -> ProofResponse {
         }],
         external_contract_overlays: Vec::new(),
         python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
         cross_language_bindings: Vec::new(),
     })
 }

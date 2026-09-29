@@ -514,7 +514,9 @@ impl ImportedHeapContractModule {
 
     pub fn qualified_class_names(&self) -> Vec<String> {
         self.classes
-            .keys()
+            .iter()
+            .filter(|(_, shape)| shape.direct_base.as_deref() != Some("Exception"))
+            .map(|(name, _)| name)
             .chain(self.generic_classes.keys())
             .map(|name| format!("{}.{name}", self.module))
             .collect()
@@ -522,6 +524,49 @@ impl ImportedHeapContractModule {
 
     pub fn factory_names(&self) -> Vec<String> {
         self.factories.keys().cloned().collect()
+    }
+
+    pub fn exception_type_names(&self) -> Vec<String> {
+        self.classes
+            .iter()
+            .filter(|(_, shape)| shape.direct_base.as_deref() == Some("Exception"))
+            .map(|(name, _)| name.clone())
+            .collect()
+    }
+
+    pub fn declared_exception_types(&self) -> Vec<String> {
+        let mut declared = self
+            .classes
+            .values()
+            .chain(self.generic_classes.values().map(|generic| &generic.shape))
+            .flat_map(|shape| {
+                shape
+                    .methods
+                    .values()
+                    .flat_map(|method| {
+                        method
+                            .exception_postconditions
+                            .iter()
+                            .map(|(exception, _)| exception.clone())
+                    })
+                    .chain(shape.constructor.iter().flat_map(|constructor| {
+                        constructor
+                            .exception_postconditions
+                            .iter()
+                            .map(|(exception, _)| exception.clone())
+                    }))
+            })
+            .chain(self.factories.values().flat_map(|shape| {
+                shape.constructor.iter().flat_map(|constructor| {
+                    constructor
+                        .exception_postconditions
+                        .iter()
+                        .map(|(exception, _)| exception.clone())
+                })
+            }))
+            .collect::<BTreeSet<_>>();
+        declared.retain(|exception| !exception.is_empty());
+        declared.into_iter().collect()
     }
 
     pub fn predicate_names(&self) -> Vec<String> {
@@ -11522,6 +11567,9 @@ fn seal_exported_class_identities(
         name: &str,
         resolved_classes: &BTreeMap<String, ClassShape>,
     ) -> String {
+        if name == "Exception" {
+            return name.to_owned();
+        }
         if name.contains('.') {
             return name.to_owned();
         }
@@ -11684,7 +11732,15 @@ pub fn parse_external_heap_contract_module(
             _ => None,
         })
         .collect::<BTreeSet<_>>();
-    let mut classes = BTreeMap::new();
+    let mut classes = suite
+        .iter()
+        .filter_map(|statement| match statement {
+            ast::Stmt::ClassDef(class) if external_exception_declaration(class) => {
+                Some(external_exception_shape(class, &class_names, module))
+            }
+            _ => None,
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
     let mut factory_definitions = Vec::new();
     for statement in &suite {
         match statement {
@@ -11814,6 +11870,7 @@ pub fn parse_external_heap_contract_module(
                                     method,
                                     class.name.as_str(),
                                     &class_names,
+                                    &classes,
                                 )?;
                                 if methods.insert(method.name.to_string(), summary).is_some() {
                                     return fail(
@@ -11838,11 +11895,11 @@ pub fn parse_external_heap_contract_module(
                         }
                     }
                 }
-                if fields.is_empty() || constructor.is_none() {
+                if !fields.is_empty() && constructor.is_none() {
                     return fail(
                         "frontend.python.heap.external-class-incomplete",
                         format!(
-                            "external heap class {:?} requires declared fields and a constructor contract",
+                            "external heap class {:?} declares fields but has no constructor contract",
                             class.name
                         ),
                     );
@@ -11865,7 +11922,7 @@ pub fn parse_external_heap_contract_module(
                         defines_instancecheck_override: false,
                         defines_dynamic_attribute_access: false,
                         verified_source_allocator: false,
-                        has_explicit_constructor: true,
+                        has_explicit_constructor: constructor.is_some(),
                         constructor_has_exceptional_outcome: false,
                         constructor_dependencies: BTreeSet::new(),
                         exact_constructed_fields: BTreeMap::new(),
@@ -12052,6 +12109,59 @@ fn external_exception_declaration(class: &ast::StmtClassDef) -> bool {
     )
 }
 
+fn external_exception_shape(
+    class: &ast::StmtClassDef,
+    class_names: &BTreeSet<String>,
+    module: &str,
+) -> Result<(String, ClassShape), ContractFailure> {
+    validate_external_exception_declaration(class)?;
+    let mut fields = BTreeMap::new();
+    for statement in &class.body {
+        if let ast::Stmt::AnnAssign(field) = statement {
+            let ast::Expr::Name(name) = field.target.as_ref() else {
+                unreachable!("external exception validation accepts only name fields")
+            };
+            fields.insert(
+                name.id.to_string(),
+                field_annotation(&field.annotation, class_names)?,
+            );
+        }
+    }
+    let name = class.name.to_string();
+    Ok((
+        name.clone(),
+        ClassShape {
+            name: name.clone(),
+            identity: format!("{module}.{name}"),
+            completed_provider: None,
+            externally_assumed: true,
+            defines_custom_new: false,
+            defines_eq_override: false,
+            canonical_rd_binding: false,
+            defines_hash_override: false,
+            defines_instancecheck_override: false,
+            defines_dynamic_attribute_access: false,
+            verified_source_allocator: false,
+            has_explicit_constructor: false,
+            constructor_has_exceptional_outcome: false,
+            constructor_dependencies: BTreeSet::new(),
+            exact_constructed_fields: BTreeMap::new(),
+            constants: BTreeMap::new(),
+            fields,
+            externally_assumed_fields: BTreeSet::new(),
+            predicates: BTreeMap::new(),
+            properties: BTreeMap::new(),
+            methods: BTreeMap::new(),
+            abstract_methods: BTreeSet::new(),
+            constructor: None,
+            direct_base: Some("Exception".to_owned()),
+            direct_base_fields: BTreeSet::new(),
+            direct_base_constructor: None,
+            override_obligations: Vec::new(),
+        },
+    ))
+}
+
 fn validate_external_exception_declaration(
     class: &ast::StmtClassDef,
 ) -> Result<(), ContractFailure> {
@@ -12079,47 +12189,48 @@ fn validate_external_heap_contract_shapes(
     classes: &BTreeMap<String, ClassShape>,
 ) -> Result<(), ContractFailure> {
     for (class_name, class) in classes {
-        let constructor = class
-            .constructor
-            .as_ref()
-            .expect("parser requires constructor");
-        let mut constructor_environment = constructor.captured_environment.clone();
-        constructor_environment.insert(
-            constructor.receiver.clone(),
-            Term::Variable {
-                name: format!("external::{class_name}::self"),
-                sort: Sort::Reference,
-            },
-        );
-        for (parameter, parameter_type) in &constructor.parameters {
+        if class.direct_base.as_deref() == Some("Exception") && class.constructor.is_none() {
+            continue;
+        }
+        if let Some(constructor) = &class.constructor {
+            let mut constructor_environment = constructor.captured_environment.clone();
             constructor_environment.insert(
-                parameter.clone(),
+                constructor.receiver.clone(),
                 Term::Variable {
-                    name: format!("external::{class_name}::__init__::{parameter}"),
-                    sort: parameter_type.sort.clone(),
+                    name: format!("external::{class_name}::self"),
+                    sort: Sort::Reference,
                 },
             );
-        }
-        for condition in constructor
-            .preconditions
-            .iter()
-            .chain(&constructor.postconditions)
-        {
-            let result = if constructor.result_is_receiver {
-                constructor_environment[&constructor.receiver].clone()
-            } else {
-                Term::Unit
-            };
-            let lowered = lower_expression(
-                condition,
-                &constructor_environment,
-                class,
-                0,
-                0,
-                Some(&result),
-                true,
-            )?;
-            require_bool(&lowered.term, "external constructor contract")?;
+            for (parameter, parameter_type) in &constructor.parameters {
+                constructor_environment.insert(
+                    parameter.clone(),
+                    Term::Variable {
+                        name: format!("external::{class_name}::__init__::{parameter}"),
+                        sort: parameter_type.sort.clone(),
+                    },
+                );
+            }
+            for condition in constructor
+                .preconditions
+                .iter()
+                .chain(&constructor.postconditions)
+            {
+                let result = if constructor.result_is_receiver {
+                    constructor_environment[&constructor.receiver].clone()
+                } else {
+                    Term::Unit
+                };
+                let lowered = lower_expression(
+                    condition,
+                    &constructor_environment,
+                    class,
+                    0,
+                    0,
+                    Some(&result),
+                    true,
+                )?;
+                require_bool(&lowered.term, "external constructor contract")?;
+            }
         }
         for (method_name, method) in &class.methods {
             let mut environment = method.captured_environment.clone();
@@ -12148,7 +12259,17 @@ fn validate_external_heap_contract_shapes(
             if let Some(result_class) = &method.return_type.nominal_class {
                 object_classes.insert("__result__".to_owned(), result_class.clone());
             }
-            for condition in method.preconditions.iter().chain(&method.postconditions) {
+            for condition in method
+                .preconditions
+                .iter()
+                .chain(&method.postconditions)
+                .chain(
+                    method
+                        .exception_postconditions
+                        .iter()
+                        .map(|(_, condition)| condition),
+                )
+            {
                 let lowered = lower_contextual_expression(
                     condition,
                     &environment,
@@ -12194,12 +12315,45 @@ fn validate_external_contract_only_body(
     }
 }
 
+fn validate_external_contract_only_body_with_exsures(
+    method: &ast::StmtFunctionDef,
+    available_classes: &BTreeMap<String, ClassShape>,
+) -> Result<(), ContractFailure> {
+    let mut executable = Vec::new();
+    for statement in &method.body {
+        if contract(statement).is_some()
+            || exception_contract(statement, available_classes)?.is_some()
+        {
+            continue;
+        }
+        executable.push(statement);
+    }
+    let valid = matches!(executable.as_slice(), [ast::Stmt::Pass(_)])
+        || matches!(
+            executable.as_slice(),
+            [ast::Stmt::Expr(statement)]
+                if matches!(statement.value.as_ref(), ast::Expr::Constant(constant) if constant.value == ast::Constant::Ellipsis)
+        );
+    if valid {
+        Ok(())
+    } else {
+        fail(
+            "frontend.python.heap.external-body-not-contract-only",
+            format!(
+                "external heap method {:?} must contain only contracts and final pass or ellipsis",
+                method.name
+            ),
+        )
+    }
+}
+
 fn build_external_readonly_method_summary(
     method: &ast::StmtFunctionDef,
     owner_class: &str,
     class_names: &BTreeSet<String>,
+    available_classes: &BTreeMap<String, ClassShape>,
 ) -> Result<MethodSummary, ContractFailure> {
-    validate_external_contract_only_body(method)?;
+    validate_external_contract_only_body_with_exsures(method, available_classes)?;
     let arguments = method
         .args
         .posonlyargs
@@ -12247,6 +12401,23 @@ fn build_external_readonly_method_summary(
             _ => None,
         })
         .collect::<Vec<_>>();
+    let exception_postconditions = method
+        .body
+        .iter()
+        .filter_map(|statement| exception_contract(statement, available_classes).transpose())
+        .collect::<Result<Vec<_>, _>>()?;
+    if exception_postconditions
+        .iter()
+        .any(|(_, condition)| expression_names(condition).contains("RaisedException"))
+    {
+        return fail(
+            "frontend.python.heap.external-raised-exception-postcondition-unsupported",
+            format!(
+                "external heap method {:?} cannot transfer RaisedException() fields across the provider boundary",
+                method.name
+            ),
+        );
+    }
     let return_type = method_annotation(method.returns.as_deref(), class_names)?;
     for postcondition in &postconditions {
         if contains_result_identity_expression(postcondition)
@@ -12279,6 +12450,30 @@ fn build_external_readonly_method_summary(
                 method.name
             ),
         })?;
+    for (exception, condition) in &exception_postconditions {
+        let mut exceptional_permissions =
+            collect_permission_contracts(std::slice::from_ref(condition)).ok_or_else(|| {
+                ContractFailure {
+                    code: "frontend.python.heap.external-method-effects-unsupported",
+                    message: format!(
+                        "external method {:?} has a non-decomposable Exsures permission outcome for {exception:?}",
+                        method.name
+                    ),
+                }
+            })?;
+        exceptional_permissions.sort();
+        let mut required_for_exception = required_permissions.clone();
+        required_for_exception.sort();
+        if exceptional_permissions != required_for_exception {
+            return fail(
+                "frontend.python.heap.external-method-exception-permission-mismatch",
+                format!(
+                    "external method {:?} must return exactly its required permissions on Exsures outcome {exception:?}",
+                    method.name
+                ),
+            );
+        }
+    }
     if required_permissions
         .iter()
         .chain(&returned_permissions)
@@ -12333,7 +12528,7 @@ fn build_external_readonly_method_summary(
         return_type,
         preconditions,
         postconditions,
-        exception_postconditions: Vec::new(),
+        exception_postconditions,
         verified_single_return_result: None,
         pure_result: None,
         opaque_pure: false,
@@ -27867,6 +28062,23 @@ fn execute_heap_function_path_set_at_loop_depth(
                 }
             } else if let ast::Stmt::Assign(assignment) = statement
                 && let [ast::Expr::Name(target)] = assignment.targets.as_slice()
+                && declared_exception_instance_method_target(&assignment.value, &state, context)
+                    .is_some()
+            {
+                for mut path in evaluate_declared_exception_instance_method_call_paths(
+                    &assignment.value,
+                    state,
+                    context,
+                )?
+                .expect("guard established an instance method with declared exceptional outcomes")
+                {
+                    if let Some(value) = path.value {
+                        bind_heap_python_value(target.id.as_str(), value, &mut path.state);
+                    }
+                    next_states.push(path.state);
+                }
+            } else if let ast::Stmt::Assign(assignment) = statement
+                && let [ast::Expr::Name(target)] = assignment.targets.as_slice()
                 && matches!(assignment.value.as_ref(), ast::Expr::BoolOp(_))
             {
                 for mut path in evaluate_heap_python_value_paths(&assignment.value, state, context)?
@@ -27901,6 +28113,22 @@ fn execute_heap_function_path_set_at_loop_depth(
                     )?
                     .expect(
                         "guard established a source function with declared exceptional outcomes",
+                    )
+                    .into_iter()
+                    .map(|path| path.state),
+                );
+            } else if let ast::Stmt::Expr(expression) = statement
+                && declared_exception_instance_method_target(&expression.value, &state, context)
+                    .is_some()
+            {
+                next_states.extend(
+                    evaluate_declared_exception_instance_method_call_paths(
+                        &expression.value,
+                        state,
+                        context,
+                    )?
+                    .expect(
+                        "guard established an instance method with declared exceptional outcomes",
                     )
                     .into_iter()
                     .map(|path| path.state),
@@ -28703,6 +28931,53 @@ fn evaluate_heap_module_call_variant(
     Ok(HeapPythonValuePath { state, value })
 }
 
+fn evaluate_heap_instance_method_call_variant(
+    expression: &ast::Expr,
+    mut state: HeapFunctionState,
+    context: &HeapBranchContext<'_>,
+    class_name: &str,
+    method_name: &str,
+    method: MethodSummary,
+    path_tag: &str,
+) -> Result<HeapPythonValuePath, ContractFailure> {
+    state.path_tag.push_str(path_tag);
+    let mut classes = context.classes.clone();
+    classes
+        .get_mut(class_name)
+        .expect("variant instance class remains in the cloned catalog")
+        .methods
+        .insert(method_name.to_owned(), method);
+    let variant_context = HeapBranchContext {
+        classes: &classes,
+        typed_state_bindings: context.typed_state_bindings,
+        module_predicates: context.module_predicates,
+        reference_identity_functions: context.reference_identity_functions,
+        scalar_calls: context.scalar_calls,
+        heap_functions: context.heap_functions,
+        effect_free_procedures: context.effect_free_procedures,
+        lexical_names: context.lexical_names,
+        builtin_isinstance_is_canonical: context.builtin_isinstance_is_canonical,
+        verified_methods: context.verified_methods,
+        pure_function_offset: context.pure_function_offset,
+        return_nominal_class: context.return_nominal_class,
+        return_optional: context.return_optional,
+        caller: context.caller,
+        path: context.path,
+        source: context.source,
+    };
+    let (state, value) = evaluate_heap_effect_value(expression, state, &variant_context)?;
+    let value = match value {
+        Some(term) => Some(heap_python_value_from_term(
+            expression,
+            term,
+            &state,
+            &variant_context,
+        )?),
+        None => None,
+    };
+    Ok(HeapPythonValuePath { state, value })
+}
+
 fn evaluate_heap_constructor_call_variant(
     expression: &ast::Expr,
     mut state: HeapFunctionState,
@@ -28967,11 +29242,153 @@ fn evaluate_declared_exception_heap_function_call_paths(
     Ok(Some(outcomes))
 }
 
+fn declared_exception_instance_method_target<'a>(
+    expression: &'a ast::Expr,
+    state: &'a HeapFunctionState,
+    context: &'a HeapBranchContext<'_>,
+) -> Option<(&'a str, &'a str, &'a MethodSummary)> {
+    let (receiver_name, call) = local_instance_method_call(expression, &state.object_classes)?;
+    let class_name = state.object_classes.get(receiver_name)?;
+    let ast::Expr::Attribute(attribute) = call.func.as_ref() else {
+        return None;
+    };
+    let summary = context
+        .classes
+        .get(class_name)?
+        .methods
+        .get(attribute.attr.as_str())?;
+    (!summary.exception_postconditions.is_empty()).then_some((
+        class_name.as_str(),
+        attribute.attr.as_str(),
+        summary,
+    ))
+}
+
+fn evaluate_declared_exception_instance_method_call_paths(
+    expression: &ast::Expr,
+    state: HeapFunctionState,
+    context: &HeapBranchContext<'_>,
+) -> Result<Option<Vec<HeapPythonValuePath>>, ContractFailure> {
+    let Some((class_name, method_name, summary)) =
+        declared_exception_instance_method_target(expression, &state, context)
+    else {
+        return Ok(None);
+    };
+    let ast::Expr::Call(call) = expression else {
+        unreachable!("instance method target requires a call expression")
+    };
+    if !call.keywords.is_empty() || !call.args.iter().all(heap_effect_argument_is_plain) {
+        return fail(
+            "frontend.python.heap.exceptional-method-arguments-unsupported",
+            "exceptional instance method calls require effect-free positional arguments",
+        );
+    }
+    ensure_heap_call_arguments_compatible(
+        call,
+        class_name,
+        &state.object_classes,
+        context.classes,
+    )?;
+
+    let offset = u32::from(call.range.start());
+    let mut outcomes = Vec::with_capacity(summary.exception_postconditions.len() + 1);
+    let mut normal_method = summary.clone();
+    let exceptional = std::mem::take(&mut normal_method.exception_postconditions);
+    outcomes.push(evaluate_heap_instance_method_call_variant(
+        expression,
+        state.clone(),
+        context,
+        class_name,
+        method_name,
+        normal_method,
+        &format!("in{offset}"),
+    )?);
+
+    for (index, (exception_class, condition)) in exceptional.into_iter().enumerate() {
+        if expression_names(&condition).contains("RaisedException") {
+            return fail(
+                "frontend.python.heap.method-raised-exception-postcondition-unsupported",
+                format!(
+                    "method {method_name:?} Exsures for {exception_class:?} refers to RaisedException(); modular exception-object field transfer is not yet represented"
+                ),
+            );
+        }
+        let mut exceptional_method = summary.clone();
+        exceptional_method.exception_postconditions.clear();
+        exceptional_method.postconditions = vec![condition];
+        exceptional_method.pure_result = None;
+        exceptional_method.verified_single_return_result = None;
+        let required = collect_method_permission_contracts(
+            &exceptional_method,
+            &exceptional_method.preconditions,
+        )
+        .ok_or_else(|| ContractFailure {
+            code: "frontend.python.heap.method-permission-effects-unsupported",
+            message: format!(
+                "method {method_name:?} has a non-decomposable permission precondition"
+            ),
+        })?;
+        let returned = collect_method_permission_contracts(
+            &exceptional_method,
+            &exceptional_method.postconditions,
+        )
+        .ok_or_else(|| ContractFailure {
+            code: "frontend.python.heap.method-permission-effects-unsupported",
+            message: format!(
+                "method {method_name:?} has a non-decomposable Exsures permission outcome"
+            ),
+        })?;
+        exceptional_method.call_permission_neutral = required == returned;
+        let mut path = evaluate_heap_instance_method_call_variant(
+            expression,
+            state.clone(),
+            context,
+            class_name,
+            method_name,
+            exceptional_method,
+            &format!("ie{offset}_{index}"),
+        )?;
+        if path.value.is_some() && !path.state.verification_halted {
+            let receiver = Term::NominalReference {
+                name: format!(
+                    "{}::method-exception:{method_name}:{offset}:{index}",
+                    context.caller
+                ),
+                class: context
+                    .classes
+                    .get(&exception_class)
+                    .map_or_else(|| exception_class.clone(), |class| class.identity.clone()),
+            };
+            path.state.assumptions.push(Term::Not {
+                value: Box::new(Term::Equal {
+                    left: Box::new(receiver.clone()),
+                    right: Box::new(Term::NullReference),
+                }),
+            });
+            path.state.raised = Some(HeapExceptionalExit {
+                exception_class,
+                receiver,
+                exact: false,
+                source_constructed: false,
+                byte_offset: offset,
+            });
+            path.value = None;
+        }
+        outcomes.push(path);
+    }
+    Ok(Some(outcomes))
+}
+
 fn evaluate_heap_python_value_paths(
     expression: &ast::Expr,
     state: HeapFunctionState,
     context: &HeapBranchContext<'_>,
 ) -> Result<Vec<HeapPythonValuePath>, ContractFailure> {
+    if let Some(paths) =
+        evaluate_declared_exception_instance_method_call_paths(expression, state.clone(), context)?
+    {
+        return Ok(paths);
+    }
     if let Some(paths) =
         evaluate_declared_exception_constructor_call_paths(expression, state.clone(), context)?
     {

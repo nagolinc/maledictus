@@ -134,7 +134,7 @@ converts every Python exceptional exit to the same return type. `except Exceptio
 because it does not close arbitrary `BaseException` effects. Argument and fallback expressions are
 restricted to typed parameters and primitive literals.
 
-The `dagcert-closed-typed-operations/v3` fragment is the direct Dagcert application seam. It
+The `dagcert-closed-typed-operations/v4` fragment is the direct Dagcert application seam. It
 resolves `operation` and frozen `dataclass` markers from their real imports, checks a one-record task
 input and a finite record-outcome union written with either `|` or an explicitly imported
 `typing.Union`, and proves straight-line or `if`-branched direct outcome construction from total
@@ -166,6 +166,13 @@ dependencies may run sequentially; each primitive result may be stored in a type
 to later callbacks or outcomes. Same-type primitive reassignment is allowed, while callable-valued
 locals, callable rebinding, type-changing reassignment, and inconsistent branch/handler local
 environments refuse.
+
+Version 4 removes the artificial requirement that every operation file redeclare a frozen record.
+A hash-bound module containing only shared frozen records may export those records, and an operation
+may use only imported record inputs and outcomes. Boolean negation of a proved `isinstance` test
+swaps the two finite narrowing environments, which covers the ordinary early-failure form
+`if not isinstance(result, ExternalSuccess)`. No unproved class, dynamic type test, or open outcome
+set is introduced by this rule.
 
 The second fragment, `scalar-nagini-contracts/v44`, lowers path-sensitive
 `int`/`bool`/`str`/`None` functions, recursively typed fixed `Tuple[...]` values, and homogeneous
@@ -1538,7 +1545,7 @@ the provider has completed and the ordinary and guarded executors select the sam
 summary. The combined checked-external variant may retain unrelated provider assumptions but
 cannot authorize v44's source-only effect dispatch. Lean models only the supplied transition and
 exact finite-path algebra, not import/frontend correspondence or provider truth.
-`checked-external-heap-contracts/v7` uses the identical `ClassShape` representation for a
+`checked-external-heap-contracts/v8` uses the identical `ClassShape` representation for a
 hash-bound provider stub. It requires explicit fields, a constructor contract, contract-only
 method bodies, and explicit permission effects. Version 6 also admits contract-only functions and
 methods returning one declared non-optional heap type. The contract must grant every permission on
@@ -1552,6 +1559,10 @@ Version 7 closes generic provider classes at each source-owned nominal specializ
 that nominal payload across imported frozen records and one optional typed module-state snapshot.
 The imported state is atomic but intentionally history-free: it proves neither prior configuration
 nor persistence between reads.
+Version 8 permits a fieldless, constructorless generic class only as an opaque provider-owned
+handle. Its methods may declare typed `Exsures` outcomes; each normal and exceptional path is
+composed at the real call, and each exceptional outcome must return exactly the permissions required
+by the method. Exception types remain separate protocol metadata rather than ordinary heap types.
 The current Python fragments prove source symbol bodies after function entry; they do not claim to
 prove module import execution. The response therefore reports `all-source-symbol-bodies`, never
 `complete-file`.

@@ -7,7 +7,7 @@ maledictus verify --request request.json
 ```
 
 For Python operation tasks, the current directly compatible fragment is
-`dagcert-closed-typed-operations/v3`. It verifies source-imported `@operation` boundaries and frozen
+`dagcert-closed-typed-operations/v4`. It verifies source-imported `@operation` boundaries and frozen
 dataclass input/outcome types from the real application file. Version 2 accepts finite outcomes via
 `|` or an explicitly imported `typing.Union[...]` and primitive-only f-string interpolation without
 opening a user-defined formatting call. Version 3 adds explicit `python_callable_bindings` for
@@ -194,10 +194,10 @@ source module edges; its combined external variant preserves provider assumption
 `transitive-source-scalar-contracts/v33` proves absolute source-owned
 `from module import symbol` DAGs; the combined external variant is
 `transitive-source+checked-external-scalar-contracts/v33`.
-`transitive-source-heap-contracts/v65` separately proves recursive source class layouts,
+`transitive-source-heap-contracts/v66` separately proves recursive source class layouts,
 constructor contracts, and typed method effects; it is not an external-provider assumption
 fragment. The variant that also consumes checked external heap contracts is
-`transitive-source+checked-external-heap-contracts/v65` and retains those provider assumptions.
+`transitive-source+checked-external-heap-contracts/v66` and retains those provider assumptions.
 The shared production binder advertises `python-call-argument-binding/v3`. It has no application-
 level argument-count ceiling: source, expanded, and formal counts use checked machine-size
 arithmetic, while each allocation has a typed failure outcome containing the exact site and
@@ -855,6 +855,14 @@ to the exact hash-bound child module, and the provider overlay follows real call
 helpers without turning either file into an artificial Dagcert task. Conflicting overlay contracts,
 another module-level writer, an incompatible setter type, the wrong queue payload, or an undeclared
 external exception all refuse.
+
+Heap-contract version 8 and transitive version 66 additionally support opaque external generic
+handles that applications receive from provider-managed state rather than constructing themselves.
+Their methods may declare finite typed `Exsures` outcomes. The path verifier composes one normal
+path and each exceptional path, preserves the exact generic payload, and requires every exceptional
+permission outcome to return the method's required permissions. A reachable worker may combine
+several provider overlays when their imported module contracts are nonconflicting; missing coverage
+or two different contracts for the same provider module refuses.
 
 Dagcert may enumerate a reachable application helper with an empty `symbols` list when that file
 is proof-only rather than a contract task. Maledictus still verifies every supported operation body

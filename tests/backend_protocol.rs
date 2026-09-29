@@ -3,6 +3,7 @@ use std::fs;
 use maledictus::protocol::{
     FileResult, PROTOCOL_SCHEMA, ProofRequest, ProofResponse, ProofStatus, SourceFile,
 };
+use maledictus::vc::ObligationStatus;
 use maledictus::{FrontendDisposition, analyze_python_frontend};
 
 fn analyze_frontend_request(request: &ProofRequest) -> ProofResponse {
@@ -1562,7 +1563,7 @@ fn verifier_composes_transitive_source_heap_permission_contracts() {
     assert_eq!(response.source_imports.len(), 1);
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(
         response
@@ -1679,7 +1680,7 @@ fn verifier_proves_explicit_empty_and_passive_package_initializers() {
         assert!(response.files.iter().any(|file| {
             file.path == "app.py"
                 && matches!(file.result, ProofStatus::Proved)
-                && file.fragment.as_deref() == Some("transitive-source-heap-contracts/v65")
+                && file.fragment.as_deref() == Some("transitive-source-heap-contracts/v66")
         }));
     }
 }
@@ -1755,7 +1756,7 @@ fn verifier_composes_properties_and_pure_results_across_a_source_heap_edge() {
     assert_eq!(response.source_imports.len(), 1);
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(
         response.obligations.iter().any(|obligation| {
@@ -1820,7 +1821,7 @@ fn verifier_transfers_non_neutral_permissions_across_a_source_heap_edge() {
     assert!(matches!(good.status, ProofStatus::Proved), "{good:#?}");
     assert_eq!(
         good.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(good.obligations.iter().any(|obligation| {
         obligation
@@ -1882,7 +1883,7 @@ fn verifier_composes_nominal_method_variance_across_a_source_heap_edge() {
     assert_eq!(response.source_imports.len(), 1);
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation
@@ -1936,7 +1937,7 @@ fn checked_external_heap_contract_reaches_json_backend_with_permission_effects()
     assert!(matches!(response.status, ProofStatus::Proved));
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("checked-external-heap-contracts/v7")
+        Some("checked-external-heap-contracts/v8")
     );
     assert_eq!(response.external_contracts[0].heap_types, ["provider.Cell"]);
     assert!(response.external_contracts[0].nominal_types.is_empty());
@@ -1995,7 +1996,7 @@ fn checked_external_heap_factory_reaches_json_backend_as_one_application_functio
     );
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("checked-external-heap-contracts/v7")
+        Some("checked-external-heap-contracts/v8")
     );
     assert_eq!(response.external_contracts[0].functions, ["open_resource"]);
     assert_eq!(
@@ -2107,7 +2108,7 @@ fn external_generic_queue_adapter_consumes_source_owned_record_payload() {
     assert_eq!(response.source_imports.len(), 1, "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source+checked-external-heap-contracts/v65")
+        Some("transitive-source+checked-external-heap-contracts/v66")
     );
 }
 
@@ -2415,7 +2416,7 @@ fn verifier_composes_source_and_external_heap_contracts_in_one_adapter() {
     assert!(matches!(response.status, ProofStatus::Proved));
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source+checked-external-heap-contracts/v65")
+        Some("transitive-source+checked-external-heap-contracts/v66")
     );
     assert_eq!(response.source_imports.len(), 1);
     assert_eq!(response.external_contracts.len(), 1);
@@ -3461,7 +3462,7 @@ fn verifier_proves_real_dagcert_operation_module() {
     assert!(matches!(response.status, ProofStatus::Proved));
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("dagcert-closed-typed-operations/v3")
+        Some("dagcert-closed-typed-operations/v4")
     );
 }
 
@@ -3510,7 +3511,7 @@ fn verifier_composes_dagcert_operation_records_across_source_modules() {
         response
             .files
             .iter()
-            .all(|file| { file.fragment.as_deref() == Some("dagcert-closed-typed-operations/v3") })
+            .all(|file| { file.fragment.as_deref() == Some("dagcert-closed-typed-operations/v4") })
     );
     assert_eq!(response.source_imports.len(), 1, "{response:#?}");
     assert_eq!(response.source_imports[0].importer_path, "consume.py");
@@ -3703,7 +3704,7 @@ fn verifier_proves_dagcert_probability_float_operations() {
     assert!(matches!(response.status, ProofStatus::Proved));
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("dagcert-closed-typed-operations/v3")
+        Some("dagcert-closed-typed-operations/v4")
     );
     assert!(response.diagnostics.is_empty());
 }
@@ -3736,7 +3737,7 @@ fn verifier_proves_dagcert_history_selection_over_variadic_tuple() {
     assert!(matches!(response.status, ProofStatus::Proved));
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("dagcert-closed-typed-operations/v3")
+        Some("dagcert-closed-typed-operations/v4")
     );
     assert!(response.diagnostics.is_empty());
 }
@@ -3769,7 +3770,7 @@ fn verifier_proves_dagcert_bytes_worker_record_flow() {
     assert!(matches!(response.status, ProofStatus::Proved));
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("dagcert-closed-typed-operations/v3")
+        Some("dagcert-closed-typed-operations/v4")
     );
     assert!(response.diagnostics.is_empty());
 }
@@ -4293,7 +4294,7 @@ fn verifier_composes_old_identity_across_a_source_module_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id.starts_with("Caller.run:")
@@ -4586,7 +4587,7 @@ fn verifier_composes_result_field_identity_across_a_source_module_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(
         response.obligations.iter().any(|obligation| {
@@ -4846,7 +4847,7 @@ fn verifier_composes_late_bound_class_identity_from_a_fully_initialized_provider
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert_eq!(
         response
@@ -4903,7 +4904,7 @@ fn verifier_imports_a_class_with_an_internal_completed_provider_dependency() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert_eq!(
         response.source_imports[0].imported_symbols,
@@ -4973,7 +4974,7 @@ fn verifier_preserves_canonical_class_identity_across_two_source_provider_edges(
     );
     assert_eq!(
         response.files[2].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.source_imports.iter().any(|edge| {
         edge.importer_path == "b.py"
@@ -5051,7 +5052,7 @@ fn verifier_reexports_an_explicit_source_class_with_its_leaf_canonical_identity(
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[2].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(
         response.obligations.iter().any(|obligation| {
@@ -5993,7 +5994,7 @@ fn verifier_proves_operation_helper_beside_requested_package_initializer() {
     assert!(response.diagnostics.is_empty());
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("dagcert-closed-typed-operations/v3")
+        Some("dagcert-closed-typed-operations/v4")
     );
     assert_eq!(
         response.files[2].fragment.as_deref(),
@@ -7041,7 +7042,7 @@ fn verifier_composes_exact_constructor_field_provenance_across_a_source_edge() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.source_imports.iter().any(|edge| {
         edge.importer_path == "app.py"
@@ -7353,7 +7354,7 @@ fn verifier_proves_a_checked_external_nominal_argument_to_a_source_setter() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("checked-external-heap-contracts/v7")
+        Some("checked-external-heap-contracts/v8")
     );
     assert_eq!(
         response.external_contracts[0].heap_types,
@@ -7488,7 +7489,7 @@ fn verifier_composes_a_nested_terminal_call_across_a_source_module_edge() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.source_imports.iter().any(|edge| {
         edge.importer_path == "app.py"
@@ -7799,7 +7800,7 @@ fn verifier_composes_raw_left_identity_across_a_source_module_edge() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.source_imports.iter().any(|edge| {
         edge.importer_path == "app.py"
@@ -8029,7 +8030,7 @@ fn verifier_composes_a_pure_nominal_identity_function_across_a_source_edge() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.source_imports.iter().any(|edge| {
         edge.importer_path == "app.py"
@@ -8592,7 +8593,7 @@ fn verifier_refutes_distinct_exact_raw_left_references_across_a_source_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id.starts_with("run:assert:")
@@ -9013,7 +9014,7 @@ fn verifier_preserves_typed_ifexp_joins_across_a_source_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id == "run:heap-function-complete" && obligation.satisfied()
@@ -9061,7 +9062,7 @@ fn verifier_joins_statement_if_reference_locals_across_a_source_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id == "run:heap-function-complete" && obligation.satisfied()
@@ -9124,7 +9125,7 @@ fn verifier_joins_checked_external_nominal_values_without_promoting_external_beh
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source+checked-external-heap-contracts/v65")
+        Some("transitive-source+checked-external-heap-contracts/v66")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation
@@ -9322,7 +9323,7 @@ fn verifier_proves_conditional_early_returns_across_a_source_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id.starts_with("choose:postcondition:") && obligation.satisfied()
@@ -9569,7 +9570,7 @@ fn verifier_composes_guarded_heap_effect_paths_across_a_source_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.obligations.iter().any(|item| {
         item.id.contains("run:method-call-precondition:bump:") && item.satisfied()
@@ -9605,7 +9606,7 @@ fn verifier_does_not_execute_effects_after_a_returned_guarded_path() {
 }
 
 #[test]
-fn verifier_refuses_unmodeled_properties_dynamic_dispatch_and_exceptional_guarded_calls() {
+fn verifier_refuses_unmodeled_properties_and_dynamic_dispatch() {
     for (source, symbols) in [
         (
             "from nagini_contracts.contracts import *\n\nclass Cell:\n    value: int\n    @property\n    def selected(self) -> int:\n        Requires(Acc(self.value))\n        return self.value\ndef run(cell: Cell, flag: bool) -> None:\n    Requires(Acc(cell.value))\n    if flag:\n        observed = cell.selected\n    else:\n        observed = 0\n",
@@ -9613,10 +9614,6 @@ fn verifier_refuses_unmodeled_properties_dynamic_dispatch_and_exceptional_guarde
         ),
         (
             "from nagini_contracts.contracts import *\n\nclass Cell:\n    value: int\n    def touch(self) -> None:\n        Requires(Acc(self.value))\n        Ensures(Acc(self.value))\n        self.value = self.value\ndef run(cell: Cell, flag: bool) -> None:\n    Requires(Acc(cell.value))\n    if flag:\n        getattr(cell, 'touch')()\n",
-            vec!["Cell.touch", "run"],
-        ),
-        (
-            "from nagini_contracts.contracts import *\n\nclass Failure(Exception):\n    pass\nclass Cell:\n    value: int\n    def touch(self) -> None:\n        Requires(Acc(self.value))\n        Ensures(Acc(self.value))\n        Exsures(Failure, True)\n        self.value = self.value\ndef run(cell: Cell, flag: bool) -> None:\n    Requires(Acc(cell.value))\n    if flag:\n        cell.touch()\n",
             vec!["Cell.touch", "run"],
         ),
         (
@@ -9629,7 +9626,7 @@ fn verifier_refuses_unmodeled_properties_dynamic_dispatch_and_exceptional_guarde
         ),
     ]
     .into_iter()
-    .take(3)
+    .take(2)
     {
         let response = verify_heap_program(source, &symbols);
         assert!(
@@ -9640,6 +9637,26 @@ fn verifier_refuses_unmodeled_properties_dynamic_dispatch_and_exceptional_guarde
         assert!(response.obligations.is_empty(), "{response:#?}");
         assert!(!response.diagnostics.is_empty(), "{response:#?}");
     }
+}
+
+#[test]
+fn verifier_refutes_an_uncaught_exceptional_guarded_method_call() {
+    let response = verify_heap_program(
+        "from nagini_contracts.contracts import *\n\nclass Failure(Exception):\n    pass\nclass Cell:\n    value: int\n    def touch(self) -> None:\n        Requires(Acc(self.value))\n        Ensures(Acc(self.value))\n        Exsures(Failure, True)\n        self.value = self.value\ndef run(cell: Cell, flag: bool) -> None:\n    Requires(Acc(cell.value))\n    if flag:\n        cell.touch()\n",
+        &["Cell.touch", "run"],
+    );
+
+    assert!(
+        matches!(response.status, ProofStatus::Refuted),
+        "{response:#?}"
+    );
+    assert!(
+        response.obligations.iter().any(|obligation| {
+            obligation.id.contains("exception-undeclared:Failure")
+                && matches!(obligation.status, ObligationStatus::Refuted)
+        }),
+        "{response:#?}"
+    );
 }
 
 #[test]
@@ -10434,7 +10451,7 @@ fn verifier_composes_exact_short_circuit_condition_methods_across_a_source_edge(
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     for caller in ["run_if", "run_and", "run_or"] {
         assert!(response.obligations.iter().any(|item| {
@@ -10504,7 +10521,7 @@ fn verifier_refutes_an_exact_imported_condition_result_but_refuses_open_ingress(
                 );
                 assert_eq!(
                     response.files[1].fragment.as_deref(),
-                    Some("transitive-source-heap-contracts/v65")
+                    Some("transitive-source-heap-contracts/v66")
                 );
                 assert!(response.obligations.iter().any(|item| {
                     item.id.starts_with("run:postcondition:") && !item.satisfied()
@@ -11121,7 +11138,7 @@ fn verifier_composes_static_reference_return_permissions_across_a_source_edge() 
     assert_eq!(response.source_imports.len(), 1, "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(response.obligations.iter().any(|item| {
         item.id.starts_with("run:")
@@ -11365,7 +11382,7 @@ fn verifier_does_not_rebind_imported_pure_scalar_dependencies_to_consumer_global
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v65")
+        Some("transitive-source-heap-contracts/v66")
     );
     assert!(
         response.obligations.iter().any(|obligation| {

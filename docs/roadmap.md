@@ -1185,7 +1185,7 @@ unclassified direct dependencies, and stale generated output.
 - Prohibit silent backend fallback during issuance or verification.
 - Add end-to-end positive, negative, tamper, timeout, and unsupported-language tests.
 
-The application-facing source fragment is now `dagcert-closed-typed-operations/v3`: imported
+The application-facing source fragment is now `dagcert-closed-typed-operations/v4`: imported
 `@operation` functions over frozen dataclass inputs and finite frozen-dataclass outcome unions, with
 both `|` and explicitly imported `typing.Union[...]` syntax, total primitive field expressions,
 primitive-only f-string interpolation, same-type primitive local reassignment, closed total `float`
@@ -1207,3 +1207,12 @@ hash-bound child module, and propagates a provider overlay through real adapter 
 This closes the production `Queue[Job]` adapter shape without payload erasure or artificial DAG
 tasks. Mutable history, initialization order, capacity, liveness, and undeclared provider exceptions
 remain outside that snapshot and must not be inferred from it.
+
+Maledictus 0.2.4 composes every nonconflicting provider overlay reachable from one source-proved
+worker instead of requiring one overlay to cover the entire imported closure. Checked external heap
+fragment v8 and transitive heap fragment v66 add opaque generic provider handles and typed
+`Exsures` paths on their methods, including `Queue[Job].put_nowait` raising `Full`; application code
+must catch the declared outcome or the proof refuses. Closed-operation fragment v4 admits shared
+frozen-record modules, operations whose records are all imported, and total `not isinstance(...)`
+narrowing. One release fixture proves the complete multi-adapter worker, and a conflicting-overlay
+fixture remains fail-closed.

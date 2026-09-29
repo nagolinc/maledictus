@@ -647,10 +647,10 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             }
         }
     }
-    if local_class_names.is_empty() || functions.is_empty() {
+    if local_class_names.is_empty() && functions.is_empty() {
         return failure(
             "frontend.python.dagcert.empty-module",
-            "Dagcert operation fragment requires frozen record types and at least one operation",
+            "Dagcert operation fragment requires at least one frozen record type or operation",
         );
     }
     let mut local_operation_shapes = BTreeMap::new();
@@ -804,12 +804,10 @@ fn imported_markers(suite: &[ast::Stmt]) -> Result<ImportedMarkers, OperationFai
             }
         }
     }
-    if (operations.is_empty() && external_boundaries.is_empty())
-        || (!operations.is_empty() && dataclasses.is_empty())
-    {
+    if operations.is_empty() && external_boundaries.is_empty() && dataclasses.is_empty() {
         return failure(
             "frontend.python.dagcert.marker-import-missing",
-            "operation modules require operation and dataclass imports; external adapters require external_boundary",
+            "operation modules require operation, frozen record modules require dataclass, and external adapters require external_boundary",
         );
     }
     Ok(ImportedMarkers {
@@ -1542,6 +1540,17 @@ fn narrow_isinstance_branches(
     then_locals: &mut BTreeMap<String, ValueType>,
     else_locals: &mut BTreeMap<String, ValueType>,
 ) -> Result<(), OperationFailure> {
+    if let ast::Expr::UnaryOp(unary) = test
+        && matches!(unary.op, ast::UnaryOp::Not)
+    {
+        return narrow_isinstance_branches(
+            &unary.operand,
+            records,
+            external_result_types,
+            else_locals,
+            then_locals,
+        );
+    }
     let ast::Expr::Call(call) = test else {
         return Ok(());
     };
@@ -1835,6 +1844,30 @@ fn infer_operation_expression(
     callable_bindings: &[ResolvedCallableBinding],
     locals: &BTreeMap<String, ValueType>,
 ) -> Result<(ValueType, BTreeSet<String>), OperationFailure> {
+    if let ast::Expr::UnaryOp(unary) = expression
+        && matches!(unary.op, ast::UnaryOp::Not)
+    {
+        let (operand, raised_exceptions) = infer_operation_expression(
+            &unary.operand,
+            input_name,
+            input_record,
+            records,
+            operations,
+            external_boundaries,
+            external_result_types,
+            operation_name,
+            callable_bindings,
+            locals,
+        )?;
+        if !matches!(operand, ValueType::Bool | ValueType::Str | ValueType::Bytes) {
+            return located_failure(
+                "frontend.python.dagcert.unary-not-type-mismatch",
+                "operation unary not requires a bool, str, or bytes expression",
+                expression,
+            );
+        }
+        return Ok((ValueType::Bool, raised_exceptions));
+    }
     let ast::Expr::Call(call) = expression else {
         return infer_expression(expression, input_name, input_record, records, locals)
             .map(|value_type| (value_type, BTreeSet::new()));

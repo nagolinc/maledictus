@@ -184,7 +184,7 @@ struct HeapSourceModuleResolver<'a> {
     external_by_adapter:
         &'a BTreeMap<String, Vec<python_heap_contracts::ImportedHeapContractModule>>,
     operation_modules: &'a BTreeMap<String, dagcert_operations::ImportedOperationModule>,
-    states: BTreeMap<(String, Option<String>), HeapSourceModuleState>,
+    states: BTreeMap<(String, Vec<String>), HeapSourceModuleState>,
     package_initializers: BTreeMap<String, HeapPackageInitializerState>,
 }
 
@@ -2262,49 +2262,57 @@ fn resolve_heap_source_imports(
             .get(&module)
             .cloned()
             .unwrap_or_default();
+        overlay_roots.sort();
+        overlay_roots.dedup();
         overlay_roots.retain(|root| {
-            required_external_modules.iter().all(|required| {
-                resolver.external_by_adapter[root]
-                    .iter()
-                    .any(|contract| contract.module() == required)
-            })
+            resolver.external_by_adapter[root]
+                .iter()
+                .any(|contract| required_external_modules.contains(contract.module()))
         });
         if required_external_modules.is_empty() {
             overlay_roots.clear();
-        } else if overlay_roots.len() > 1 {
-            let signatures = overlay_roots
+        } else {
+            for required in &required_external_modules {
+                let providers = overlay_roots
+                    .iter()
+                    .flat_map(|root| &resolver.external_by_adapter[root])
+                    .filter(|contract| contract.module() == required)
+                    .map(|contract| format!("{contract:?}"))
+                    .collect::<BTreeSet<_>>();
+                if providers.len() > 1 {
+                    return Err(Diagnostic::file_error(
+                        "frontend.python.heap.external-overlay-context-conflict",
+                        format!(
+                            "source module {module:?} reaches conflicting external contracts for module {required:?} through adapters {overlay_roots:?}"
+                        ),
+                        &path,
+                    ));
+                }
+            }
+            let covered = overlay_roots
                 .iter()
-                .map(|root| {
-                    resolver.external_by_adapter[root]
-                        .iter()
-                        .map(|contract| (contract.module().to_owned(), format!("{contract:?}")))
-                        .collect::<Vec<_>>()
-                })
+                .flat_map(|root| &resolver.external_by_adapter[root])
+                .map(|contract| contract.module().to_owned())
                 .collect::<BTreeSet<_>>();
-            if signatures.len() == 1 {
-                overlay_roots.truncate(1);
-            } else {
+            let missing = required_external_modules
+                .difference(&covered)
+                .cloned()
+                .collect::<BTreeSet<_>>();
+            if !missing.is_empty() {
                 return Err(Diagnostic::file_error(
-                    "frontend.python.heap.external-overlay-context-ambiguous",
+                    "frontend.python.heap.external-overlay-context-missing",
                     format!(
-                        "source module {module:?} is reachable from more than one external adapter overlay: {overlay_roots:?}"
+                        "source module {module:?} transitively imports external modules {required_external_modules:?}, but its reachable adapter overlays do not cover {missing:?}"
                     ),
                     &path,
                 ));
             }
-        } else if overlay_roots.is_empty() {
-            return Err(Diagnostic::file_error(
-                "frontend.python.heap.external-overlay-context-missing",
-                format!(
-                    "source module {module:?} transitively imports external modules {required_external_modules:?}, but no declared adapter overlay covers that source closure"
-                ),
-                &path,
-            ));
         }
-        let overlay_root = overlay_roots.first().map(String::as_str);
         let resolved = resolver
             .verify_parent_package_initializers(&module)
-            .and_then(|()| resolver.resolve_imports_for_path(&path, &imported_names, overlay_root));
+            .and_then(|()| {
+                resolver.resolve_imports_for_path(&path, &imported_names, &overlay_roots)
+            });
         by_path.insert(path, resolved);
     }
     Ok(ResolvedHeapSourceImports { by_path, edges })
@@ -2315,7 +2323,7 @@ impl HeapSourceModuleResolver<'_> {
         &mut self,
         path: &str,
         imported_names: &[String],
-        overlay_root: Option<&str>,
+        overlay_roots: &[String],
     ) -> Result<
         Vec<python_heap_contracts::ImportedHeapContractModule>,
         python_contracts::ContractFailure,
@@ -2323,24 +2331,35 @@ impl HeapSourceModuleResolver<'_> {
         let mut imports = Vec::new();
         for imported_name in imported_names {
             if self.units.contains_key(imported_name) {
-                imports.push(self.resolve_module(imported_name, overlay_root)?);
-            } else if let Some(external) = overlay_root
-                .and_then(|root| self.external_by_adapter.get(root))
-                .or_else(|| self.external_by_adapter.get(path))
-                .and_then(|modules| {
-                    modules
-                        .iter()
-                        .find(|module| module.module() == imported_name)
-                })
-            {
-                imports.push(external.clone());
+                imports.push(self.resolve_module(imported_name, overlay_roots)?);
             } else {
-                return Err(python_contracts::ContractFailure {
-                    code: "frontend.python.heap.unbound-module",
-                    message: format!(
-                        "source {path:?} imports heap module {imported_name:?}, but it is neither requested source nor an explicit external contract"
-                    ),
-                });
+                let mut candidates = overlay_roots
+                    .iter()
+                    .filter_map(|root| self.external_by_adapter.get(root))
+                    .chain(self.external_by_adapter.get(path))
+                    .flatten()
+                    .filter(|module| module.module() == imported_name)
+                    .collect::<Vec<_>>();
+                candidates.dedup_by(|left, right| format!("{left:?}") == format!("{right:?}"));
+                match candidates.as_slice() {
+                    [external] => imports.push((*external).clone()),
+                    [] => {
+                        return Err(python_contracts::ContractFailure {
+                            code: "frontend.python.heap.unbound-module",
+                            message: format!(
+                                "source {path:?} imports heap module {imported_name:?}, but it is neither requested source nor an explicit external contract"
+                            ),
+                        });
+                    }
+                    _ => {
+                        return Err(python_contracts::ContractFailure {
+                            code: "frontend.python.heap.external-overlay-context-conflict",
+                            message: format!(
+                                "source {path:?} reaches conflicting external contracts for module {imported_name:?}"
+                            ),
+                        });
+                    }
+                }
             }
         }
         Ok(imports)
@@ -2349,10 +2368,10 @@ impl HeapSourceModuleResolver<'_> {
     fn resolve_module(
         &mut self,
         module: &str,
-        overlay_root: Option<&str>,
+        overlay_roots: &[String],
     ) -> Result<python_heap_contracts::ImportedHeapContractModule, python_contracts::ContractFailure>
     {
-        let state_key = (module.to_owned(), overlay_root.map(str::to_owned));
+        let state_key = (module.to_owned(), overlay_roots.to_vec());
         if let Some(state) = self.states.get(&state_key) {
             return match state {
                 HeapSourceModuleState::Visiting => Err(python_contracts::ContractFailure {
@@ -2384,7 +2403,7 @@ impl HeapSourceModuleResolver<'_> {
             let imported_names =
                 expanded_heap_source_imports(&unit.source, &unit.path, &self.units)?;
             let imports =
-                self.resolve_imports_for_path(&unit.path, &imported_names, overlay_root)?;
+                self.resolve_imports_for_path(&unit.path, &imported_names, overlay_roots)?;
             let (_, exported) = python_heap_contracts::verify_and_export_source_heap_module(
                 &unit.source,
                 &unit.path,
@@ -2475,7 +2494,7 @@ impl HeapSourceModuleResolver<'_> {
         let result = (|| {
             let imported_names =
                 python_contracts::source_contract_imports(&unit.source, &unit.path)?;
-            let imports = self.resolve_imports_for_path(&unit.path, &imported_names, None)?;
+            let imports = self.resolve_imports_for_path(&unit.path, &imported_names, &[])?;
             let verification = python_heap_contracts::verify_heap_package_initializer_with_imports(
                 &unit.source,
                 &unit.path,
@@ -3005,16 +3024,34 @@ fn resolve_external_contracts(
                             };
                             Diagnostic::file_error(code, message, &overlay.stub_path)
                         })?;
-                        if !matches!(
-                            overlay.exception_policy,
+                        let exception_types = contract.exception_type_names();
+                        let declared_exceptions = contract.declared_exception_types();
+                        let scope = match &overlay.exception_policy {
                             protocol::ExternalExceptionPolicy::AssumeNoException
-                        ) {
-                            return Err(Diagnostic::file_error(
-                                "external-contract.exception-policy-mismatch",
-                                "heap contracts currently require assume-no-exception",
-                                &overlay.stub_path,
-                            ));
-                        }
+                                if declared_exceptions.is_empty() =>
+                            {
+                                "provider-import-and-heap-contract-conformance-assumed; heap-returning-factory-binding-class-layout-method-and-permission-effects-checked-at-adapter"
+                            }
+                            protocol::ExternalExceptionPolicy::DeclaredByExsures
+                                if !declared_exceptions.is_empty() =>
+                            {
+                                "provider-import-and-heap-contract-conformance-assumed; typed-heap-exsures-outcome-union-propagated; class-layout-method-and-permission-effects-checked-at-adapter"
+                            }
+                            protocol::ExternalExceptionPolicy::AssumeNoException => {
+                                return Err(Diagnostic::file_error(
+                                    "external-contract.exception-policy-mismatch",
+                                    "assume-no-exception cannot be used with a heap contract that declares Exsures outcomes",
+                                    &overlay.stub_path,
+                                ));
+                            }
+                            protocol::ExternalExceptionPolicy::DeclaredByExsures => {
+                                return Err(Diagnostic::file_error(
+                                    "external-contract.exception-policy-mismatch",
+                                    "declared-by-exsures requires at least one typed heap Exsures outcome",
+                                    &overlay.stub_path,
+                                ));
+                            }
+                        };
                         let heap_types = contract.qualified_class_names();
                         let functions = contract.factory_names();
                         results.push(ExternalContractResult {
@@ -3025,10 +3062,10 @@ fn resolve_external_contracts(
                             functions,
                             nominal_types: Vec::new(),
                             heap_types,
-                            exception_types: Vec::new(),
+                            exception_types,
                             exception_policy: overlay.exception_policy.clone(),
-                            declared_exceptions: Vec::new(),
-                            scope: "provider-import-and-heap-contract-conformance-assumed; heap-returning-factory-binding-class-layout-method-and-permission-effects-checked-at-adapter".to_owned(),
+                            declared_exceptions,
+                            scope: scope.to_owned(),
                         });
                         heap_modules
                             .entry(overlay.adapter_path.clone())

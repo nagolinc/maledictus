@@ -74,7 +74,7 @@ fn public_verifier_composes_source_callback_returns_and_caught_exceptions() {
         .unwrap();
     assert_eq!(
         consumer.fragment.as_deref(),
-        Some("dagcert-closed-typed-operations/v3")
+        Some("dagcert-closed-typed-operations/v4")
     );
     assert_eq!(response.python_callable_bindings.len(), 1);
     let binding = &response.python_callable_bindings[0];
@@ -295,7 +295,7 @@ fn same_file_source_callback_identity_is_checked_without_treating_glue_as_an_ope
     );
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("dagcert-closed-typed-operations/v3")
+        Some("dagcert-closed-typed-operations/v4")
     );
 }
 
@@ -380,7 +380,7 @@ fn passed_at_construction_dependencies_compose_across_multiple_typed_local_resul
     assert_eq!(response.python_callable_bindings.len(), 3);
     assert!(response.files.iter().all(|file| {
         matches!(file.result, ProofStatus::Proved)
-            && file.fragment.as_deref() == Some("dagcert-closed-typed-operations/v3")
+            && file.fragment.as_deref() == Some("dagcert-closed-typed-operations/v4")
     }));
 }
 

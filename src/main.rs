@@ -6,6 +6,12 @@ use std::process::ExitCode;
 
 use maledictus::protocol::{ProofRequest, ProofStatus};
 
+// Windows executables otherwise receive a 1 MiB main stack.  Real multi-module proof closures
+// legitimately exceed that while recursively lowering typed AST and VC terms.  Run only the
+// proof kernel on a deliberately reserved stack; CLI parsing and all other commands stay on the
+// ordinary main thread.  This is memory reservation, not a proof-search or application limit.
+const VERIFICATION_STACK_BYTES: usize = 32 * 1024 * 1024;
+
 fn main() -> ExitCode {
     match run() {
         Ok(code) => code,
@@ -398,7 +404,13 @@ fn run() -> Result<ExitCode, String> {
                 .map_err(|error| format!("cannot read request {path:?}: {error}"))?;
             let request: ProofRequest = serde_json::from_str(&source)
                 .map_err(|error| format!("invalid request {path:?}: {error}"))?;
-            let response = maledictus::verify(&request);
+            let response = std::thread::Builder::new()
+                .name("maledictus-verification".to_owned())
+                .stack_size(VERIFICATION_STACK_BYTES)
+                .spawn(move || maledictus::verify(&request))
+                .map_err(|error| format!("cannot start verification worker: {error}"))?
+                .join()
+                .map_err(|_| "verification worker terminated unexpectedly".to_owned())?;
             let exit_code = match response.status {
                 ProofStatus::Proved => ExitCode::SUCCESS,
                 ProofStatus::Refuted => ExitCode::from(1),

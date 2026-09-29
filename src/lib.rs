@@ -112,6 +112,7 @@ struct ResolvedOperationSourceImports {
             dagcert_operations::OperationFailure,
         >,
     >,
+    ordinary_by_path: BTreeMap<String, Vec<dagcert_operations::OrdinarySourceImport>>,
     by_module: BTreeMap<String, dagcert_operations::ImportedOperationModule>,
 }
 
@@ -126,6 +127,7 @@ struct OperationSourceModuleResolver<'a> {
     requested_symbols: BTreeMap<String, Vec<String>>,
     callable_bindings: &'a BTreeMap<String, Vec<dagcert_operations::ResolvedCallableBinding>>,
     external_adapter_paths: BTreeSet<String>,
+    external_nominal_modules: BTreeMap<String, BTreeSet<String>>,
     states: BTreeMap<String, OperationSourceModuleState>,
 }
 
@@ -184,7 +186,8 @@ struct HeapSourceModuleResolver<'a> {
     external_by_adapter:
         &'a BTreeMap<String, Vec<python_heap_contracts::ImportedHeapContractModule>>,
     operation_modules: &'a BTreeMap<String, dagcert_operations::ImportedOperationModule>,
-    states: BTreeMap<(String, Vec<String>), HeapSourceModuleState>,
+    overlay_roots_by_module: BTreeMap<String, Vec<String>>,
+    states: BTreeMap<String, HeapSourceModuleState>,
     package_initializers: BTreeMap<String, HeapPackageInitializerState>,
 }
 
@@ -461,7 +464,15 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
             .iter()
             .map(|overlay| overlay.adapter_path.clone())
             .collect(),
+        &external_contracts.heap_by_adapter,
     );
+    let mut external_nominal_modules = BTreeMap::<String, BTreeSet<String>>::new();
+    for module in external_contracts.heap_by_adapter.values().flatten() {
+        external_nominal_modules
+            .entry(module.module().to_owned())
+            .or_default()
+            .extend(module.class_names());
+    }
     let heap_source_imports = match resolve_heap_source_imports(
         &root,
         request,
@@ -640,6 +651,74 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
         if language == "python" {
             match std::str::from_utf8(&bytes) {
                 Ok(text) => {
+                    if source.symbols.is_empty()
+                        && !external_contracts
+                            .heap_by_adapter
+                            .contains_key(&source.path)
+                        && !external_contracts
+                            .reference_by_adapter
+                            .contains_key(&source.path)
+                        && !external_contracts
+                            .scalar_by_adapter
+                            .contains_key(&source.path)
+                        && dagcert_operations::is_operation_module_candidate(text, &source.path)
+                    {
+                        let imports = match operation_source_imports.by_path.get(&source.path) {
+                            Some(Ok(imports)) => imports.as_slice(),
+                            Some(Err(error)) => {
+                                response.diagnostics.push(Diagnostic::file_error(
+                                    error.code,
+                                    error.message.clone(),
+                                    &source.path,
+                                ));
+                                continue;
+                            }
+                            None => &[],
+                        };
+                        let module_name = python_module_name(&source.path)
+                            .unwrap_or_else(|_| source.path.clone());
+                        let ordinary_imports = operation_source_imports
+                            .ordinary_by_path
+                            .get(&source.path)
+                            .cloned()
+                            .unwrap_or_default();
+                        match dagcert_operations::verify_and_export_operation_module_with_imports_and_external_types(
+                            text,
+                            &source.path,
+                            &module_name,
+                            &source.symbols,
+                            &[],
+                            imports,
+                            &ordinary_imports,
+                            &external_nominal_modules,
+                        ) {
+                            Ok(_) => {
+                                if discharge_operation_assertions(
+                                    &mut response,
+                                    text,
+                                    &source.path,
+                                    &source.symbols,
+                                    heap_source_imports.get(&source.path),
+                                    "all-source-symbol-bodies",
+                                ) {
+                                    continue;
+                                }
+                                if let Some(file) = response.files.last_mut() {
+                                    file.result = ProofStatus::Proved;
+                                    file.fragment = Some(
+                                        fragments::DAGCERT_CLOSED_TYPED_OPERATIONS.to_owned(),
+                                    );
+                                    file.scope = "all-source-symbol-bodies".to_owned();
+                                }
+                            }
+                            Err(error) => response.diagnostics.push(Diagnostic::file_error(
+                                error.code,
+                                error.message,
+                                &source.path,
+                            )),
+                        }
+                        continue;
+                    }
                     if let Some(bindings) = python_callable_bindings.by_consumer.get(&source.path) {
                         match dagcert_operations::verify_operation_module_with_bindings(
                             text,
@@ -648,6 +727,16 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                             bindings,
                         ) {
                             Ok(_) => {
+                                if discharge_operation_assertions(
+                                    &mut response,
+                                    text,
+                                    &source.path,
+                                    &source.symbols,
+                                    heap_source_imports.get(&source.path),
+                                    "hash-bound-operation-input-and-concrete-callable-provider-with-composed-exit-effects",
+                                ) {
+                                    continue;
+                                }
                                 if let Some(file) = response.files.last_mut() {
                                     file.result = ProofStatus::Proved;
                                     file.fragment =
@@ -676,7 +765,12 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                                     .by_consumer
                                     .get(&source.path)
                                     .map_or(&[][..], Vec::as_slice);
-                                dagcert_operations::verify_and_export_operation_module_with_imports(
+                                let ordinary_imports = operation_source_imports
+                                    .ordinary_by_path
+                                    .get(&source.path)
+                                    .cloned()
+                                    .unwrap_or_default();
+                                dagcert_operations::verify_and_export_operation_module_with_imports_and_external_types(
                                     text,
                                     &source.path,
                                     &python_module_name(&source.path)
@@ -684,6 +778,8 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                                     &source.symbols,
                                     bindings,
                                     imports,
+                                    &ordinary_imports,
+                                    &external_nominal_modules,
                                 )
                                 .map(|_| ())
                             }),
@@ -707,6 +803,16 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                         };
                         let operation_error = match operation_result {
                             Some(Ok(())) => {
+                                if discharge_operation_assertions(
+                                    &mut response,
+                                    text,
+                                    &source.path,
+                                    &source.symbols,
+                                    heap_source_imports.get(&source.path),
+                                    "all-source-symbol-bodies",
+                                ) {
+                                    continue;
+                                }
                                 if let Some(file) = response.files.last_mut() {
                                     file.result = ProofStatus::Proved;
                                     file.fragment =
@@ -953,6 +1059,16 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                         &source.symbols,
                     ) {
                         Ok(_) => {
+                            if discharge_operation_assertions(
+                                &mut response,
+                                text,
+                                &source.path,
+                                &source.symbols,
+                                heap_source_imports.get(&source.path),
+                                "all-source-symbol-bodies",
+                            ) {
+                                continue;
+                            }
                             if let Some(file) = response.files.last_mut() {
                                 file.result = ProofStatus::Proved;
                                 file.fragment =
@@ -1734,12 +1850,17 @@ fn resolve_operation_source_imports(
     request: &ProofRequest,
     callable_bindings: &BTreeMap<String, Vec<dagcert_operations::ResolvedCallableBinding>>,
     external_adapter_paths: &BTreeSet<String>,
+    external_heap_by_adapter: &BTreeMap<
+        String,
+        Vec<python_heap_contracts::ImportedHeapContractModule>,
+    >,
 ) -> ResolvedOperationSourceImports {
     let Ok(units) = collect_python_source_units(root, request) else {
         // The ordinary source resolvers report path and module-name failures before this
         // operation-specific resolver is consulted.
         return ResolvedOperationSourceImports {
             by_path: BTreeMap::new(),
+            ordinary_by_path: BTreeMap::new(),
             by_module: BTreeMap::new(),
         };
     };
@@ -1749,11 +1870,19 @@ fn resolve_operation_source_imports(
         .filter(|source| source.language == "python")
         .map(|source| (source.path.clone(), source.symbols.clone()))
         .collect();
+    let mut external_nominal_modules = BTreeMap::<String, BTreeSet<String>>::new();
+    for module in external_heap_by_adapter.values().flatten() {
+        external_nominal_modules
+            .entry(module.module().to_owned())
+            .or_default()
+            .extend(module.class_names());
+    }
     let mut resolver = OperationSourceModuleResolver {
         units,
         requested_symbols,
         callable_bindings,
         external_adapter_paths: external_adapter_paths.clone(),
+        external_nominal_modules,
         states: BTreeMap::new(),
     };
     let paths = resolver
@@ -1762,6 +1891,7 @@ fn resolve_operation_source_imports(
         .map(|unit| (unit.path.clone(), unit.source.clone()))
         .collect::<Vec<_>>();
     let mut by_path = BTreeMap::new();
+    let mut ordinary_by_path = BTreeMap::new();
     for (path, source) in paths {
         if !dagcert_operations::is_operation_module_candidate(&source, &path) {
             continue;
@@ -1771,9 +1901,29 @@ fn resolve_operation_source_imports(
         };
         let imported_modules = bindings
             .iter()
-            .filter(|binding| resolver.units.contains_key(&binding.module))
+            .filter(|binding| {
+                resolver.units.get(&binding.module).is_some_and(|unit| {
+                    dagcert_operations::is_operation_module_candidate(&unit.source, &unit.path)
+                        || resolver.external_adapter_paths.contains(&unit.path)
+                })
+            })
             .map(|binding| binding.module.clone())
             .collect::<BTreeSet<_>>();
+        let mut ordinary_imports = Vec::new();
+        for binding in &bindings {
+            if let Some(unit) = resolver.units.get(&binding.module)
+                && !dagcert_operations::is_operation_module_candidate(&unit.source, &unit.path)
+                && !resolver.external_adapter_paths.contains(&unit.path)
+            {
+                ordinary_imports.push(dagcert_operations::OrdinarySourceImport {
+                    module: binding.module.clone(),
+                    imported_name: binding.imported_name.clone(),
+                    local_name: binding.local_name.clone(),
+                    source: unit.source.clone(),
+                });
+            }
+        }
+        ordinary_by_path.insert(path.clone(), ordinary_imports);
         if imported_modules.is_empty() {
             continue;
         }
@@ -1800,7 +1950,11 @@ fn resolve_operation_source_imports(
             OperationSourceModuleState::Visiting | OperationSourceModuleState::Done(Err(_)) => None,
         })
         .collect();
-    ResolvedOperationSourceImports { by_path, by_module }
+    ResolvedOperationSourceImports {
+        by_path,
+        ordinary_by_path,
+        by_module,
+    }
 }
 
 impl OperationSourceModuleResolver<'_> {
@@ -1849,9 +2003,31 @@ impl OperationSourceModuleResolver<'_> {
                         message: error.message,
                         byte_offset: None,
                     })?;
+            let mut ordinary_source_imports = Vec::new();
+            for binding in &bindings {
+                if let Some(imported) = self.units.get(&binding.module)
+                    && !dagcert_operations::is_operation_module_candidate(
+                        &imported.source,
+                        &imported.path,
+                    )
+                    && !self.external_adapter_paths.contains(&imported.path)
+                {
+                    ordinary_source_imports.push(dagcert_operations::OrdinarySourceImport {
+                        module: binding.module.clone(),
+                        imported_name: binding.imported_name.clone(),
+                        local_name: binding.local_name.clone(),
+                        source: imported.source.clone(),
+                    });
+                }
+            }
             let imported_modules = bindings
                 .iter()
-                .filter(|binding| self.units.contains_key(&binding.module))
+                .filter(|binding| {
+                    self.units.get(&binding.module).is_some_and(|unit| {
+                        dagcert_operations::is_operation_module_candidate(&unit.source, &unit.path)
+                            || self.external_adapter_paths.contains(&unit.path)
+                    })
+                })
                 .map(|binding| binding.module.clone())
                 .collect::<BTreeSet<_>>()
                 .iter()
@@ -1862,13 +2038,15 @@ impl OperationSourceModuleResolver<'_> {
                 .get(&unit.path)
                 .map_or(&[][..], Vec::as_slice);
             let (_, exported) =
-                dagcert_operations::verify_and_export_operation_module_with_imports(
+                dagcert_operations::verify_and_export_operation_module_with_imports_and_external_types(
                     &unit.source,
                     &unit.path,
                     &unit.module,
                     &requested,
                     callable_bindings,
                     &imported_modules,
+                    &ordinary_source_imports,
+                    &self.external_nominal_modules,
                 )
                 .map_err(|error| {
                     let location = error.byte_offset.map_or_else(String::new, |offset| {
@@ -2184,6 +2362,7 @@ fn resolve_heap_source_imports(
         units,
         external_by_adapter,
         operation_modules,
+        overlay_roots_by_module: overlay_roots_by_module.clone(),
         states: BTreeMap::new(),
         package_initializers: BTreeMap::new(),
     };
@@ -2239,25 +2418,23 @@ fn resolve_heap_source_imports(
                 });
             }
         }
-        let mut reachable_modules = vec![module.clone()];
-        let mut visited_modules = BTreeSet::new();
-        let mut required_external_modules = BTreeSet::new();
-        while let Some(reachable) = reachable_modules.pop() {
-            if !visited_modules.insert(reachable.clone()) {
-                continue;
-            }
-            for imported in all_imports_by_module.get(&reachable).into_iter().flatten() {
-                if resolver.units.contains_key(imported) {
-                    reachable_modules.push(imported.clone());
-                } else if resolver.external_by_adapter.values().any(|contracts| {
+        // Each hash-bound source module is checked in its own adapter context.  A module that
+        // imports another source module consumes the latter's already proved exports; it must not
+        // inherit every external provider used anywhere inside that dependency.  Requiring the
+        // transitive union here made an importer of one plain record depend on unrelated external
+        // types used by sibling records in the same source module.
+        let required_external_modules = imported_names
+            .iter()
+            .filter(|imported| !resolver.units.contains_key(*imported))
+            .filter(|imported| {
+                resolver.external_by_adapter.values().any(|contracts| {
                     contracts
                         .iter()
-                        .any(|contract| contract.module() == imported)
-                }) {
-                    required_external_modules.insert(imported.clone());
-                }
-            }
-        }
+                        .any(|contract| contract.module() == imported.as_str())
+                })
+            })
+            .cloned()
+            .collect::<BTreeSet<_>>();
         let mut overlay_roots = overlay_roots_by_module
             .get(&module)
             .cloned()
@@ -2331,7 +2508,7 @@ impl HeapSourceModuleResolver<'_> {
         let mut imports = Vec::new();
         for imported_name in imported_names {
             if self.units.contains_key(imported_name) {
-                imports.push(self.resolve_module(imported_name, overlay_roots)?);
+                imports.push(self.resolve_module(imported_name)?);
             } else {
                 let mut candidates = overlay_roots
                     .iter()
@@ -2368,11 +2545,9 @@ impl HeapSourceModuleResolver<'_> {
     fn resolve_module(
         &mut self,
         module: &str,
-        overlay_roots: &[String],
     ) -> Result<python_heap_contracts::ImportedHeapContractModule, python_contracts::ContractFailure>
     {
-        let state_key = (module.to_owned(), overlay_roots.to_vec());
-        if let Some(state) = self.states.get(&state_key) {
+        if let Some(state) = self.states.get(module) {
             return match state {
                 HeapSourceModuleState::Visiting => Err(python_contracts::ContractFailure {
                     code: "frontend.python.heap.import-cycle",
@@ -2384,11 +2559,11 @@ impl HeapSourceModuleResolver<'_> {
             };
         }
         self.states
-            .insert(state_key.clone(), HeapSourceModuleState::Visiting);
+            .insert(module.to_owned(), HeapSourceModuleState::Visiting);
         if let Some(operation_module) = self.operation_modules.get(module) {
             let result = python_heap_contracts::import_operation_records(operation_module);
             self.states.insert(
-                state_key,
+                module.to_owned(),
                 HeapSourceModuleState::Done(Box::new(result.clone())),
             );
             return result;
@@ -2402,8 +2577,13 @@ impl HeapSourceModuleResolver<'_> {
             self.verify_parent_package_initializers(module)?;
             let imported_names =
                 expanded_heap_source_imports(&unit.source, &unit.path, &self.units)?;
+            let overlay_roots = self
+                .overlay_roots_by_module
+                .get(module)
+                .cloned()
+                .unwrap_or_default();
             let imports =
-                self.resolve_imports_for_path(&unit.path, &imported_names, overlay_roots)?;
+                self.resolve_imports_for_path(&unit.path, &imported_names, &overlay_roots)?;
             let (_, exported) = python_heap_contracts::verify_and_export_source_heap_module(
                 &unit.source,
                 &unit.path,
@@ -2413,7 +2593,7 @@ impl HeapSourceModuleResolver<'_> {
             Ok(exported)
         })();
         self.states.insert(
-            state_key,
+            module.to_owned(),
             HeapSourceModuleState::Done(Box::new(result.clone())),
         );
         result
@@ -2842,6 +3022,64 @@ fn resolve_external_contracts(
     let mut heap_modules = BTreeMap::<String, Vec<_>>::new();
     let mut heap_bridge_modules = BTreeMap::<String, Vec<_>>::new();
     let mut results = Vec::new();
+    let mut provider_stub_sources = BTreeMap::<String, (String, String)>::new();
+    for overlay in &request.external_contract_overlays {
+        let Ok(stub_path) = resolve_source_path(root, &overlay.stub_path) else {
+            continue;
+        };
+        let Ok(bytes) = fs::read(stub_path) else {
+            continue;
+        };
+        let Ok(text) = String::from_utf8(bytes) else {
+            continue;
+        };
+        if let Some((existing_path, existing_text)) = provider_stub_sources.get(&overlay.module) {
+            if existing_path != &overlay.stub_path || existing_text != &text {
+                return Err(Diagnostic::file_error(
+                    "external-contract.provider-module-conflict",
+                    format!(
+                        "provider module {:?} is described by conflicting stubs {:?} and {:?}",
+                        overlay.module, existing_path, overlay.stub_path
+                    ),
+                    &overlay.stub_path,
+                ));
+            }
+        } else {
+            provider_stub_sources.insert(overlay.module.clone(), (overlay.stub_path.clone(), text));
+        }
+    }
+    let mut provider_heap_catalog =
+        BTreeMap::<String, python_heap_contracts::ImportedHeapContractModule>::new();
+    let mut unresolved_provider_modules = provider_stub_sources
+        .keys()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    loop {
+        let mut resolved_any = false;
+        for provider_module in unresolved_provider_modules.clone() {
+            let (stub_path, text) = &provider_stub_sources[&provider_module];
+            let imported = provider_heap_catalog
+                .values()
+                .filter(|candidate| candidate.module() != provider_module)
+                .cloned()
+                .collect::<Vec<_>>();
+            if let Ok(contract) =
+                python_heap_contracts::parse_external_heap_contract_module_with_imports(
+                    text,
+                    stub_path,
+                    &provider_module,
+                    &imported,
+                )
+            {
+                provider_heap_catalog.insert(provider_module.clone(), contract);
+                unresolved_provider_modules.remove(&provider_module);
+                resolved_any = true;
+            }
+        }
+        if !resolved_any {
+            break;
+        }
+    }
     for overlay in &request.external_contract_overlays {
         let Some(adapter) = request
             .files
@@ -2905,9 +3143,19 @@ fn resolve_external_contracts(
             &overlay.module,
         ) {
             Ok(contract) => {
+                // Scalar providers remain scalar inside a stateful worker. Their finite Exsures
+                // union is carried by the scalar summary itself; requiring a second parse as a
+                // nominal heap factory incorrectly rejected ordinary calls such as os.makedirs.
                 let heap_bridge = python_heap_contracts::import_scalar_contract(&contract)
                     .map_err(|error| {
-                        Diagnostic::file_error(error.code, error.message, &overlay.stub_path)
+                        Diagnostic::file_error(
+                            "external-contract.scalar-heap-bridge-invalid",
+                            format!(
+                                "external scalar contract cannot be used inside a stateful worker: {} [{}]",
+                                error.message, error.code
+                            ),
+                            &overlay.stub_path,
+                        )
                     })?;
                 let functions = contract.function_names();
                 let exception_types = contract.exception_type_names();
@@ -2955,19 +3203,10 @@ fn resolve_external_contracts(
                     .entry(overlay.adapter_path.clone())
                     .or_default()
                     .push(contract);
-                // The heap bridge currently represents only a provider's normal return.  Never
-                // admit a contract with declared exceptional exits through that narrower model:
-                // doing so would erase its Exsures channel and could prove an uncaught call total.
-                // Scalar-only adapters continue to use the exception-aware scalar frontend.
-                if matches!(
-                    overlay.exception_policy,
-                    protocol::ExternalExceptionPolicy::AssumeNoException
-                ) {
-                    heap_bridge_modules
-                        .entry(overlay.adapter_path.clone())
-                        .or_default()
-                        .push(heap_bridge);
-                }
+                heap_bridge_modules
+                    .entry(overlay.adapter_path.clone())
+                    .or_default()
+                    .push(heap_bridge);
             }
             Err(scalar_error) => {
                 match python_reference_contracts::parse_external_reference_contract_module(
@@ -3007,22 +3246,26 @@ fn resolve_external_contracts(
                             .push(contract);
                     }
                     Err(_) => {
-                        let contract = python_heap_contracts::parse_external_heap_contract_module(
+                        let imported = provider_heap_catalog
+                            .values()
+                            .filter(|candidate| candidate.module() != overlay.module)
+                            .cloned()
+                            .collect::<Vec<_>>();
+                        let contract = python_heap_contracts::parse_external_heap_contract_module_with_imports(
                             text,
                             &overlay.stub_path,
                             &overlay.module,
+                            &imported,
                         )
                         .map_err(|heap_error| {
-                            let (code, message) = if matches!(
+                            Diagnostic::file_error(
                                 heap_error.code,
-                                "frontend.python.heap.external-old-unsupported"
-                                    | "frontend.python.heap.result-identity-external-unsupported"
-                            ) {
-                                (heap_error.code, heap_error.message)
-                            } else {
-                                (scalar_error.code, scalar_error.message)
-                            };
-                            Diagnostic::file_error(code, message, &overlay.stub_path)
+                                format!(
+                                    "{} (the scalar-contract parser also refused this stub: {} [{}])",
+                                    heap_error.message, scalar_error.message, scalar_error.code
+                                ),
+                                &overlay.stub_path,
+                            )
                         })?;
                         let exception_types = contract.exception_type_names();
                         let declared_exceptions = contract.declared_exception_types();
@@ -3053,7 +3296,7 @@ fn resolve_external_contracts(
                             }
                         };
                         let heap_types = contract.qualified_class_names();
-                        let functions = contract.factory_names();
+                        let functions = contract.provider_callable_names();
                         results.push(ExternalContractResult {
                             adapter_path: overlay.adapter_path.clone(),
                             module: overlay.module.clone(),
@@ -3221,6 +3464,73 @@ fn record_reference_verification(
             ));
         }
     }
+}
+
+/// A closed-operation check proves typing, finite outcomes, and exception closure.  Python
+/// `assert` additionally states a semantic theorem, so an operation containing one is complete
+/// only after the heap backend has discharged it.  Returning true means this function recorded
+/// the definitive result (proved, refuted, or refused) and the caller must not apply the ordinary
+/// operation-success fast path.
+fn discharge_operation_assertions(
+    response: &mut ProofResponse,
+    source: &str,
+    path: &str,
+    requested_symbols: &[String],
+    imported: Option<
+        &Result<
+            Vec<python_heap_contracts::ImportedHeapContractModule>,
+            python_contracts::ContractFailure,
+        >,
+    >,
+    proved_scope: &str,
+) -> bool {
+    match dagcert_operations::operation_module_contains_assertions(source, path) {
+        Ok(false) => return false,
+        Err(error) => {
+            response
+                .diagnostics
+                .push(Diagnostic::file_error(error.code, error.message, path));
+            return true;
+        }
+        Ok(true) => {}
+    }
+    let empty = Vec::new();
+    let imported = match imported {
+        Some(Ok(imported)) => imported,
+        Some(Err(error)) => {
+            response.diagnostics.push(Diagnostic::file_error(
+                error.code,
+                error.message.clone(),
+                path,
+            ));
+            return true;
+        }
+        None => &empty,
+    };
+    match python_heap_contracts::verify_heap_module_with_imports(
+        source,
+        path,
+        requested_symbols,
+        imported,
+    ) {
+        Ok(verification) => {
+            record_heap_verification(
+                response,
+                path,
+                verification,
+                fragments::DAGCERT_TYPED_OPERATIONS_WITH_SEMANTIC_ASSERTIONS,
+            );
+            if let Some(file) = response.files.last_mut() {
+                file.scope = proved_scope.to_owned();
+            }
+        }
+        Err(error) => {
+            response
+                .diagnostics
+                .push(Diagnostic::file_error(error.code, error.message, path))
+        }
+    }
+    true
 }
 
 fn record_heap_verification(

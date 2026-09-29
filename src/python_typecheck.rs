@@ -132,7 +132,12 @@ pub fn typecheck_request_sources_with_interfaces(
         .arg(&mypy_cache)
         .args(&checked_paths)
         .args(&overlay_workspace.files)
-        .current_dir(&root)
+        // Keep mypy's working directory on the same volume as its generated overlay modules.
+        // On Windows, mypy 1.5 formats module-shadowing diagnostics with os.path.relpath and
+        // crashes when an overlay is on the system-temp drive while source_root is elsewhere.
+        // All source inputs and MYPYPATH entries remain canonical absolute paths, so changing
+        // cwd does not broaden resolution or weaken the confined-source checks above.
+        .current_dir(&overlay_workspace.root)
         .env_remove("MYPY_CONFIG_FILE")
         .env_remove("PYTHONPATH")
         .env("PYTHONDONTWRITEBYTECODE", "1")
@@ -472,6 +477,13 @@ fn materialize_overlay_stubs(
     let mut files = Vec::new();
     let mut modules = BTreeMap::<String, Vec<u8>>::new();
     for overlay in overlays {
+        // mypy reserves the top-level `builtins` module and refuses any explicit builtins.pyi as
+        // a user shadow. Application calls still receive strict static typing from the pinned
+        // mypy/typeshed builtins surface; Maledictus separately parses, hash-binds, and composes
+        // the declared ContractOnly builtins overlay for formal call/effect semantics.
+        if overlay.module == "builtins" {
+            continue;
+        }
         let segments = checked_module_segments(&overlay.module)?;
         reject_source_owned_overlay_module(root, &segments, &overlay.module)?;
         let stub_path = confined_source_path(root, &overlay.stub_path)?;

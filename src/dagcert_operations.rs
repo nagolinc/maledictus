@@ -13,11 +13,24 @@ pub(crate) enum ValueType {
     Bool,
     Str,
     Bytes,
+    Null,
     /// The result of `str.split`. It is kept distinct from an arbitrary list because index zero
     /// is total for every split result, while general list indexing is partial.
     StringSplitResult,
     VariadicTuple(Box<ValueType>),
     Record(String),
+    /// Path-local refinement of a frozen record after identity checks prove selected optional
+    /// external nominal fields are non-None.
+    RefinedRecord {
+        name: String,
+        non_none_fields: BTreeSet<String>,
+    },
+    /// A native/provider-owned nominal value whose class declaration is supplied by a sealed
+    /// external heap contract in the same proof request. The boolean records `T | None`.
+    ExternalNominal {
+        identity: String,
+        optional: bool,
+    },
     RecordUnion(BTreeSet<String>),
     ExternalResult {
         success_type: Box<ValueType>,
@@ -42,7 +55,23 @@ pub use callables::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct RecordShape {
     pub(crate) fields: Vec<(String, ValueType)>,
+    pub(crate) field_defaults: Vec<Option<RecordDefault>>,
+    /// Number of leading positional fields that have no source-declared default.  Defaulted
+    /// dataclass fields remain part of the nominal shape, but callers may omit the trailing
+    /// suffix exactly as Python's generated dataclass constructor permits.
+    pub(crate) required_fields: usize,
     pub(crate) constructible: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum RecordDefault {
+    Null,
+    Bool(bool),
+    Int(String),
+    Float(String),
+    Str(String),
+    Bytes(Vec<u8>),
+    VariadicTuple(Vec<RecordDefault>),
 }
 
 /// A source-owned operation module whose frozen record definitions were checked by this
@@ -53,9 +82,21 @@ pub(crate) struct RecordShape {
 pub(crate) struct ImportedOperationModule {
     pub module: String,
     records: BTreeMap<String, RecordShape>,
+    /// Canonical source module that declared each record in `records`.  A module may carry a
+    /// proved record through its transitive import closure without becoming a second nominal
+    /// origin for that record.
+    record_origins: BTreeMap<String, String>,
     record_exports: BTreeSet<String>,
     operations: BTreeMap<String, OperationShape>,
     external_boundaries: BTreeMap<String, ExternalBoundaryShape>,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct OrdinarySourceImport {
+    pub module: String,
+    pub imported_name: String,
+    pub local_name: String,
+    pub source: String,
 }
 
 impl ImportedOperationModule {
@@ -70,6 +111,14 @@ impl ImportedOperationModule {
     pub(crate) fn record_exports(&self) -> &BTreeSet<String> {
         &self.record_exports
     }
+
+    pub(crate) fn record_origin(&self, name: &str) -> Option<&str> {
+        self.record_origins.get(name).map(String::as_str)
+    }
+
+    pub(crate) fn external_boundaries(&self) -> &BTreeMap<String, ExternalBoundaryShape> {
+        &self.external_boundaries
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -79,10 +128,10 @@ struct OperationShape {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct ExternalBoundaryShape {
-    boundary_id: String,
-    parameters: Vec<ValueType>,
-    success_type: ValueType,
+pub(crate) struct ExternalBoundaryShape {
+    pub(crate) boundary_id: String,
+    pub(crate) parameters: Vec<ValueType>,
+    pub(crate) success_type: ValueType,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -111,6 +160,35 @@ pub struct OperationFailure {
     pub code: &'static str,
     pub message: String,
     pub byte_offset: Option<u32>,
+}
+
+/// Returns whether a closed-operation module contains a Python assertion whose truth must be
+/// discharged by the semantic heap verifier.  The operation frontend checks the assertion's
+/// expression type and exception effects, but type checking alone is not a proof that it holds.
+pub(crate) fn operation_module_contains_assertions(
+    source: &str,
+    path: &str,
+) -> Result<bool, OperationFailure> {
+    let suite = ast::Suite::parse(source, path).map_err(|error| OperationFailure {
+        code: "frontend.python.parse-error",
+        message: error.to_string(),
+        byte_offset: None,
+    })?;
+    #[derive(Default)]
+    struct AssertionCollector {
+        found: bool,
+    }
+    impl Visitor for AssertionCollector {
+        fn visit_stmt_assert(&mut self, node: ast::StmtAssert) {
+            self.found = true;
+            self.generic_visit_stmt_assert(node);
+        }
+    }
+    let mut collector = AssertionCollector::default();
+    for statement in suite {
+        collector.visit_stmt(statement);
+    }
+    Ok(collector.found)
 }
 
 pub fn verify_operation_module(
@@ -145,13 +223,18 @@ pub(crate) fn is_operation_module_candidate(source: &str, path: &str) -> bool {
     let Ok(markers) = imported_markers(&suite) else {
         return false;
     };
-    suite.iter().any(|statement| {
-        let ast::Stmt::FunctionDef(function) = statement else {
-            return false;
-        };
-        function.decorator_list.iter().any(|decorator| {
+    suite.iter().any(|statement| match statement {
+        ast::Stmt::FunctionDef(function) => function.decorator_list.iter().any(|decorator| {
             matches!(decorator, ast::Expr::Name(name) if markers.operations.contains(name.id.as_str()))
-        })
+        }),
+        ast::Stmt::ClassDef(class) => class.decorator_list.iter().any(|decorator| {
+            let decorator = match decorator {
+                ast::Expr::Call(call) => call.func.as_ref(),
+                value => value,
+            };
+            matches!(decorator, ast::Expr::Name(name) if markers.dataclasses.contains(name.id.as_str()))
+        }),
+        _ => false,
     })
 }
 
@@ -293,6 +376,7 @@ pub(crate) fn export_external_boundary_module(
     Ok(ImportedOperationModule {
         module: module.to_owned(),
         records: BTreeMap::new(),
+        record_origins: BTreeMap::new(),
         record_exports: BTreeSet::new(),
         operations: BTreeMap::new(),
         external_boundaries,
@@ -434,6 +518,28 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
     callable_bindings: &[ResolvedCallableBinding],
     imported_modules: &[ImportedOperationModule],
 ) -> Result<(OperationVerification, ImportedOperationModule), OperationFailure> {
+    verify_and_export_operation_module_with_imports_and_external_types(
+        source,
+        path,
+        module,
+        requested_symbols,
+        callable_bindings,
+        imported_modules,
+        &[],
+        &BTreeMap::new(),
+    )
+}
+
+pub(crate) fn verify_and_export_operation_module_with_imports_and_external_types(
+    source: &str,
+    path: &str,
+    module: &str,
+    requested_symbols: &[String],
+    callable_bindings: &[ResolvedCallableBinding],
+    imported_modules: &[ImportedOperationModule],
+    ordinary_source_imports: &[OrdinarySourceImport],
+    external_nominal_modules: &BTreeMap<String, BTreeSet<String>>,
+) -> Result<(OperationVerification, ImportedOperationModule), OperationFailure> {
     let suite = ast::Suite::parse(source, path).map_err(|error| OperationFailure {
         code: "frontend.python.dagcert.parse-error",
         message: error.to_string(),
@@ -470,6 +576,83 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
         .iter()
         .map(|imported| (imported.module.as_str(), imported))
         .collect::<BTreeMap<_, _>>();
+    let mut external_nominal_names = BTreeMap::new();
+    for statement in &suite {
+        let ast::Stmt::ImportFrom(import) = statement else {
+            continue;
+        };
+        let Some(imported_module_name) = import.module.as_ref().map(|name| name.as_str()) else {
+            continue;
+        };
+        let Some(allowed_types) = external_nominal_modules.get(imported_module_name) else {
+            continue;
+        };
+        if import.level.is_some_and(|level| level != 0_u32) {
+            return failure(
+                "frontend.python.dagcert.external-type-import-relative",
+                "external nominal type imports must use absolute module names",
+            );
+        }
+        for alias in &import.names {
+            let imported_name = alias.name.as_str();
+            if imported_name == "*" || !allowed_types.contains(imported_name) {
+                return failure(
+                    "frontend.python.dagcert.external-type-import-unproved",
+                    format!(
+                        "external module {imported_module_name:?} does not expose sealed nominal type {imported_name:?}"
+                    ),
+                );
+            }
+            let local_name = alias
+                .asname
+                .as_ref()
+                .map_or(imported_name, |name| name.as_str())
+                .to_owned();
+            let identity = format!("{imported_module_name}.{imported_name}");
+            if external_nominal_names
+                .insert(local_name.clone(), identity)
+                .is_some()
+            {
+                return failure(
+                    "frontend.python.dagcert.external-type-import-duplicate",
+                    format!("external nominal type name {local_name:?} is imported more than once"),
+                );
+            }
+        }
+    }
+    for statement in &suite {
+        let ast::Stmt::ImportFrom(import) = statement else {
+            continue;
+        };
+        let Some(imported_module_name) = import.module.as_ref().map(|name| name.as_str()) else {
+            continue;
+        };
+        let allowed_symbols = ordinary_source_imports
+            .iter()
+            .filter(|source_import| source_import.module == imported_module_name)
+            .map(|source_import| source_import.imported_name.as_str())
+            .collect::<BTreeSet<_>>();
+        if allowed_symbols.is_empty() {
+            continue;
+        }
+        if import.level.is_some_and(|level| level != 0_u32) {
+            return failure(
+                "frontend.python.dagcert.source-helper-import-relative",
+                "ordinary source helper imports must use absolute module names",
+            );
+        }
+        for alias in &import.names {
+            if alias.name.as_str() == "*" || !allowed_symbols.contains(alias.name.as_str()) {
+                return failure(
+                    "frontend.python.dagcert.source-helper-symbol-unproved",
+                    format!(
+                        "ordinary source module {imported_module_name:?} does not have a sealed import edge for {:?}",
+                        alias.name
+                    ),
+                );
+            }
+        }
+    }
     let mut records = BTreeMap::new();
     let mut record_origins = BTreeMap::new();
     let mut imported_record_names = BTreeSet::new();
@@ -492,12 +675,16 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             );
         }
         for (name, shape) in &imported_module.records {
+            let canonical_origin = imported_module
+                .record_origins
+                .get(name)
+                .map_or(imported_module_name, String::as_str);
             if let Some(origin) = record_origins.get(name) {
-                if origin != imported_module_name {
+                if origin != canonical_origin {
                     return failure(
                         "frontend.python.dagcert.source-import-name-collision",
                         format!(
-                            "operation record name {name:?} is supplied by both {origin:?} and {imported_module_name:?}"
+                            "operation record name {name:?} is supplied by both canonical origins {origin:?} and {canonical_origin:?}"
                         ),
                     );
                 }
@@ -505,7 +692,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
                 let mut hidden_shape = shape.clone();
                 hidden_shape.constructible = false;
                 records.insert(name.clone(), hidden_shape);
-                record_origins.insert(name.clone(), imported_module_name.to_owned());
+                record_origins.insert(name.clone(), canonical_origin.to_owned());
             }
         }
         for alias in &import.names {
@@ -565,9 +752,13 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
                     byte_offset: None,
                 }
             })?;
+            let canonical_origin = imported_module
+                .record_origins
+                .get(imported_name)
+                .map_or(imported_module_name, String::as_str);
             if record_origins
                 .get(&local_name)
-                .is_some_and(|origin| origin != imported_module_name)
+                .is_some_and(|origin| origin != canonical_origin)
                 || imported_operations.contains_key(&local_name)
                 || imported_external_boundaries.contains_key(&local_name)
                 || !imported_record_names.insert(local_name.clone())
@@ -579,7 +770,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             }
             shape.constructible = true;
             records.insert(local_name.clone(), shape);
-            record_origins.insert(local_name, imported_module_name.to_owned());
+            record_origins.insert(local_name, canonical_origin.to_owned());
         }
     }
     let mut class_names = imported_record_names.clone();
@@ -596,6 +787,8 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
         }
     }
     let mut functions = Vec::new();
+    let mut available_record_names = imported_record_names.clone();
+    let mut static_type_aliases = BTreeSet::new();
     let same_file_provider_symbols = callable_bindings
         .iter()
         .filter_map(|binding| binding.source_provider.as_ref())
@@ -607,10 +800,13 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             _ if index == 0 && is_docstring(statement) => {}
             ast::Stmt::ImportFrom(import)
                 if allowed_import(import)
-                    || import
-                        .module
-                        .as_ref()
-                        .is_some_and(|name| imported_by_module.contains_key(name.as_str())) => {}
+                    || import.module.as_ref().is_some_and(|name| {
+                        imported_by_module.contains_key(name.as_str())
+                            || ordinary_source_imports
+                                .iter()
+                                .any(|source_import| source_import.module == name.as_str())
+                            || external_nominal_modules.contains_key(name.as_str())
+                    }) => {}
             ast::Stmt::ClassDef(class) => {
                 if records.contains_key(class.name.as_str()) {
                     return failure(
@@ -626,8 +822,33 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
                     &markers.dataclasses,
                     &markers.callables,
                     &class_names,
+                    &external_nominal_names,
                 )?;
                 records.insert(class.name.to_string(), shape);
+                record_origins.insert(class.name.to_string(), module.to_owned());
+                available_record_names.insert(class.name.to_string());
+            }
+            ast::Stmt::Assign(assignment)
+                if static_record_union_alias(
+                    assignment,
+                    &markers.unions,
+                    &available_record_names,
+                )
+                .is_some() =>
+            {
+                let alias =
+                    static_record_union_alias(assignment, &markers.unions, &available_record_names)
+                        .expect("match guard established a static record union alias");
+                if records.contains_key(&alias)
+                    || imported_operations.contains_key(&alias)
+                    || imported_external_boundaries.contains_key(&alias)
+                    || !static_type_aliases.insert(alias.clone())
+                {
+                    return failure(
+                        "frontend.python.dagcert.type-alias-name-collision",
+                        format!("static record union alias {alias:?} is ambiguous"),
+                    );
+                }
             }
             ast::Stmt::FunctionDef(function)
                 if function.decorator_list.len() == 1
@@ -678,6 +899,11 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             );
         }
     }
+    let source_helper_signatures = ordinary_source_helper_signatures(
+        ordinary_source_imports,
+        &records.keys().cloned().collect(),
+        &markers.callables,
+    )?;
     // Only already-proved operations from acyclic provider modules are callable here. Local
     // operation calls would require a separate termination/call-graph proof and remain refused.
     let available_operations = imported_operations;
@@ -693,6 +919,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
             &imported_external_boundaries,
             &markers.external_result_types,
             callable_bindings,
+            &source_helper_signatures,
         )?;
         operations.push(function.name.to_string());
     }
@@ -728,6 +955,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
         ImportedOperationModule {
             module: module.to_owned(),
             records,
+            record_origins,
             record_exports: local_class_names,
             operations: local_operation_shapes,
             external_boundaries: BTreeMap::new(),
@@ -862,6 +1090,7 @@ fn parse_record(
     dataclass_names: &BTreeSet<String>,
     callable_names: &BTreeSet<String>,
     class_names: &BTreeSet<String>,
+    external_nominal_names: &BTreeMap<String, String>,
 ) -> Result<RecordShape, OperationFailure> {
     if !class.bases.is_empty()
         || !class.keywords.is_empty()
@@ -878,7 +1107,10 @@ fn parse_record(
         );
     }
     let mut fields = Vec::new();
+    let mut field_defaults = Vec::new();
     let mut names = BTreeSet::new();
+    let mut required_fields = 0_usize;
+    let mut saw_default = false;
     for (index, statement) in class.body.iter().enumerate() {
         match statement {
             _ if index == 0 && is_docstring(statement) => {}
@@ -889,16 +1121,49 @@ fn parse_record(
                         "record fields require simple annotated names",
                     );
                 };
-                if assignment.value.is_some() || !names.insert(name.id.to_string()) {
+                if !names.insert(name.id.to_string()) {
                     return failure(
                         "frontend.python.dagcert.record-field-unsupported",
-                        format!("record field {:?} has a default or is duplicated", name.id),
+                        format!("record field {:?} is duplicated", name.id),
                     );
                 }
-                fields.push((
-                    name.id.to_string(),
-                    annotation_type(&assignment.annotation, class_names, callable_names)?,
-                ));
+                let field_type = record_field_annotation_type(
+                    &assignment.annotation,
+                    class_names,
+                    callable_names,
+                    external_nominal_names,
+                )?;
+                if let Some(default) = assignment.value.as_deref() {
+                    saw_default = true;
+                    if !record_default_matches(default, &field_type) {
+                        return located_failure(
+                            "frontend.python.dagcert.record-field-default-unsupported",
+                            format!(
+                                "record field {:?} requires a total immutable literal default matching {field_type:?}",
+                                name.id
+                            ),
+                            default,
+                        );
+                    }
+                } else if saw_default {
+                    return failure(
+                        "frontend.python.dagcert.record-field-order-invalid",
+                        format!(
+                            "required record field {:?} cannot follow a defaulted field",
+                            name.id
+                        ),
+                    );
+                } else {
+                    required_fields += 1;
+                }
+                field_defaults.push(
+                    assignment
+                        .value
+                        .as_deref()
+                        .map(record_default_value)
+                        .transpose()?,
+                );
+                fields.push((name.id.to_string(), field_type));
             }
             ast::Stmt::Pass(_) => {}
             _ => {
@@ -914,8 +1179,163 @@ fn parse_record(
     }
     Ok(RecordShape {
         fields,
+        field_defaults,
+        required_fields,
         constructible: true,
     })
+}
+
+fn static_record_union_alias(
+    assignment: &ast::StmtAssign,
+    union_names: &BTreeSet<String>,
+    available_records: &BTreeSet<String>,
+) -> Option<String> {
+    let [ast::Expr::Name(target)] = assignment.targets.as_slice() else {
+        return None;
+    };
+    let ast::Expr::Subscript(union) = assignment.value.as_ref() else {
+        return None;
+    };
+    let ast::Expr::Name(constructor) = union.value.as_ref() else {
+        return None;
+    };
+    if !union_names.contains(constructor.id.as_str()) {
+        return None;
+    }
+    let members = match union.slice.as_ref() {
+        ast::Expr::Tuple(tuple) => tuple.elts.as_slice(),
+        member => std::slice::from_ref(member),
+    };
+    (!members.is_empty()
+        && members.iter().all(|member| {
+            matches!(member, ast::Expr::Name(name)
+                if available_records.contains(name.id.as_str()))
+        }))
+    .then(|| target.id.to_string())
+}
+
+fn record_default_matches(expression: &ast::Expr, expected: &ValueType) -> bool {
+    let actual = match expression {
+        ast::Expr::Constant(constant) => match &constant.value {
+            ast::Constant::None => Some(ValueType::Null),
+            ast::Constant::Bool(_) => Some(ValueType::Bool),
+            ast::Constant::Int(_) => Some(ValueType::Int),
+            ast::Constant::Float(_) => Some(ValueType::Float),
+            ast::Constant::Str(_) => Some(ValueType::Str),
+            ast::Constant::Bytes(_) => Some(ValueType::Bytes),
+            _ => None,
+        },
+        ast::Expr::UnaryOp(unary)
+            if matches!(unary.op, ast::UnaryOp::UAdd | ast::UnaryOp::USub) =>
+        {
+            match unary.operand.as_ref() {
+                ast::Expr::Constant(value) if matches!(value.value, ast::Constant::Int(_)) => {
+                    Some(ValueType::Int)
+                }
+                ast::Expr::Constant(value) if matches!(value.value, ast::Constant::Float(_)) => {
+                    Some(ValueType::Float)
+                }
+                _ => None,
+            }
+        }
+        ast::Expr::Tuple(tuple) => {
+            let ValueType::VariadicTuple(element) = expected else {
+                return false;
+            };
+            return tuple
+                .elts
+                .iter()
+                .all(|value| record_default_matches(value, element));
+        }
+        _ => None,
+    };
+    actual.is_some_and(|actual| operation_value_assignable(&actual, expected))
+}
+
+fn record_default_value(expression: &ast::Expr) -> Result<RecordDefault, OperationFailure> {
+    match expression {
+        ast::Expr::Constant(constant) => match &constant.value {
+            ast::Constant::None => Ok(RecordDefault::Null),
+            ast::Constant::Bool(value) => Ok(RecordDefault::Bool(*value)),
+            ast::Constant::Int(value) => Ok(RecordDefault::Int(value.to_string())),
+            ast::Constant::Float(value) => Ok(RecordDefault::Float(value.to_string())),
+            ast::Constant::Str(value) => Ok(RecordDefault::Str(value.clone())),
+            ast::Constant::Bytes(value) => Ok(RecordDefault::Bytes(value.clone())),
+            _ => located_failure(
+                "frontend.python.dagcert.record-field-default-unsupported",
+                "record default is outside the closed immutable literal set",
+                expression,
+            ),
+        },
+        ast::Expr::UnaryOp(unary)
+            if matches!(unary.op, ast::UnaryOp::UAdd | ast::UnaryOp::USub) =>
+        {
+            let sign = if unary.op == ast::UnaryOp::USub {
+                "-"
+            } else {
+                ""
+            };
+            match unary.operand.as_ref() {
+                ast::Expr::Constant(value) => match &value.value {
+                    ast::Constant::Int(value) => Ok(RecordDefault::Int(format!("{sign}{value}"))),
+                    ast::Constant::Float(value) => {
+                        Ok(RecordDefault::Float(format!("{sign}{value}")))
+                    }
+                    _ => unreachable!("record_default_matches validated numeric unary default"),
+                },
+                _ => unreachable!("record_default_matches validated numeric unary default"),
+            }
+        }
+        ast::Expr::Tuple(tuple) => tuple
+            .elts
+            .iter()
+            .map(record_default_value)
+            .collect::<Result<Vec<_>, _>>()
+            .map(RecordDefault::VariadicTuple),
+        _ => unreachable!("record_default_matches validated the default expression"),
+    }
+}
+
+fn record_field_annotation_type(
+    annotation: &ast::Expr,
+    class_names: &BTreeSet<String>,
+    callable_names: &BTreeSet<String>,
+    external_nominal_names: &BTreeMap<String, String>,
+) -> Result<ValueType, OperationFailure> {
+    if let ast::Expr::Name(name) = annotation
+        && let Some(identity) = external_nominal_names.get(name.id.as_str())
+    {
+        return Ok(ValueType::ExternalNominal {
+            identity: identity.clone(),
+            optional: false,
+        });
+    }
+    if let ast::Expr::BinOp(union) = annotation
+        && matches!(union.op, ast::Operator::BitOr)
+    {
+        let (nominal, none) = match (union.left.as_ref(), union.right.as_ref()) {
+            (ast::Expr::Name(nominal), ast::Expr::Constant(none))
+            | (ast::Expr::Constant(none), ast::Expr::Name(nominal))
+                if matches!(none.value, ast::Constant::None) =>
+            {
+                (nominal, none)
+            }
+            _ => {
+                return failure(
+                    "frontend.python.dagcert.external-type-union-unsupported",
+                    "external nominal record fields support only T or T | None",
+                );
+            }
+        };
+        let _ = none;
+        if let Some(identity) = external_nominal_names.get(nominal.id.as_str()) {
+            return Ok(ValueType::ExternalNominal {
+                identity: identity.clone(),
+                optional: true,
+            });
+        }
+    }
+    annotation_type(annotation, class_names, callable_names)
 }
 
 fn frozen_dataclass(expression: &ast::Expr, names: &BTreeSet<String>) -> bool {
@@ -1065,6 +1485,118 @@ fn callable_annotation_type(
     }))
 }
 
+fn ordinary_source_helper_signatures(
+    imports: &[OrdinarySourceImport],
+    class_names: &BTreeSet<String>,
+    callable_names: &BTreeSet<String>,
+) -> Result<BTreeMap<String, CallableSignature>, OperationFailure> {
+    let mut signatures = BTreeMap::new();
+    for source_import in imports {
+        let suite =
+            ast::Suite::parse(&source_import.source, &source_import.module).map_err(|error| {
+                OperationFailure {
+                    code: "frontend.python.dagcert.source-helper-parse-error",
+                    message: error.to_string(),
+                    byte_offset: None,
+                }
+            })?;
+        let matches = suite
+            .iter()
+            .filter_map(|statement| match statement {
+                ast::Stmt::FunctionDef(function)
+                    if function.name.as_str() == source_import.imported_name =>
+                {
+                    Some(function)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        if matches.is_empty() {
+            // Ordinary source modules may also export typed state objects. Those bindings are
+            // checked by the heap frontend and are not callable operation locals.
+            continue;
+        }
+        let [function] = matches.as_slice() else {
+            return failure(
+                "frontend.python.dagcert.source-helper-duplicate",
+                format!(
+                    "ordinary source module {:?} declares helper {:?} more than once",
+                    source_import.module, source_import.imported_name
+                ),
+            );
+        };
+        if !function.decorator_list.is_empty()
+            || !function.type_params.is_empty()
+            || function.args.vararg.is_some()
+            || function.args.kwarg.is_some()
+            || !function.args.posonlyargs.is_empty()
+            || !function.args.kwonlyargs.is_empty()
+            || function
+                .args
+                .args
+                .iter()
+                .any(|argument| argument.default.is_some())
+        {
+            return failure(
+                "frontend.python.dagcert.source-helper-signature-unsupported",
+                format!(
+                    "ordinary source helper {:?}.{} requires an undecorated, fully annotated positional signature",
+                    source_import.module, source_import.imported_name
+                ),
+            );
+        }
+        let mut parameters = Vec::new();
+        for argument in &function.args.args {
+            let annotation =
+                argument
+                    .def
+                    .annotation
+                    .as_deref()
+                    .ok_or_else(|| OperationFailure {
+                        code: "frontend.python.dagcert.source-helper-type-missing",
+                        message: format!(
+                            "ordinary source helper {:?}.{} parameter {:?} is untyped",
+                            source_import.module, source_import.imported_name, argument.def.arg
+                        ),
+                        byte_offset: Some(argument.def.range.start().into()),
+                    })?;
+            parameters.push(annotation_type(annotation, class_names, callable_names)?);
+        }
+        let return_annotation = function
+            .returns
+            .as_deref()
+            .ok_or_else(|| OperationFailure {
+                code: "frontend.python.dagcert.source-helper-type-missing",
+                message: format!(
+                    "ordinary source helper {:?}.{} has no return annotation",
+                    source_import.module, source_import.imported_name
+                ),
+                byte_offset: Some(function.range.start().into()),
+            })?;
+        let signature = CallableSignature {
+            parameters,
+            return_type: Box::new(annotation_type(
+                return_annotation,
+                class_names,
+                callable_names,
+            )?),
+        };
+        if signatures
+            .insert(source_import.local_name.clone(), signature)
+            .is_some()
+        {
+            return failure(
+                "frontend.python.dagcert.source-helper-name-collision",
+                format!(
+                    "ordinary source helper local name {:?} is ambiguous",
+                    source_import.local_name
+                ),
+            );
+        }
+    }
+    Ok(signatures)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn verify_operation(
     function: &ast::StmtFunctionDef,
@@ -1076,6 +1608,7 @@ fn verify_operation(
     external_boundaries: &BTreeMap<String, ExternalBoundaryShape>,
     external_result_types: &BTreeMap<String, String>,
     callable_bindings: &[ResolvedCallableBinding],
+    source_helpers: &BTreeMap<String, CallableSignature>,
 ) -> Result<(), OperationFailure> {
     let shape = operation_shape(
         function,
@@ -1104,7 +1637,11 @@ fn verify_operation(
         operation_name: function.name.as_str(),
         callable_bindings,
     };
-    let effects = verify_statements(&function.body, &context, &mut BTreeMap::new())?;
+    let mut locals = source_helpers
+        .iter()
+        .map(|(name, signature)| (name.clone(), ValueType::Callable(signature.clone())))
+        .collect();
+    let effects = verify_statements(&function.body, &context, &mut locals)?;
     if !effects.normal_path_returns || !effects.raised_exceptions.is_empty() {
         let exception_detail = if effects.raised_exceptions.is_empty() {
             String::new()
@@ -1410,7 +1947,7 @@ fn verify_statements(
                     locals,
                 )?;
                 raised_exceptions.extend(exceptions);
-                if actual != expected {
+                if !operation_value_assignable(&actual, &expected) {
                     return located_failure(
                         "frontend.python.dagcert.local-assignment-type-mismatch",
                         format!(
@@ -1474,13 +2011,45 @@ fn verify_statements(
                     else_returns.normal_path_returns,
                 )?;
             }
-            ast::Stmt::Try(try_statement) => {
-                if !try_statement.orelse.is_empty() || !try_statement.finalbody.is_empty() {
-                    return failure(
-                        "frontend.python.dagcert.try-shape-unsupported",
-                        "callback operation try statements do not yet admit else or finally",
+            ast::Stmt::Assert(assertion) => {
+                if assertion.msg.is_some() {
+                    return located_failure(
+                        "frontend.python.dagcert.assert-message-unsupported",
+                        "operation assertions cannot use a conditionally evaluated message",
+                        &assertion.test,
                     );
                 }
+                let (condition, condition_exceptions) = infer_operation_expression(
+                    &assertion.test,
+                    context.input_name,
+                    context.input_record,
+                    context.records,
+                    context.operations,
+                    context.external_boundaries,
+                    context.external_result_types,
+                    context.operation_name,
+                    context.callable_bindings,
+                    locals,
+                )?;
+                raised_exceptions.extend(condition_exceptions);
+                if condition != ValueType::Bool {
+                    return located_failure(
+                        "frontend.python.dagcert.assert-type-mismatch",
+                        "operation assertion condition must be bool",
+                        &assertion.test,
+                    );
+                }
+                // The heap proof discharges this assertion on every reachable path.  It is not
+                // treated as an assumed truth or as an unconditional AssertionError outcome.
+            }
+            ast::Stmt::Try(try_statement) => {
+                if !try_statement.orelse.is_empty() {
+                    return failure(
+                        "frontend.python.dagcert.try-shape-unsupported",
+                        "callback operation try statements do not yet admit else",
+                    );
+                }
+                let raised_before_try = raised_exceptions.clone();
                 let entry_locals = locals.clone();
                 let mut body_locals = entry_locals.clone();
                 let body = verify_statements(&try_statement.body, context, &mut body_locals)?;
@@ -1518,6 +2087,27 @@ fn verify_statements(
                     continuing.extend(continuing_handler_locals);
                     merge_continuing_locals(locals, &entry_locals, &continuing)?;
                 }
+                if !try_statement.finalbody.is_empty() {
+                    // A finally suite runs even when the protected body raises before defining
+                    // one of its locals.  Verify it against the entry environment so it cannot
+                    // accidentally depend on a conditionally initialized body value.
+                    let mut final_locals = entry_locals.clone();
+                    let final_effects =
+                        verify_statements(&try_statement.finalbody, context, &mut final_locals)?;
+                    if final_effects.normal_path_returns {
+                        // Python return-in-finally overrides both a pending return and a pending
+                        // exception from the protected suite.
+                        returned = true;
+                        raised_exceptions = raised_before_try;
+                    } else if !returned {
+                        // Assignments made by a normally completing finally suite are guaranteed
+                        // on every path that continues after the try statement.
+                        for (name, value_type) in final_locals {
+                            locals.insert(name, value_type);
+                        }
+                    }
+                    raised_exceptions.extend(final_effects.raised_exceptions);
+                }
             }
             _ => {
                 return failure(
@@ -1550,6 +2140,95 @@ fn narrow_isinstance_branches(
             else_locals,
             then_locals,
         );
+    }
+    if let ast::Expr::BoolOp(boolean) = test {
+        match boolean.op {
+            ast::BoolOp::Or => {
+                // An OR is false only when every operand is false, so only the else branch may
+                // safely accumulate each operand's false-path refinements.
+                for value in &boolean.values {
+                    let mut ignored_then = then_locals.clone();
+                    narrow_isinstance_branches(
+                        value,
+                        records,
+                        external_result_types,
+                        &mut ignored_then,
+                        else_locals,
+                    )?;
+                }
+            }
+            ast::BoolOp::And => {
+                // An AND is true only when every operand is true.
+                for value in &boolean.values {
+                    let mut ignored_else = else_locals.clone();
+                    narrow_isinstance_branches(
+                        value,
+                        records,
+                        external_result_types,
+                        then_locals,
+                        &mut ignored_else,
+                    )?;
+                }
+            }
+        }
+        return Ok(());
+    }
+    if let ast::Expr::Compare(comparison) = test
+        && comparison.ops.len() == 1
+        && comparison.comparators.len() == 1
+        && matches!(comparison.ops[0], ast::CmpOp::Is | ast::CmpOp::IsNot)
+    {
+        let field = match (comparison.left.as_ref(), &comparison.comparators[0]) {
+            (ast::Expr::Attribute(field), ast::Expr::Constant(none))
+            | (ast::Expr::Constant(none), ast::Expr::Attribute(field))
+                if matches!(none.value, ast::Constant::None) =>
+            {
+                Some(field)
+            }
+            _ => None,
+        };
+        if let Some(field) = field
+            && let ast::Expr::Name(receiver) = field.value.as_ref()
+        {
+            let non_none_locals = if matches!(comparison.ops[0], ast::CmpOp::Is) {
+                else_locals
+            } else {
+                then_locals
+            };
+            let Some(current) = non_none_locals.get(receiver.id.as_str()).cloned() else {
+                return Ok(());
+            };
+            let (record_name, mut non_none_fields) = match current {
+                ValueType::Record(name) => (name, BTreeSet::new()),
+                ValueType::RefinedRecord {
+                    name,
+                    non_none_fields,
+                } => (name, non_none_fields),
+                _ => return Ok(()),
+            };
+            let is_optional_external = records
+                .get(&record_name)
+                .and_then(|shape| {
+                    shape
+                        .fields
+                        .iter()
+                        .find(|(name, _)| name == field.attr.as_str())
+                })
+                .is_some_and(|(_, value)| {
+                    matches!(value, ValueType::ExternalNominal { optional: true, .. })
+                });
+            if is_optional_external {
+                non_none_fields.insert(field.attr.to_string());
+                non_none_locals.insert(
+                    receiver.id.to_string(),
+                    ValueType::RefinedRecord {
+                        name: record_name,
+                        non_none_fields,
+                    },
+                );
+            }
+        }
+        return Ok(());
     }
     let ast::Expr::Call(call) = test else {
         return Ok(());
@@ -1627,6 +2306,74 @@ fn narrow_isinstance_branches(
     Ok(())
 }
 
+fn operation_value_assignable(actual: &ValueType, expected: &ValueType) -> bool {
+    if actual == expected {
+        return true;
+    }
+    match (actual, expected) {
+        (
+            ValueType::ExternalNominal {
+                identity: actual,
+                optional: false,
+            },
+            ValueType::ExternalNominal {
+                identity: expected,
+                optional: true,
+            },
+        ) => actual == expected,
+        (ValueType::Null, ValueType::ExternalNominal { optional: true, .. }) => true,
+        (ValueType::RefinedRecord { name, .. }, ValueType::Record(expected)) => name == expected,
+        _ => false,
+    }
+}
+
+fn operation_equality_is_total(
+    value_type: &ValueType,
+    records: &BTreeMap<String, RecordShape>,
+    visiting: &mut BTreeSet<String>,
+) -> bool {
+    match value_type {
+        ValueType::Int
+        | ValueType::Float
+        | ValueType::Bool
+        | ValueType::Str
+        | ValueType::Bytes
+        | ValueType::Null
+        | ValueType::StringSplitResult => true,
+        ValueType::VariadicTuple(element) => {
+            operation_equality_is_total(element, records, visiting)
+        }
+        ValueType::Record(name) | ValueType::RefinedRecord { name, .. } => {
+            if !visiting.insert(name.clone()) {
+                return false;
+            }
+            let total = records.get(name).is_some_and(|shape| {
+                shape
+                    .fields
+                    .iter()
+                    .all(|(_, field)| operation_equality_is_total(field, records, visiting))
+            });
+            visiting.remove(name);
+            total
+        }
+        ValueType::RecordUnion(variants) => variants.iter().all(|name| {
+            operation_equality_is_total(&ValueType::Record(name.clone()), records, visiting)
+        }),
+        ValueType::ExternalResult {
+            success_type,
+            variants,
+        } => {
+            operation_equality_is_total(success_type, records, visiting)
+                && variants.iter().all(|name| {
+                    operation_equality_is_total(&ValueType::Record(name.clone()), records, visiting)
+                })
+        }
+        // Provider-owned classes may implement arbitrary or exceptional __eq__. The same is true
+        // transitively for a frozen dataclass field containing one of these values.
+        ValueType::ExternalNominal { .. } | ValueType::Callable(_) => false,
+    }
+}
+
 fn bind_operation_local(
     name: &str,
     value_type: ValueType,
@@ -1700,14 +2447,19 @@ fn merge_branch_locals(
             destination.clone_from(then_locals);
             Ok(())
         }
-        (false, false) if then_locals == else_locals => {
-            destination.clone_from(then_locals);
+        (false, false) => {
+            // Python locals introduced in only one branch are not definitely assigned after the
+            // conditional. Retain exactly the common, identically typed bindings; a later read of
+            // a discarded name is then rejected as unbound. Requiring the complete maps to match
+            // incorrectly refused ordinary workers whose branch-private diagnostic temporaries
+            // are never used after the join.
+            *destination = then_locals
+                .iter()
+                .filter(|(name, value_type)| else_locals.get(*name) == Some(*value_type))
+                .map(|(name, value_type)| (name.clone(), value_type.clone()))
+                .collect();
             Ok(())
         }
-        (false, false) => failure(
-            "frontend.python.dagcert.local-branch-merge-unsupported",
-            "continuing operation branches must establish the same immutable local bindings",
-        ),
     }
 }
 
@@ -1720,15 +2472,17 @@ fn merge_continuing_locals(
         destination.clone_from(entry);
         return Ok(());
     };
-    if continuing.iter().all(|candidate| candidate == first) {
-        destination.clone_from(first);
-        Ok(())
-    } else {
-        failure(
-            "frontend.python.dagcert.local-try-merge-unsupported",
-            "continuing try/except paths must establish the same immutable local bindings",
-        )
-    }
+    *destination = first
+        .iter()
+        .filter(|(name, value_type)| {
+            continuing
+                .iter()
+                .skip(1)
+                .all(|candidate| candidate.get(*name) == Some(*value_type))
+        })
+        .map(|(name, value_type)| (name.clone(), value_type.clone()))
+        .collect();
+    Ok(())
 }
 
 fn is_docstring(statement: &ast::Stmt) -> bool {
@@ -1773,11 +2527,37 @@ fn verify_outcome_constructor(
     context: &OperationBodyContext<'_>,
     locals: &BTreeMap<String, ValueType>,
 ) -> Result<BTreeSet<String>, OperationFailure> {
-    let ast::Expr::Call(call) = expression else {
+    let direct_declared_constructor = matches!(expression, ast::Expr::Call(call)
+        if matches!(call.func.as_ref(), ast::Expr::Name(name)
+            if context.outcomes.contains(name.id.as_str())));
+    if !direct_declared_constructor {
+        let (actual, raised_exceptions) = infer_operation_expression(
+            expression,
+            context.input_name,
+            context.input_record,
+            context.records,
+            context.operations,
+            context.external_boundaries,
+            context.external_result_types,
+            context.operation_name,
+            context.callable_bindings,
+            locals,
+        )?;
+        let declared = match &actual {
+            ValueType::Record(name) => context.outcomes.contains(name),
+            ValueType::RecordUnion(names) => !names.is_empty() && names.is_subset(context.outcomes),
+            _ => false,
+        };
+        if declared {
+            return Ok(raised_exceptions);
+        }
         return failure(
             "frontend.python.dagcert.outcome-constructor-required",
-            "operation return must directly construct one declared outcome",
+            format!("operation return must be one declared typed outcome; received {actual:?}"),
         );
+    }
+    let ast::Expr::Call(call) = expression else {
+        unreachable!("direct declared constructor guard established a call")
     };
     let ast::Expr::Name(name) = call.func.as_ref() else {
         return failure(
@@ -1795,12 +2575,13 @@ fn verify_outcome_constructor(
         );
     }
     let shape = &context.records[name.id.as_str()];
-    if call.args.len() != shape.fields.len() {
+    if call.args.len() < shape.required_fields || call.args.len() > shape.fields.len() {
         return failure(
             "frontend.python.dagcert.outcome-constructor-arity",
             format!(
-                "outcome {:?} expects {} fields, received {}",
+                "outcome {:?} expects between {} and {} positional fields, received {}",
                 name.id,
+                shape.required_fields,
                 shape.fields.len(),
                 call.args.len()
             ),
@@ -1821,7 +2602,7 @@ fn verify_outcome_constructor(
             locals,
         )?;
         raised_exceptions.extend(argument_exceptions);
-        if &actual != expected {
+        if !operation_value_assignable(&actual, expected) {
             return failure(
                 "frontend.python.dagcert.outcome-field-type-mismatch",
                 format!("outcome field {field:?} expects {expected:?}, received {actual:?}"),
@@ -1962,7 +2743,7 @@ fn infer_operation_expression(
                 callable_bindings,
                 locals,
             )?;
-            if !raised.is_empty() || &actual != expected {
+            if !raised.is_empty() || !operation_value_assignable(&actual, expected) {
                 return located_failure(
                     "frontend.python.dagcert.external-boundary-call-input-type-mismatch",
                     format!(
@@ -2018,7 +2799,7 @@ fn infer_operation_expression(
             locals,
         )?;
         let expected = ValueType::Record(shape.input_record.clone());
-        if actual != expected {
+        if !operation_value_assignable(&actual, &expected) {
             return located_failure(
                 "frontend.python.dagcert.operation-call-input-type-mismatch",
                 format!(
@@ -2040,6 +2821,50 @@ fn infer_operation_expression(
             ValueType::RecordUnion(shape.outcomes.clone())
         };
         return Ok((value_type, raised));
+    }
+    if let ast::Expr::Name(callee) = call.func.as_ref()
+        && let Some(ValueType::Callable(signature)) = locals.get(callee.id.as_str())
+    {
+        if !call.keywords.is_empty() || call.args.len() != signature.parameters.len() {
+            return located_failure(
+                "frontend.python.dagcert.source-helper-call-arguments",
+                format!(
+                    "ordinary source helper {:?} expects {} positional arguments and no keywords, received {} positional and {} keyword arguments",
+                    callee.id,
+                    signature.parameters.len(),
+                    call.args.len(),
+                    call.keywords.len()
+                ),
+                expression,
+            );
+        }
+        let mut raised = BTreeSet::new();
+        for (argument, expected) in call.args.iter().zip(&signature.parameters) {
+            let (actual, argument_raised) = infer_operation_expression(
+                argument,
+                input_name,
+                input_record,
+                records,
+                operations,
+                external_boundaries,
+                external_result_types,
+                operation_name,
+                callable_bindings,
+                locals,
+            )?;
+            raised.extend(argument_raised);
+            if !operation_value_assignable(&actual, expected) {
+                return located_failure(
+                    "frontend.python.dagcert.source-helper-call-type-mismatch",
+                    format!(
+                        "ordinary source helper {:?} expects {expected:?}, received {actual:?}",
+                        callee.id
+                    ),
+                    argument,
+                );
+            }
+        }
+        return Ok(((*signature.return_type).clone(), raised));
     }
     if let Some(value_type) =
         infer_total_string_method_call(call, expression, input_name, input_record, records, locals)?
@@ -2133,7 +2958,7 @@ fn infer_operation_expression(
     }
     for (index, (argument, expected)) in call.args.iter().zip(&signature.parameters).enumerate() {
         let actual = infer_expression(argument, input_name, input_record, records, locals)?;
-        if &actual != expected {
+        if !operation_value_assignable(&actual, expected) {
             return located_failure(
                 "frontend.python.dagcert.callable-argument-type-mismatch",
                 format!("callable argument {index} expects {expected:?}, received {actual:?}"),
@@ -2311,9 +3136,23 @@ fn infer_expression(
             ast::Constant::Bool(_) => Ok(ValueType::Bool),
             ast::Constant::Str(_) => Ok(ValueType::Str),
             ast::Constant::Bytes(_) => Ok(ValueType::Bytes),
+            ast::Constant::None => Ok(ValueType::Null),
             _ => unsupported_expression(expression),
         },
         ast::Expr::Attribute(attribute) => {
+            if attribute.attr.as_str() == "__qualname__"
+                && let ast::Expr::Call(call) = attribute.value.as_ref()
+                && call.args.len() == 1
+                && call.keywords.is_empty()
+                && matches!(call.func.as_ref(), ast::Expr::Name(name)
+                    if name.id.as_str() == "type")
+                && input_name != "type"
+                && !locals.contains_key("type")
+                && !records.contains_key("type")
+            {
+                infer_expression(&call.args[0], input_name, input_record, records, locals)?;
+                return Ok(ValueType::Str);
+            }
             let receiver =
                 infer_expression(&attribute.value, input_name, input_record, records, locals)?;
             if let ValueType::ExternalResult {
@@ -2326,18 +3165,19 @@ fn infer_expression(
                 {
                     return Ok(*success_type);
                 }
-                if variants.len() == 1
+                let failure_only = !variants.is_empty()
                     && variants.iter().all(|variant| {
                         matches!(variant.as_str(), "ExternalRaised" | "ExternalTypeViolation")
-                    })
-                    && matches!(
-                        attribute.attr.as_str(),
-                        "boundary_id"
-                            | "exception_type"
-                            | "message"
-                            | "expected_type"
-                            | "observed_type"
-                    )
+                    });
+                let common_failure_field =
+                    matches!(attribute.attr.as_str(), "boundary_id" | "message");
+                let raised_only_field = variants == BTreeSet::from(["ExternalRaised".to_owned()])
+                    && attribute.attr.as_str() == "exception_type";
+                let violation_only_field = variants
+                    == BTreeSet::from(["ExternalTypeViolation".to_owned()])
+                    && matches!(attribute.attr.as_str(), "expected_type" | "observed_type");
+                if failure_only
+                    && (common_failure_field || raised_only_field || violation_only_field)
                 {
                     return Ok(ValueType::Str);
                 }
@@ -2347,17 +3187,35 @@ fn infer_expression(
                     expression,
                 );
             }
-            let ValueType::Record(record) = receiver else {
-                return failure(
-                    "frontend.python.dagcert.field-receiver-unsupported",
-                    "operation field reads require a source-owned frozen record receiver",
-                );
+            let (record, refined_fields) = match receiver {
+                ValueType::Record(record) => (record, BTreeSet::new()),
+                ValueType::RefinedRecord {
+                    name,
+                    non_none_fields,
+                } => (name, non_none_fields),
+                _ => {
+                    return failure(
+                        "frontend.python.dagcert.field-receiver-unsupported",
+                        "operation field reads require a source-owned frozen record receiver",
+                    );
+                }
             };
             records[&record]
                 .fields
                 .iter()
                 .find(|(field, _)| field == attribute.attr.as_str())
-                .map(|(_, field_type)| field_type.clone())
+                .map(|(_, field_type)| match field_type {
+                    ValueType::ExternalNominal {
+                        identity,
+                        optional: true,
+                    } if refined_fields.contains(attribute.attr.as_str()) => {
+                        ValueType::ExternalNominal {
+                            identity: identity.clone(),
+                            optional: false,
+                        }
+                    }
+                    _ => field_type.clone(),
+                })
                 .ok_or_else(|| OperationFailure {
                     code: "frontend.python.dagcert.field-unknown",
                     message: format!("record {record:?} has no field {:?}", attribute.attr),
@@ -2391,12 +3249,16 @@ fn infer_expression(
                     expression,
                 );
             }
-            if !call.keywords.is_empty() || call.args.len() != shape.fields.len() {
+            if !call.keywords.is_empty()
+                || call.args.len() < shape.required_fields
+                || call.args.len() > shape.fields.len()
+            {
                 return located_failure(
                     "frontend.python.dagcert.record-constructor-shape-mismatch",
                     format!(
-                        "frozen record {:?} requires exactly {} positional fields",
+                        "frozen record {:?} requires between {} and {} positional fields",
                         constructor.id,
+                        shape.required_fields,
                         shape.fields.len()
                     ),
                     expression,
@@ -2404,7 +3266,7 @@ fn infer_expression(
             }
             for ((field, expected), argument) in shape.fields.iter().zip(&call.args) {
                 let actual = infer_expression(argument, input_name, input_record, records, locals)?;
-                if &actual != expected {
+                if !operation_value_assignable(&actual, expected) {
                     return located_failure(
                         "frontend.python.dagcert.record-constructor-field-type-mismatch",
                         format!(
@@ -2508,6 +3370,21 @@ fn infer_expression(
                     _ => unsupported_expression(expression),
                 };
             }
+            let optional_none_comparison = matches!(
+                (&left, &right),
+                (
+                    ValueType::ExternalNominal { optional: true, .. },
+                    ValueType::Null
+                ) | (
+                    ValueType::Null,
+                    ValueType::ExternalNominal { optional: true, .. }
+                )
+            );
+            if optional_none_comparison
+                && matches!(comparison.ops[0], ast::CmpOp::Is | ast::CmpOp::IsNot)
+            {
+                return Ok(ValueType::Bool);
+            }
             if left != right {
                 return failure(
                     "frontend.python.dagcert.comparison-type-mismatch",
@@ -2515,7 +3392,12 @@ fn infer_expression(
                 );
             }
             match comparison.ops[0] {
-                ast::CmpOp::Eq | ast::CmpOp::NotEq => Ok(ValueType::Bool),
+                ast::CmpOp::Eq | ast::CmpOp::NotEq
+                    if operation_equality_is_total(&left, records, &mut BTreeSet::new()) =>
+                {
+                    Ok(ValueType::Bool)
+                }
+                ast::CmpOp::Is | ast::CmpOp::IsNot => Ok(ValueType::Bool),
                 ast::CmpOp::Lt | ast::CmpOp::LtE | ast::CmpOp::Gt | ast::CmpOp::GtE
                     if matches!(left, ValueType::Int | ValueType::Float | ValueType::Str) =>
                 {
@@ -2635,6 +3517,141 @@ mod tests {
     }
 
     #[test]
+    fn operation_assertions_are_typed_before_the_heap_proof_discharges_them() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Value:\n    text: str\n\n@operation\ndef preserve(value: Value) -> Value:\n    returned = value\n    assert returned is value\n    return returned\n";
+        let result =
+            verify_operation_module(source, "identity_assert.py", &["preserve".to_owned()])
+                .unwrap();
+        assert_eq!(result.operations, ["preserve"]);
+
+        let invalid = source.replace("assert returned is value", "assert returned.text");
+        let error =
+            verify_operation_module(&invalid, "non_boolean_assert.py", &["preserve".to_owned()])
+                .unwrap_err();
+        assert_eq!(error.code, "frontend.python.dagcert.assert-type-mismatch");
+    }
+
+    #[test]
+    fn record_equality_refuses_transitive_external_nominal_dispatch() {
+        let records = BTreeMap::from([
+            (
+                "NativeBuffer".to_owned(),
+                RecordShape {
+                    fields: vec![(
+                        "buffer".to_owned(),
+                        ValueType::ExternalNominal {
+                            identity: "io.BytesIO".to_owned(),
+                            optional: false,
+                        },
+                    )],
+                    field_defaults: vec![None],
+                    required_fields: 1,
+                    constructible: true,
+                },
+            ),
+            (
+                "CompareRequest".to_owned(),
+                RecordShape {
+                    fields: vec![
+                        (
+                            "left".to_owned(),
+                            ValueType::Record("NativeBuffer".to_owned()),
+                        ),
+                        (
+                            "right".to_owned(),
+                            ValueType::Record("NativeBuffer".to_owned()),
+                        ),
+                    ],
+                    field_defaults: vec![None, None],
+                    required_fields: 2,
+                    constructible: true,
+                },
+            ),
+        ]);
+        let expression = ast::Expr::parse("request.left == request.right", "compare.py").unwrap();
+        let error = infer_expression(
+            &expression,
+            "request",
+            "CompareRequest",
+            &records,
+            &BTreeMap::new(),
+        )
+        .unwrap_err();
+        assert_eq!(error.code, "frontend.python.dagcert.expression-unsupported");
+    }
+
+    #[test]
+    fn proves_trailing_typed_dataclass_defaults_and_omitted_arguments() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    value: int\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n    message: str = ''\n    retries: int = 0\n\n@operation\ndef run(request: Request) -> Completed:\n    return Completed(request.value)\n";
+        let result = verify_operation_module(source, "defaults.py", &["run".to_owned()]).unwrap();
+        assert_eq!(result.operations, ["run"]);
+    }
+
+    #[test]
+    fn record_only_module_accepts_a_canonical_static_union_alias() {
+        let source = "from dataclasses import dataclass\nfrom typing import Union\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n@dataclass(frozen=True)\nclass Failed:\n    message: str\n\nOutcome = Union[Completed, Failed]\n";
+        let result = verify_operation_module(source, "records.py", &[]).unwrap();
+        assert!(result.operations.is_empty());
+    }
+
+    #[test]
+    fn operation_finally_assignments_are_available_after_cleanup() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    value: int\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n@operation\ndef run(request: Request) -> Completed:\n    result = request.value\n    try:\n        result = request.value + 1\n    finally:\n        cleaned = request.value + 2\n    return Completed(result + cleaned)\n";
+        let result = verify_operation_module(source, "finally.py", &["run".to_owned()]).unwrap();
+        assert_eq!(result.operations, ["run"]);
+    }
+
+    #[test]
+    fn branch_private_locals_do_not_poison_a_continuing_join() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    choose: bool\n    value: int\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n@operation\ndef run(request: Request) -> Completed:\n    if request.choose:\n        diagnostic = request.value\n    else:\n        other_diagnostic = request.value\n    return Completed(request.value)\n";
+        let result =
+            verify_operation_module(source, "branch_locals.py", &["run".to_owned()]).unwrap();
+        assert_eq!(result.operations, ["run"]);
+    }
+
+    #[test]
+    fn branch_private_local_read_after_join_remains_unbound() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    choose: bool\n    value: int\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n@operation\ndef run(request: Request) -> Completed:\n    if request.choose:\n        diagnostic = request.value\n    return Completed(diagnostic)\n";
+        let error =
+            verify_operation_module(source, "branch_unbound.py", &["run".to_owned()]).unwrap_err();
+        assert_eq!(error.code, "frontend.python.dagcert.local-name-unbound");
+    }
+
+    #[test]
+    fn operation_finally_cannot_read_a_conditionally_initialized_try_local() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    value: int\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n@operation\ndef run(request: Request) -> Completed:\n    try:\n        temporary = request.value\n    finally:\n        cleaned = temporary\n    return Completed(cleaned)\n";
+        let error =
+            verify_operation_module(source, "unsafe_finally.py", &["run".to_owned()]).unwrap_err();
+        assert_eq!(error.code, "frontend.python.dagcert.local-name-unbound");
+    }
+
+    #[test]
+    fn refuses_effectful_or_wrongly_typed_dataclass_defaults() {
+        let effectful = APP.replace(
+            "    value: int\n\n@dataclass",
+            "    value: int = int('1')\n\n@dataclass",
+        );
+        let error =
+            verify_operation_module(&effectful, "effectful_default.py", &["work".to_owned()])
+                .unwrap_err();
+        assert_eq!(
+            error.code,
+            "frontend.python.dagcert.record-field-default-unsupported"
+        );
+
+        let wrong_type = APP.replace(
+            "    value: int\n\n@dataclass",
+            "    value: int = 'wrong'\n\n@dataclass",
+        );
+        let error = verify_operation_module(&wrong_type, "wrong_default.py", &["work".to_owned()])
+            .unwrap_err();
+        assert_eq!(
+            error.code,
+            "frontend.python.dagcert.record-field-default-unsupported"
+        );
+    }
+
+    #[test]
     fn proves_total_probability_float_operations() {
         let source = "from dataclasses import dataclass\nfrom typing import Union\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass ChanceRequest:\n    combine: float\n    mutation: float\n    automatic: bool\n    new: float\n\n@dataclass(frozen=True)\nclass Chances:\n    combine: float\n    mutation: float\n    new: float\n\n@dataclass(frozen=True)\nclass Invalid:\n    reason: str\n\n@operation\ndef validate(request: ChanceRequest) -> Union[Chances, Invalid]:\n    combine = request.combine\n    mutation = request.mutation\n    new = request.new\n    if request.automatic:\n        mutation = 1.0 - combine - new\n    if combine != combine or mutation != mutation or new != new:\n        return Invalid('chance must not be NaN')\n    if combine < 0.0 or mutation < 0.0 or new < 0.0:\n        return Invalid('chance must be nonnegative')\n    total = combine + mutation + new\n    difference = total - 1.0\n    if difference < -0.000000001 or difference > 0.000000001:\n        return Invalid('chances must sum to one')\n    return Chances(combine, mutation, new)\n";
         let result =
@@ -2659,6 +3676,14 @@ mod tests {
         let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Payload:\n    ok: bool\n    content: bytes\n    label: str\n\n@dataclass(frozen=True)\nclass Ready:\n    content: bytes\n\n@dataclass(frozen=True)\nclass Rejected:\n    reason: str\n\n@operation\ndef classify(request: Payload) -> Ready | Rejected:\n    if not request.ok:\n        return Rejected('provider failed')\n    if not request.content:\n        return Rejected('empty bytes')\n    if not request.label:\n        return Rejected('empty label')\n    return Ready(request.content)\n";
         let result =
             verify_operation_module(source, "payload.py", &["classify".to_owned()]).unwrap();
+        assert_eq!(result.operations, ["classify"]);
+    }
+
+    #[test]
+    fn proves_builtin_type_qualname_for_a_narrowed_typed_outcome() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    failed: bool\n\n@dataclass(frozen=True)\nclass Completed:\n    value: str\n\n@dataclass(frozen=True)\nclass Failed:\n    message: str\n\n@operation\ndef classify(request: Request) -> Completed | Failed:\n    outcome = Failed('bad')\n    if request.failed:\n        return Completed(type(outcome).__qualname__)\n    return Failed(outcome.message)\n";
+        let result =
+            verify_operation_module(source, "qualname.py", &["classify".to_owned()]).unwrap();
         assert_eq!(result.operations, ["classify"]);
     }
 
@@ -2874,6 +3899,37 @@ mod tests {
             &[imported],
         )
         .unwrap();
+        assert_eq!(verification.operations, ["complete"]);
+    }
+
+    #[test]
+    fn proves_fields_shared_by_every_narrowed_external_failure_variant() {
+        let adapter = "from dagcert.runtime import external_boundary\n\n@external_boundary('stdlib.text.normalize')\ndef normalize_external(value: str) -> str:\n    return value\n";
+        let imported = export_external_boundary_module(
+            adapter,
+            "adapter.py",
+            "adapter",
+            &["normalize_external".to_owned()],
+        )
+        .unwrap();
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import ExternalSuccess, operation\nfrom adapter import normalize_external\n\n@dataclass(frozen=True)\nclass Request:\n    value: str\n\n@dataclass(frozen=True)\nclass Completed:\n    value: str\n\n@dataclass(frozen=True)\nclass Failed:\n    boundary_id: str\n    message: str\n\n@operation\ndef complete(request: Request) -> Completed | Failed:\n    result = normalize_external(request.value)\n    if not isinstance(result, ExternalSuccess):\n        return Failed(result.boundary_id, result.message)\n    return Completed(result.value)\n";
+        let (verification, _) = verify_and_export_operation_module_with_imports(
+            source,
+            "app.py",
+            "app",
+            &["complete".to_owned()],
+            &[],
+            &[imported],
+        )
+        .unwrap();
+        assert_eq!(verification.operations, ["complete"]);
+    }
+
+    #[test]
+    fn proves_returning_a_local_with_an_exact_declared_outcome_type() {
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\n\n@dataclass(frozen=True)\nclass Request:\n    value: str\n\n@dataclass(frozen=True)\nclass Completed:\n    value: str\n\n@operation\ndef complete(request: Request) -> Completed:\n    result = Completed(request.value)\n    return result\n";
+        let verification =
+            verify_operation_module(source, "app.py", &["complete".to_owned()]).unwrap();
         assert_eq!(verification.operations, ["complete"]);
     }
 }

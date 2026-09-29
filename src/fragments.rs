@@ -24,8 +24,10 @@ pub const CHECKED_EXTERNAL_HEAP_CONTRACTS: &str = "checked-external-heap-contrac
 pub const TRANSITIVE_SOURCE_CHECKED_EXTERNAL_HEAP_CONTRACTS: &str =
     "transitive-source+checked-external-heap-contracts/v66";
 pub const DAGCERT_CLOSED_TYPED_OPERATIONS: &str = "dagcert-closed-typed-operations/v4";
+pub const DAGCERT_TYPED_OPERATIONS_WITH_SEMANTIC_ASSERTIONS: &str =
+    "dagcert-closed-typed-operations+semantic-assertions/v1";
 
-pub const PYTHON_CAPABILITIES: [&str; 17] = [
+pub const PYTHON_CAPABILITIES: [&str; 18] = [
     CLOSED_TOTAL_FUNCTIONS,
     CAUGHT_CALLABLE_DATACLASS_BOUNDARIES,
     SCALAR_NAGINI_CONTRACTS,
@@ -41,6 +43,7 @@ pub const PYTHON_CAPABILITIES: [&str; 17] = [
     CHECKED_EXTERNAL_HEAP_CONTRACTS,
     TRANSITIVE_SOURCE_CHECKED_EXTERNAL_HEAP_CONTRACTS,
     DAGCERT_CLOSED_TYPED_OPERATIONS,
+    DAGCERT_TYPED_OPERATIONS_WITH_SEMANTIC_ASSERTIONS,
     crate::mixed_language::MIXED_LANGUAGE_FRAGMENT,
     crate::call_binding::IDENTITY,
 ];

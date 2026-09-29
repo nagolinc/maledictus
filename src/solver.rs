@@ -73,6 +73,25 @@ enum Z3Term {
     },
 }
 
+fn z3_term_kind(term: &Z3Term) -> &'static str {
+    match term {
+        Z3Term::Bool(_) => "Bool",
+        Z3Term::Int(_) => "Int",
+        Z3Term::Float(_) => "Float",
+        Z3Term::String(_) => "String",
+        Z3Term::Unit => "Unit",
+        Z3Term::Reference(_) => "Reference",
+        Z3Term::Class(_) => "Class",
+        Z3Term::Bytes(_) => "Bytes",
+        Z3Term::Range(_) => "Range",
+        Z3Term::Tuple(_) => "Tuple",
+        Z3Term::VariadicTuple { .. } => "VariadicTuple",
+        Z3Term::List { .. } => "List",
+        Z3Term::Set { .. } => "Set",
+        Z3Term::Dict { .. } => "Dict",
+    }
+}
+
 pub fn discharge(obligation: &Obligation) -> Result<ObligationResult, String> {
     if obligation.conclusion.sort()? != Sort::Bool {
         return Err(format!(
@@ -736,12 +755,12 @@ fn lower(term: &Term) -> Result<Z3Term, String> {
                 Sort::Reference => Ok(Z3Term::Reference(value)),
                 Sort::Class => Err("heap fields cannot have Class sort".to_owned()),
                 Sort::Unit => Err("heap fields cannot have Unit sort".to_owned()),
-                Sort::Bytes => Err("heap fields cannot have Bytes sort".to_owned()),
+                Sort::Bytes => value
+                    .as_seq()
+                    .map(Z3Term::Bytes)
+                    .ok_or_else(|| "bytes field lowered to a non-sequence Z3 term".to_owned()),
                 Sort::Range => Err("heap fields cannot have Range sort".to_owned()),
-                Sort::Tuple(_) => Err("heap fields cannot have Tuple sort".to_owned()),
-                Sort::VariadicTuple(_) => {
-                    Err("heap fields cannot have VariadicTuple sort".to_owned())
-                }
+                Sort::Tuple(_) | Sort::VariadicTuple(_) => dynamic_from_sort(value, sort),
                 Sort::List(element_sort) => value
                     .as_seq()
                     .map(|value| Z3Term::List {
@@ -972,6 +991,13 @@ fn lower(term: &Term) -> Result<Z3Term, String> {
             }
         }
         Term::StringLength { value } => Ok(Z3Term::Int(as_string(lower(value)?)?.length())),
+        Term::StringSlice {
+            source,
+            start,
+            length,
+        } => Ok(Z3Term::String(
+            as_string(lower(source)?)?.substr(as_int(lower(start)?)?, as_int(lower(length)?)?),
+        )),
         Term::BytesConcat { values } => {
             let lowered = values
                 .iter()
@@ -2007,6 +2033,7 @@ fn equal_terms(left: Z3Term, right: Z3Term) -> Result<Bool, String> {
     match (left, right) {
         (Z3Term::Bool(left), Z3Term::Bool(right)) => Ok(left.eq(right)),
         (Z3Term::Int(left), Z3Term::Int(right)) => Ok(left.eq(right)),
+        (Z3Term::Float(left), Z3Term::Float(right)) => Ok(left.eq(right)),
         (Z3Term::String(left), Z3Term::String(right)) => Ok(left.eq(right)),
         (Z3Term::Unit, Z3Term::Unit) => Ok(Bool::from_bool(true)),
         (Z3Term::Reference(left), Z3Term::Reference(right)) => Ok(left.eq(right)),
@@ -2056,7 +2083,11 @@ fn equal_terms(left: Z3Term, right: Z3Term) -> Result<Bool, String> {
         (Z3Term::Dict { .. }, Z3Term::Dict { .. }) => {
             Err("dictionary equality requires order-independent key/value semantics".to_owned())
         }
-        _ => Err("equality operands have different sorts".to_owned()),
+        (left, right) => Err(format!(
+            "equality operands have different sorts: left={}, right={}",
+            z3_term_kind(&left),
+            z3_term_kind(&right),
+        )),
     }
 }
 
@@ -2228,6 +2259,7 @@ fn into_dynamic_element(term: Z3Term, expected: &Sort) -> Result<Dynamic, String
     match (term, expected) {
         (Z3Term::Bool(value), Sort::Bool) => Ok(value.into()),
         (Z3Term::Int(value), Sort::Int) => Ok(value.into()),
+        (Z3Term::Float(value), Sort::Float) => Ok(value),
         (Z3Term::String(value), Sort::String) => Ok(value.into()),
         (Z3Term::Reference(value), Sort::Reference) => Ok(value),
         (Z3Term::Class(value), Sort::Class) => Ok(value.into()),
@@ -2487,6 +2519,15 @@ fn assert_predicate_instance_axioms(solver: &Solver, term: &Term) -> Result<(), 
         | Term::SetLength { value }
         | Term::DictLength { value }
         | Term::ForAll { body: value, .. } => assert_predicate_instance_axioms(solver, value)?,
+        Term::StringSlice {
+            source,
+            start,
+            length,
+        } => {
+            assert_predicate_instance_axioms(solver, source)?;
+            assert_predicate_instance_axioms(solver, start)?;
+            assert_predicate_instance_axioms(solver, length)?;
+        }
         Term::ClassSubtype {
             actual: left,
             expected: right,
@@ -3190,7 +3231,7 @@ fn is_z3_collection_key_sort(sort: &Sort) -> bool {
 
 fn is_z3_collection_value_sort(sort: &Sort) -> bool {
     match sort {
-        Sort::Bool | Sort::Int | Sort::String | Sort::Reference | Sort::Bytes => true,
+        Sort::Bool | Sort::Int | Sort::Float | Sort::String | Sort::Reference | Sort::Bytes => true,
         Sort::Tuple(elements) => {
             let mut valid = true;
             for element in elements {

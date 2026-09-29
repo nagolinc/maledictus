@@ -80,6 +80,9 @@ pub enum SortContext {
     NegationOperand,
     StringConcatenationOperand,
     StringLengthOperand,
+    StringSliceReceiver,
+    StringSliceStart,
+    StringSliceLength,
     BytesConcatenationOperand,
     BytesLengthOperand,
     BytesIndexReceiver,
@@ -121,6 +124,9 @@ impl SortContext {
             Self::NegationOperand => "negation operand",
             Self::StringConcatenationOperand => "string concatenation operand",
             Self::StringLengthOperand => "string length operand",
+            Self::StringSliceReceiver => "string slice receiver",
+            Self::StringSliceStart => "string slice start",
+            Self::StringSliceLength => "string slice length",
             Self::BytesConcatenationOperand => "bytes concatenation operand",
             Self::BytesLengthOperand => "bytes length operand",
             Self::BytesIndexReceiver => "bytes index receiver",
@@ -306,7 +312,7 @@ impl std::fmt::Display for SortError {
                 "list element sort {sort:?} is not supported by the sequence VC"
             ),
             Self::HeapFieldSortUnsupported => formatter.write_str(
-                "heap fields cannot have Unit, Class, Bytes, Range, or Tuple sort",
+                "heap fields cannot have Unit, Class, Range, or Tuple sort",
             ),
             Self::HeapListElementSortUnsupported { sort } => write!(
                 formatter,
@@ -639,6 +645,13 @@ pub enum Term {
     StringLength {
         value: Box<Term>,
     },
+    /// Python-compatible step-one substring after the frontend has normalized and clamped the
+    /// source slice bounds. `start` and `length` are therefore nonnegative integer terms.
+    StringSlice {
+        source: Box<Term>,
+        start: Box<Term>,
+        length: Box<Term>,
+    },
     BytesConcat {
         values: Vec<Term>,
     },
@@ -885,14 +898,17 @@ impl Term {
                     sort,
                     Sort::Unit
                         | Sort::Class
-                        | Sort::Bytes
                         | Sort::Range
-                        | Sort::Tuple(_)
-                        | Sort::VariadicTuple(_)
                         | Sort::FiniteDict(_, _)
                         | Sort::DictKeys(_)
                 ) {
                     Err(SortError::HeapFieldSortUnsupported)
+                } else if let Sort::VariadicTuple(element) = sort
+                    && !is_variadic_tuple_element_sort(element)
+                {
+                    Err(SortError::VariadicTupleElementSortUnsupported {
+                        sort: element.as_ref().clone(),
+                    })
                 } else if let Sort::List(element) = sort
                     && !is_list_element_sort(element)
                 {
@@ -1047,6 +1063,16 @@ impl Term {
             Self::StringLength { value } => {
                 require_sort(value, Sort::String, SortContext::StringLengthOperand)?;
                 Ok(Sort::Int)
+            }
+            Self::StringSlice {
+                source,
+                start,
+                length,
+            } => {
+                require_sort(source, Sort::String, SortContext::StringSliceReceiver)?;
+                require_sort(start, Sort::Int, SortContext::StringSliceStart)?;
+                require_sort(length, Sort::Int, SortContext::StringSliceLength)?;
+                Ok(Sort::String)
             }
             Self::BytesConcat { values } => {
                 require_all_sorts(values, Sort::Bytes, SortContext::BytesConcatenationOperand)?;
@@ -1507,7 +1533,8 @@ fn all_list_element_sorts(elements: &[Sort]) -> bool {
 }
 
 fn is_variadic_tuple_element_sort(sort: &Sort) -> bool {
-    is_list_element_sort(sort)
+    matches!(sort, Sort::Float)
+        || is_list_element_sort(sort)
         || matches!(sort, Sort::VariadicTuple(element) if is_variadic_tuple_element_sort(element))
 }
 
@@ -1687,6 +1714,19 @@ fn validate_bound_occurrences(
         | Term::ListSorted { source: value }
         | Term::SetLength { value }
         | Term::DictLength { value } => one(value, binder, binder_sort),
+        Term::StringSlice {
+            source,
+            start,
+            length,
+        } => all(
+            &[
+                source.as_ref().clone(),
+                start.as_ref().clone(),
+                length.as_ref().clone(),
+            ],
+            binder,
+            binder_sort,
+        ),
         Term::ClassSubtype {
             actual: left,
             expected: right,
@@ -2416,7 +2456,7 @@ mod tests {
             ),
             (
                 SortError::HeapFieldSortUnsupported,
-                "heap fields cannot have Unit, Class, Bytes, Range, or Tuple sort",
+                "heap fields cannot have Unit, Class, Range, or Tuple sort",
             ),
             (
                 SortError::HeapListElementSortUnsupported { sort: Sort::Unit },

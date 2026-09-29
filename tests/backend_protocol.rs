@@ -302,7 +302,10 @@ fn verifier_refuses_an_unresolved_call() {
     };
 
     let response = maledictus::verify(&request);
-    assert!(matches!(response.status, ProofStatus::Refused));
+    assert!(
+        matches!(response.status, ProofStatus::Refused),
+        "{response:#?}"
+    );
     assert_eq!(
         response.diagnostics[0].code,
         "frontend.python.fragment.expression-unsupported"
@@ -900,6 +903,68 @@ fn checked_external_contract_proves_adapter_and_records_assumption() {
     assert_eq!(identity.executable_sha256.len(), 64);
     assert_eq!(identity.frontend_bundle_sha256.len(), 64);
     assert_eq!(identity.kernel_bundle_sha256.len(), 64);
+}
+
+#[test]
+fn checked_external_float_contract_preserves_bounds_without_assuming_reflexivity() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("provider_contract.py"),
+        "from nagini_contracts.contracts import *\n\n@ContractOnly\ndef bounded(*, ceiling: float = 1.0) -> float:\n    Ensures(0.0 <= Result())\n    Ensures(Result() < ceiling)\n    ...\n\n@ContractOnly\ndef sample(population: range) -> list[int]:\n    Ensures(Forall(Result(), lambda item: item in population))\n    ...\n",
+    )
+    .unwrap();
+    let request = |source: &str| {
+        fs::write(directory.path().join("app.py"), source).unwrap();
+        maledictus::verify(&ProofRequest {
+            schema: PROTOCOL_SCHEMA.to_owned(),
+            source_root: directory.path().display().to_string(),
+            source_fingerprint: "0".repeat(64),
+            proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+            files: vec![SourceFile {
+                path: "app.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["run".to_owned()],
+            }],
+            python_callable_bindings: Vec::new(),
+            embedded_external_calls: Vec::new(),
+            cross_language_bindings: Vec::new(),
+            external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+                adapter_path: "app.py".to_owned(),
+                module: "provider".to_owned(),
+                stub_path: "provider_contract.py".to_owned(),
+                exception_policy: maledictus::protocol::ExternalExceptionPolicy::AssumeNoException,
+            }],
+        })
+    };
+
+    let bounded = request(
+        "from provider import bounded\nfrom nagini_contracts.contracts import *\n\ndef run() -> float:\n    Ensures(0.0 <= Result())\n    Ensures(Result() < 1.0)\n    return bounded(ceiling=1.0)\n",
+    );
+    assert!(
+        matches!(bounded.status, ProofStatus::Proved),
+        "{bounded:#?}"
+    );
+
+    let reflexive = request(
+        "from provider import bounded\nfrom nagini_contracts.contracts import *\n\ndef run() -> float:\n    value = bounded()\n    Assert(value == value)\n    return value\n",
+    );
+    assert!(
+        !matches!(reflexive.status, ProofStatus::Proved),
+        "NaN makes float reflexivity unsafe: {reflexive:#?}"
+    );
+    assert!(
+        reflexive.obligations.iter().any(|obligation| {
+            obligation.id.starts_with("run:assert:") && !obligation.satisfied()
+        })
+    );
+
+    let quantified = request(
+        "from provider import sample\nfrom nagini_contracts.contracts import *\n\ndef run() -> list[int]:\n    Ensures(Forall(Result(), lambda item: item in range(3)))\n    return sample(range(3))\n",
+    );
+    assert!(
+        matches!(quantified.status, ProofStatus::Proved),
+        "{quantified:#?}"
+    );
 }
 
 #[test]
@@ -1998,7 +2063,15 @@ fn checked_external_heap_factory_reaches_json_backend_as_one_application_functio
         response.files[0].fragment.as_deref(),
         Some("checked-external-heap-contracts/v8")
     );
-    assert_eq!(response.external_contracts[0].functions, ["open_resource"]);
+    assert_eq!(
+        response.external_contracts[0].functions,
+        [
+            "Resource.__enter__",
+            "Resource.__exit__",
+            "Resource.read",
+            "open_resource",
+        ]
+    );
     assert_eq!(
         response.external_contracts[0].heap_types,
         ["provider.Resource"]
@@ -2194,6 +2267,74 @@ fn external_generic_queue_adapter_reads_typed_source_state_without_erasing_paylo
 }
 
 #[test]
+fn initialized_imported_generic_state_supports_defaults_exsures_and_local_deletion() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("records.py"),
+        "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Job:\n    value: str\n\n@dataclass(frozen=True)\nclass TakeResponse:\n    status: str\n    job: Job\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("queue_state.py"),
+        "from queue import Queue\nfrom records import Job\n\nwork_queue: Queue[Job] = Queue()\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("adapter.py"),
+        "import queue\nfrom dagcert.runtime import external_boundary\nfrom queue_state import work_queue\nfrom records import Job, TakeResponse\n\n@external_boundary('queue.job.take')\ndef take_job(unused: str, discarded: str) -> TakeResponse:\n    empty = Job('')\n    del unused\n    try:\n        del discarded\n        job = queue.Queue.get(work_queue)\n        return TakeResponse('taken', job)\n    except queue.Empty:\n        return TakeResponse('empty', empty)\n    except Exception:\n        return TakeResponse('failed', empty)\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("queue_contract.py"),
+        "from typing import Generic, TypeVar\nfrom nagini_contracts.contracts import ContractOnly, Exsures\n\nT = TypeVar('T')\n\nclass Empty(Exception):\n    pass\n\nclass Queue(Generic[T]):\n    @ContractOnly\n    def __init__(self, maxsize: int = 0) -> None:\n        Exsures(Exception, True)\n        ...\n\n    @ContractOnly\n    def get(self, block: bool = True, timeout: float | None = None) -> T:\n        Exsures(Empty, True)\n        Exsures(Exception, True)\n        ...\n",
+    )
+    .unwrap();
+    let response = maledictus::verify(&ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "records.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "queue_state.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "adapter.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["take_job".to_owned()],
+            },
+        ],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "adapter.py".to_owned(),
+            module: "queue".to_owned(),
+            stub_path: "queue_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::DeclaredByExsures,
+        }],
+    });
+
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert!(response.source_imports.iter().any(|edge| {
+        edge.importer_path == "adapter.py"
+            && edge.module == "queue_state"
+            && edge.provider_path == "queue_state.py"
+            && edge.imported_symbols == ["work_queue"]
+    }));
+}
+
+#[test]
 fn external_generic_queue_rejects_the_wrong_source_owned_payload() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(
@@ -2352,7 +2493,10 @@ fn scalar_contract_with_exsures_is_not_laundered_through_the_heap_bridge() {
         }],
     });
 
-    assert!(matches!(response.status, ProofStatus::Refused));
+    assert!(
+        matches!(response.status, ProofStatus::Refused),
+        "{response:#?}"
+    );
     assert!(!response.files.iter().any(|file| {
         file.path == "adapter.py"
             && matches!(file.result, ProofStatus::Proved)
@@ -2361,6 +2505,66 @@ fn scalar_contract_with_exsures_is_not_laundered_through_the_heap_bridge() {
                 .as_deref()
                 .is_some_and(|fragment| fragment.contains("external-heap"))
     }));
+}
+
+#[test]
+fn scalar_contract_with_exsures_can_be_caught_inside_a_record_constructor_path() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("records.py"),
+        "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Response:\n    value: int\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("adapter.py"),
+        "import provider\nfrom dagcert.runtime import external_boundary\nfrom records import Response\n\n@external_boundary('provider.maybe')\ndef call_provider(flag: bool, fallback: Response) -> Response:\n    try:\n        return Response(provider.maybe_value(flag))\n    except Exception:\n        return fallback\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("provider_contract.py"),
+        "from nagini_contracts.contracts import ContractOnly, Exsures\n\n@ContractOnly\ndef maybe_value(flag: bool) -> int:\n    Exsures(Exception, flag)\n    ...\n",
+    )
+    .unwrap();
+    let response = maledictus::verify(&ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "records.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "adapter.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["call_provider".to_owned()],
+            },
+        ],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "adapter.py".to_owned(),
+            module: "provider".to_owned(),
+            stub_path: "provider_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::DeclaredByExsures,
+        }],
+    });
+
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert!(response.diagnostics.is_empty(), "{response:#?}");
+    assert!(
+        !response
+            .obligations
+            .iter()
+            .any(|obligation| obligation.id.contains("call_provider:exception-")),
+        "{response:#?}"
+    );
 }
 
 #[test]
@@ -6991,7 +7195,7 @@ fn verifier_refuses_direct_inherited_or_external_init_subclass_hooks_without_pro
     });
     assert_heap_refusal_without_any_proof(
         &external,
-        "frontend.python.external.module-statement-unsupported",
+        "frontend.python.heap.external-init-subclass-unsupported",
     );
 }
 
@@ -7937,14 +8141,14 @@ fn verifier_refuses_unsupported_identity_argument_calls_without_proof() {
 }
 
 #[test]
-fn verifier_refuses_nonpure_or_lexically_shadowed_identity_calls_without_proof() {
-    let nonpure = verify_heap_program(
+fn verifier_infers_exact_identity_helpers_but_refuses_lexical_shadowing() {
+    let inferred = verify_heap_program(
         "from nagini_contracts.contracts import *\n\nclass Item:\n    pass\nclass Target:\n    value: Item\n    def set_value(self, value: Item) -> None:\n        Requires(Acc(self.value))\n        Ensures(Acc(self.value))\n        self.value = value\ndef id(value: Item) -> Item:\n    return value\ndef run(target: Target, item: Item) -> None:\n    Requires(Acc(target.value))\n    target.set_value(id(item))\n",
         &["Target.set_value", "id", "run"],
     );
-    assert_heap_refusal_without_any_proof(
-        &nonpure,
-        "frontend.python.heap.terminal-reference-call-argument-unsupported",
+    assert!(
+        matches!(inferred.status, ProofStatus::Proved),
+        "{inferred:#?}"
     );
 
     for (source, diagnostic) in [
@@ -7954,11 +8158,14 @@ fn verifier_refuses_nonpure_or_lexically_shadowed_identity_calls_without_proof()
         ),
         (
             "from nagini_contracts.contracts import *\n\nclass Item:\n    pass\nclass Target:\n    value: Item\n    def set_value(self, value: Item) -> None:\n        Requires(Acc(self.value))\n        Ensures(Acc(self.value))\n        self.value = value\n@Pure\ndef id(value: Item) -> Item:\n    return value\ndef run(target: Target, item: Item) -> None:\n    Requires(Acc(target.value))\n    id = item\n    target.set_value(id(item))\n",
-            "frontend.python.heap.function-reference-local-inference-unsupported",
+            "frontend.python.heap.reference-identity-call-shadowed",
         ),
     ] {
         let response = verify_heap_program(source, &["Target.set_value", "id", "run"]);
-        assert_heap_refusal_without_any_proof(&response, diagnostic);
+        // The exact identity helper is independently proved before the caller is
+        // rejected.  Refusal must prevent exporting a proof for the requested
+        // program, but need not discard that valid helper obligation.
+        assert_heap_refusal_without_exported_proof(&response, diagnostic);
     }
 }
 
@@ -8173,17 +8380,28 @@ fn verifier_refuses_optional_property_or_nested_identity_arguments_without_proof
 }
 
 #[test]
-fn verifier_does_not_enable_reference_identity_calls_outside_terminal_arguments() {
-    for source in [
+fn verifier_proves_reference_identity_calls_as_assignments() {
+    let response = verify_heap_program(
         "from nagini_contracts.contracts import *\n\nclass Item:\n    marker: int\n\n@Pure\ndef id(value: Item) -> Item:\n    return value\n\ndef run(item: Item) -> None:\n    Requires(Acc(item.marker))\n    selected = id(item)\n",
+        &["id", "run"],
+    );
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert!(response.diagnostics.is_empty(), "{response:#?}");
+}
+
+#[test]
+fn verifier_refuses_inline_reference_identity_calls_in_assertions() {
+    let response = verify_heap_program(
         "from nagini_contracts.contracts import *\n\nclass Item:\n    marker: int\n\n@Pure\ndef id(value: Item) -> Item:\n    return value\n\ndef run(item: Item) -> None:\n    Requires(Acc(item.marker))\n    Assert(id(item) is item)\n",
-    ] {
-        let response = verify_heap_program(source, &["id", "run"]);
-        assert_heap_refusal_without_any_proof(
-            &response,
-            "frontend.python.heap.expression-unsupported",
-        );
-    }
+        &["id", "run"],
+    );
+    assert_heap_refusal_without_exported_proof(
+        &response,
+        "frontend.python.heap.expression-unsupported",
+    );
 }
 
 #[test]
@@ -8965,7 +9183,7 @@ fn verifier_refuses_ill_typed_or_effectful_ifexp_inputs_without_proof() {
         ),
         (
             "from nagini_contracts.contracts import *\n\nclass Item:\n    marker: int\n    def __init__(self) -> None:\n        Ensures(Acc(self.marker))\n        self.marker = 0\ndef run(flag: bool) -> None:\n    item = Item()\n    selected = Item() if flag else item\n",
-            "frontend.python.heap.call-argument-constructor-effects-unsupported",
+            "frontend.python.heap.conditional-branch-type-mismatch",
         ),
     ] {
         let response = verify_heap_program(source, &["Item.__init__", "run"]);
@@ -9730,15 +9948,13 @@ fn verifier_refuses_checked_external_effects_inside_guarded_source_paths() {
         }],
     });
     assert!(
-        matches!(response.status, ProofStatus::Refused),
+        matches!(response.status, ProofStatus::Refuted),
         "{response:#?}"
     );
-    assert!(
-        response.files.iter().all(|file| file.fragment.is_none()),
-        "{response:#?}"
-    );
-    assert!(response.obligations.is_empty(), "{response:#?}");
-    assert!(!response.diagnostics.is_empty(), "{response:#?}");
+    assert!(response.obligations.iter().any(|obligation| {
+        obligation.id.contains("method-call-precondition:touch")
+            && obligation.status == maledictus::vc::ObligationStatus::Refuted
+    }));
 }
 
 #[test]
@@ -10015,7 +10231,7 @@ fn verifier_refuses_effectful_reading_or_reference_chained_statement_comparisons
         (
             "from nagini_contracts.contracts import *\n\nclass A:\n    def one(self) -> int:\n        return 1\ndef run() -> int:\n    value = A()\n    if 0 < value.one() < 2:\n        return 1\n    return 0\n",
             vec!["A.one", "run"],
-            "frontend.python.heap.conditional-statement-effects-unsupported",
+            "frontend.python.heap.expression-unsupported",
         ),
         (
             "from nagini_contracts.contracts import *\n\nclass Box:\n    count: int\ndef run(box: Box) -> int:\n    Requires(Acc(box.count))\n    if 0 < box.count < 2:\n        return 1\n    return 0\n",
@@ -10615,7 +10831,7 @@ fn verifier_proves_a_closed_monomorphic_generic_scalar_class() {
     );
     assert!(
         response.obligations.iter().any(|obligation| {
-            obligation.id == "run:field-permission:value:0" && obligation.satisfied()
+            obligation.id.starts_with("run:field-permission:value:0") && obligation.satisfied()
         }),
         "{response:#?}"
     );

@@ -6,6 +6,7 @@ use std::num::NonZeroI128;
 use rustpython_ast::Visitor;
 use rustpython_parser::{Mode, Parse, Tok, ast, ast::Ranged, lexer::lex};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::call_binding::{
     ActualItem, BindingError, BoundArgument, CallSignature, FormalParameter, ParameterKind,
@@ -443,7 +444,7 @@ impl ExceptionHierarchy {
     }
 }
 
-fn builtin_exception_parent(exception_type: &str) -> Option<&'static str> {
+pub(crate) fn builtin_exception_parent(exception_type: &str) -> Option<&'static str> {
     match exception_type {
         "Exception" => Some("BaseException"),
         "ValueError" | "TypeError" | "RuntimeError" | "LookupError" | "ArithmeticError" => {
@@ -478,6 +479,7 @@ pub(crate) struct HeapScalarContractExport {
     pub(crate) return_sort: Sort,
     pub(crate) preconditions: Vec<ast::Expr>,
     pub(crate) postconditions: Vec<ast::Expr>,
+    pub(crate) exceptional_postconditions: Vec<(String, ast::Expr)>,
 }
 
 /// The part of an explicit external contract that can be bound to a Dagcert callable field.
@@ -617,6 +619,16 @@ impl ImportedContractModule {
                     .postconditions
                     .iter()
                     .map(|condition| condition.expression.clone())
+                    .collect(),
+                exceptional_postconditions: function
+                    .exceptional_postconditions
+                    .iter()
+                    .map(|(exception_type, condition)| {
+                        (
+                            self.exception_hierarchy.canonical_identity(exception_type),
+                            condition.clone(),
+                        )
+                    })
                     .collect(),
             })
             .collect()
@@ -5934,13 +5946,6 @@ pub fn parse_external_contract_module(
                 if !function.type_params.is_empty()
                     || function.args.vararg.is_some()
                     || function.args.kwarg.is_some()
-                    || !function.args.kwonlyargs.is_empty()
-                    || function
-                        .args
-                        .posonlyargs
-                        .iter()
-                        .chain(function.args.args.iter())
-                        .any(|argument| argument.default.is_some())
                 {
                     return failure(
                         "frontend.python.external.signature-unsupported",
@@ -6092,7 +6097,7 @@ pub(crate) fn source_contract_import_requests(
                 if relative_level == 0
                     && matches!(
                         module.as_str(),
-                        "nagini_contracts.contracts" | "typing" | "dataclasses"
+                        "nagini_contracts.contracts" | "typing" | "dataclasses" | "__future__"
                     )
                 {
                     continue;
@@ -6145,7 +6150,7 @@ pub fn source_contract_import_bindings(
                 if import.level.is_some_and(|level| level != 0_u32)
                     || !matches!(
                         module.as_str(),
-                        "nagini_contracts.contracts" | "typing" | "dataclasses"
+                        "nagini_contracts.contracts" | "typing" | "dataclasses" | "__future__"
                     )
                 {
                     for alias in &import.names {
@@ -6399,6 +6404,17 @@ fn validate_external_contract_module(
             exception_hierarchy: &module.exception_hierarchy,
             conformance_mode: false,
         };
+        for parameter in summary
+            .positional_parameters
+            .iter()
+            .chain(summary.keyword_only_parameters.iter())
+        {
+            if let Some(default) = &parameter.default {
+                let value =
+                    lowerer.lower_spec(default, &globals, None, "external function default")?;
+                coerce_to_sort(value, &parameter.sort, "external function default")?;
+            }
+        }
         for precondition in &summary.preconditions {
             for clause in lowerer.lower_specification_clauses(
                 precondition,
@@ -7392,6 +7408,7 @@ fn validate_expression_shape(
                 constant.value,
                 ast::Constant::Bool(_)
                     | ast::Constant::Int(_)
+                    | ast::Constant::Float(_)
                     | ast::Constant::Str(_)
                     | ast::Constant::Bytes(_)
                     | ast::Constant::None
@@ -11083,18 +11100,63 @@ fn collect_runtime_exception_guards(
                     evaluation_condition.clone(),
                     guards,
                 )?;
-                let values = lower_to_sequence(lowerer.lower(collection, environment, result)?)
-                    .map_err(|_| ContractFailure {
-                        code: "frontend.python.contracts.forall-symbolic-collection-unsupported",
-                        message:
-                            "Forall currently requires a statically known homogeneous list literal"
-                                .to_owned(),
-                    })?;
-                let Term::List { values, .. } = values else {
-                    return failure(
-                        "frontend.python.contracts.forall-symbolic-collection-unsupported",
-                        "Forall currently requires a statically known homogeneous list literal",
+                let collection_term = lowerer.lower(collection, environment, result)?;
+                let values = if let Term::List { values, .. } = collection_term.clone() {
+                    values
+                } else if matches!(collection_term.sort().map_err(type_failure)?, Sort::List(_)) {
+                    let binder = format!(
+                        "{}::forall-list-guards::{}::{parameter}::index",
+                        lowerer.call_stack.join("::"),
+                        u32::from(call.range.start())
                     );
+                    let index = Term::Variable {
+                        name: binder,
+                        sort: Sort::Int,
+                    };
+                    let mut nested_environment = environment.clone();
+                    nested_environment.insert(
+                        parameter.to_owned(),
+                        Term::ListGet {
+                            list: Box::new(collection_term.clone()),
+                            index: Box::new(index.clone()),
+                        },
+                    );
+                    let quantified_evaluation = Term::And {
+                        values: vec![
+                            evaluation_condition.clone(),
+                            Term::LessEqual {
+                                left: Box::new(Term::Int { value: 0 }),
+                                right: Box::new(index.clone()),
+                            },
+                            Term::Less {
+                                left: Box::new(index),
+                                right: Box::new(Term::ListLength {
+                                    value: Box::new(collection_term),
+                                }),
+                            },
+                        ],
+                    };
+                    collect_runtime_exception_guards(
+                        predicate,
+                        lowerer,
+                        &nested_environment,
+                        result,
+                        quantified_evaluation,
+                        guards,
+                    )?;
+                    Vec::new()
+                } else {
+                    let lowered = lower_to_sequence(collection_term).map_err(|_| {
+                        ContractFailure {
+                            code: "frontend.python.contracts.forall-symbolic-collection-unsupported",
+                            message: "Forall requires a homogeneous List or a finite tuple, bytes, or range value"
+                                .to_owned(),
+                        }
+                    })?;
+                    let Term::List { values, .. } = lowered else {
+                        unreachable!("lower_to_sequence returns a List")
+                    };
+                    values
                 };
                 for value in values {
                     let mut nested_environment = environment.clone();
@@ -12346,6 +12408,17 @@ impl ExpressionLowerer<'_> {
                         ),
                     })?,
                 }),
+                ast::Constant::Float(value) if value.is_finite() => Ok(Term::Variable {
+                    // Float remains an opaque IEEE-754 value. A named literal gives repeated
+                    // occurrences stable identity without pretending Z3 real arithmetic models
+                    // NaN, signed zero, rounding, or overflow.
+                    name: format!("python-float-literal:{value}"),
+                    sort: Sort::Float,
+                }),
+                ast::Constant::Float(value) => failure(
+                    "frontend.python.contracts.float-literal-nonfinite",
+                    format!("non-finite float literal {value} is not supported"),
+                ),
                 ast::Constant::Str(value) => Ok(Term::String {
                     value: value.clone(),
                 }),
@@ -12620,19 +12693,71 @@ impl ExpressionLowerer<'_> {
                         else {
                             return unsupported_expression(expression);
                         };
-                        let collection =
-                            lower_to_sequence(self.lower(collection, environment, result)?).map_err(
-                                |_| ContractFailure {
-                                    code: "frontend.python.contracts.forall-symbolic-collection-unsupported",
-                                    message: "Forall currently requires a statically known homogeneous list literal"
-                                        .to_owned(),
-                                },
-                            )?;
-                        let Term::List { values, .. } = collection else {
-                            return failure(
-                                "frontend.python.contracts.forall-symbolic-collection-unsupported",
-                                "Forall currently requires a statically known homogeneous list literal",
+                        let collection = self.lower(collection, environment, result)?;
+                        if let Term::List { values, .. } = collection {
+                            let mut predicates = Vec::with_capacity(values.len());
+                            for value in values {
+                                let mut nested_environment = environment.clone();
+                                nested_environment.insert(parameter.to_owned(), value);
+                                let predicate =
+                                    self.lower(predicate, &nested_environment, result)?;
+                                ensure_boolean(&predicate, "Forall predicate")?;
+                                predicates.push(predicate);
+                            }
+                            return Ok(Term::And { values: predicates });
+                        }
+                        if matches!(collection.sort().map_err(type_failure)?, Sort::List(_)) {
+                            let binder = format!(
+                                "{}::forall-list::{}::{parameter}::index",
+                                self.call_stack.join("::"),
+                                u32::from(call.range.start())
                             );
+                            let index = Term::Variable {
+                                name: binder.clone(),
+                                sort: Sort::Int,
+                            };
+                            let mut nested_environment = environment.clone();
+                            nested_environment.insert(
+                                parameter.to_owned(),
+                                Term::ListGet {
+                                    list: Box::new(collection.clone()),
+                                    index: Box::new(index.clone()),
+                                },
+                            );
+                            let predicate = self.lower(predicate, &nested_environment, result)?;
+                            ensure_boolean(&predicate, "Forall predicate")?;
+                            let in_bounds = Term::And {
+                                values: vec![
+                                    Term::LessEqual {
+                                        left: Box::new(Term::Int { value: 0 }),
+                                        right: Box::new(index.clone()),
+                                    },
+                                    Term::Less {
+                                        left: Box::new(index),
+                                        right: Box::new(Term::ListLength {
+                                            value: Box::new(collection),
+                                        }),
+                                    },
+                                ],
+                            };
+                            return Ok(Term::ForAll {
+                                binder,
+                                binder_sort: Sort::Int,
+                                body: Box::new(Term::Implies {
+                                    left: Box::new(in_bounds),
+                                    right: Box::new(predicate),
+                                }),
+                            });
+                        }
+                        let collection = lower_to_sequence(collection).map_err(|_| {
+                            ContractFailure {
+                                code: "frontend.python.contracts.forall-symbolic-collection-unsupported",
+                                message: "Forall requires a homogeneous List or a finite tuple, bytes, or range value"
+                                    .to_owned(),
+                            }
+                        })?;
+                        let Term::List { values, .. } = collection else {
+                            unreachable!("lower_to_sequence returns a List")
                         };
                         let mut predicates = Vec::with_capacity(values.len());
                         for value in values {
@@ -13384,6 +13509,23 @@ impl ExpressionLowerer<'_> {
                     };
                     finite_dict_contains(&entries, &left)
                 }
+                Sort::Range if !matches!(right, Term::Range { .. }) => {
+                    left = coerce_python_int(left, "range membership value")?;
+                    let encoded = serde_json::to_vec(&("range-contains", &right, &left)).map_err(
+                        |error| ContractFailure {
+                            code: "frontend.python.contracts.range-membership-encoding-failed",
+                            message: format!("could not encode symbolic range membership: {error}"),
+                        },
+                    )?;
+                    let digest = Sha256::digest(encoded);
+                    Term::Variable {
+                        // Range parameters are immutable, but their start/stop/step components
+                        // are not separately represented in the scalar IR. Keep membership as a
+                        // stable opaque predicate; concrete range arguments still expand exactly.
+                        name: format!("python-range-membership:{digest:x}"),
+                        sort: Sort::Bool,
+                    }
+                }
                 _ => {
                     right = lower_to_sequence(right).map_err(|_| ContractFailure {
                         code: "frontend.python.contracts.membership-symbolic-collection-unsupported",
@@ -13411,6 +13553,15 @@ impl ExpressionLowerer<'_> {
             } else {
                 Ok(membership)
             };
+        }
+        let left_sort = left.sort().map_err(type_failure)?;
+        let right_sort = right.sort().map_err(type_failure)?;
+        if !matches!(operator, ast::CmpOp::Is | ast::CmpOp::IsNot)
+            && matches!(left_sort, Sort::Float | Sort::Int | Sort::Bool)
+            && matches!(right_sort, Sort::Float | Sort::Int | Sort::Bool)
+            && (left_sort == Sort::Float || right_sort == Sort::Float)
+        {
+            return opaque_float_comparison(operator, &left, &right);
         }
         if matches!(operator, ast::CmpOp::Is | ast::CmpOp::IsNot) {
             if left == ellipsis_singleton() && right == ellipsis_singleton() {
@@ -13941,6 +14092,15 @@ fn term_contains_list_get(term: &Term) -> bool {
         | Term::SetLength { value: receiver }
         | Term::DictLength { value: receiver }
         | Term::ForAll { body: receiver, .. } => term_contains_list_get(receiver),
+        Term::StringSlice {
+            source,
+            start,
+            length,
+        } => {
+            term_contains_list_get(source)
+                || term_contains_list_get(start)
+                || term_contains_list_get(length)
+        }
         Term::Implies { left, right }
         | Term::Equal { left, right }
         | Term::Less { left, right }
@@ -14631,18 +14791,20 @@ fn finite_literal_forall(call: &ast::ExprCall) -> Option<(&ast::Expr, &str, &ast
     {
         return None;
     }
-    let ast::Expr::Tuple(body) = lambda.body.as_ref() else {
-        return None;
+    let predicate = match lambda.body.as_ref() {
+        // Nagini also permits an explicit empty trigger list in the lambda result.
+        ast::Expr::Tuple(body)
+            if body.elts.len() == 2
+                && matches!(&body.elts[1], ast::Expr::List(triggers) if triggers.elts.is_empty()) =>
+        {
+            &body.elts[0]
+        }
+        predicate => predicate,
     };
-    if body.elts.len() != 2
-        || !matches!(&body.elts[1], ast::Expr::List(triggers) if triggers.elts.is_empty())
-    {
-        return None;
-    }
     Some((
         &call.args[0],
         lambda.args.args[0].def.arg.as_str(),
-        &body.elts[0],
+        predicate,
     ))
 }
 
@@ -15332,7 +15494,7 @@ fn lower_proven_object_identity(
 fn is_immutable_collection_value_sort(sort: &Sort) -> bool {
     matches!(
         sort,
-        Sort::Bool | Sort::Int | Sort::String | Sort::Reference | Sort::Bytes
+        Sort::Bool | Sort::Int | Sort::Float | Sort::String | Sort::Reference | Sort::Bytes
     ) || matches!(sort, Sort::Tuple(elements) if elements.iter().all(is_immutable_collection_value_sort))
         || matches!(sort, Sort::VariadicTuple(element) if is_immutable_collection_value_sort(element))
         || matches!(sort, Sort::List(element) if is_immutable_collection_value_sort(element))
@@ -15357,9 +15519,49 @@ fn term_is_closed_immutable_value(term: &Term) -> bool {
     }
 }
 
+fn opaque_float_comparison(
+    operator: &ast::CmpOp,
+    left: &Term,
+    right: &Term,
+) -> Result<Term, ContractFailure> {
+    let operator_name = match operator {
+        ast::CmpOp::Eq | ast::CmpOp::NotEq => "eq",
+        ast::CmpOp::Lt => "lt",
+        ast::CmpOp::LtE => "le",
+        ast::CmpOp::Gt => "gt",
+        ast::CmpOp::GtE => "ge",
+        _ => {
+            return failure(
+                "frontend.python.contracts.float-comparison-unsupported",
+                format!("unsupported float comparison operator {operator:?}"),
+            );
+        }
+    };
+    let encoded =
+        serde_json::to_vec(&(operator_name, left, right)).map_err(|error| ContractFailure {
+            code: "frontend.python.contracts.float-comparison-encoding-failed",
+            message: format!("could not encode an opaque float comparison: {error}"),
+        })?;
+    let digest = Sha256::digest(encoded);
+    let predicate = Term::Variable {
+        name: format!("python-float-comparison:{digest:x}"),
+        sort: Sort::Bool,
+    };
+    // Python defines `!=` as the negation of float equality even for NaN. Equality itself stays
+    // opaque: lowering it to SMT equality would unsoundly prove `value == value` for NaN.
+    Ok(if *operator == ast::CmpOp::NotEq {
+        Term::Not {
+            value: Box::new(predicate),
+        }
+    } else {
+        predicate
+    })
+}
+
 fn annotation_sort(expression: Option<&ast::Expr>) -> Result<Sort, ContractFailure> {
     match expression {
         Some(ast::Expr::Name(name)) if name.id.as_str() == "int" => Ok(Sort::Int),
+        Some(ast::Expr::Name(name)) if name.id.as_str() == "float" => Ok(Sort::Float),
         Some(ast::Expr::Name(name)) if name.id.as_str() == "bool" => Ok(Sort::Bool),
         Some(ast::Expr::Name(name)) if name.id.as_str() == "str" => Ok(Sort::String),
         Some(ast::Expr::Name(name)) if name.id.as_str() == "bytes" => Ok(Sort::Bytes),
@@ -16371,11 +16573,11 @@ mod tests {
             "symbolic_list_forall.py",
             &[],
         )
-        .unwrap_err();
-        assert_eq!(
-            symbolic_forall.code,
-            "frontend.python.contracts.forall-symbolic-collection-unsupported"
-        );
+        .unwrap();
+        assert!(!symbolic_forall.passed);
+        assert!(symbolic_forall.obligations.iter().any(|item| {
+            item.id.contains(":assert:") && item.status == ObligationStatus::Refuted
+        }));
 
         let zero_step = verify_contract_module(
             "def broken() -> None:\n    values = range(0, 3, 0)\n",

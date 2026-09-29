@@ -1199,3 +1199,11 @@ finite exception exits through actual handlers, and emits both endpoint hashes. 
 mismatched, aliased, mutated, generic, variadic, async, or uncaught callback paths refuse. Wider
 callback bodies, non-scalar callback types, and external callback preconditions remain
 production-coverage work.
+
+Maledictus 0.2.3 adds checked external generic heap classes over source-owned frozen records and
+transitive heap fragment v65. It also models one source-owned `T | None` module-state cell with one
+exact typed setter as a fresh atomic snapshot, resolves `from package import child` to the real
+hash-bound child module, and propagates a provider overlay through real adapter callers and helpers.
+This closes the production `Queue[Job]` adapter shape without payload erasure or artificial DAG
+tasks. Mutable history, initialization order, capacity, liveness, and undeclared provider exceptions
+remain outside that snapshot and must not be inferred from it.

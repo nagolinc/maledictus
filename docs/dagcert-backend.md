@@ -194,10 +194,10 @@ source module edges; its combined external variant preserves provider assumption
 `transitive-source-scalar-contracts/v33` proves absolute source-owned
 `from module import symbol` DAGs; the combined external variant is
 `transitive-source+checked-external-scalar-contracts/v33`.
-`transitive-source-heap-contracts/v64` separately proves recursive source class layouts,
+`transitive-source-heap-contracts/v65` separately proves recursive source class layouts,
 constructor contracts, and typed method effects; it is not an external-provider assumption
 fragment. The variant that also consumes checked external heap contracts is
-`transitive-source+checked-external-heap-contracts/v64` and retains those provider assumptions.
+`transitive-source+checked-external-heap-contracts/v65` and retains those provider assumptions.
 The shared production binder advertises `python-call-argument-binding/v3`. It has no application-
 level argument-count ceiling: source, expanded, and formal counts use checked machine-size
 arithmetic, while each allocation has a typed failure outcome containing the exact site and
@@ -593,7 +593,7 @@ proof-kernel feasibility/VC dispositions remain explicit premises. The historica
 and conformance artifacts.
 
 The current atomic heap release is `heap-method-contracts/v76` with transitive and combined
-source-heap summaries at version 64. Version 71 adds finite source-nominal `typing.Union` receiver
+source-heap summaries at version 65. Version 71 adds finite source-nominal `typing.Union` receiver
 dispatch. Every arm must resolve to a deterministic source method with one compatible canonical
 call binding and neutral, nonexceptional effects. Actual arguments are lowered once, each arm's
 postconditions remain separate guarded obligations, and a Pure caller requires every arm to be
@@ -831,7 +831,7 @@ the active build and capabilities. They remain historical provenance only: the c
 is the cap-free Aeneas extraction of the production binder and its universal allocator-aware Lean
 refinement theorem. Dagcert must not report the retired bounded identity as an active gate.
 
-`checked-external-heap-contracts/v6` records module-qualified classes in `heap_types`, heap-returning
+`checked-external-heap-contracts/v7` records module-qualified classes in `heap_types`, heap-returning
 provider functions in `functions`, and keeps provider conformance explicit. A factory or method
 may return a declared heap object only when its contract supplies the corresponding Result()
 permissions. Direct and module-qualified calls are supported, and a one-item context manager is
@@ -843,6 +843,18 @@ initialization is checked. The pinned conformance resolver discovers parent pack
 the production JSON protocol instead requires every source provider to be explicitly enumerated
 and hash-bound by the request. Dagcert must not reinterpret a refusal as an observational check or
 silently fall back to Nagini after issuance begins.
+
+Heap-contract version 7 and transitive version 65 additionally preserve source-owned frozen record
+identities through checked generic provider classes. A `Queue[Job]` specialization therefore
+accepts that exact source-owned `Job` and rejects a different record instead of degrading the
+payload to `object`. A source module may expose one shared optional provider object with the closed
+shape `slot: Queue[Job] | None = None` plus one exact typed setter. Every consumer read is modeled as
+a fresh atomic snapshot and must handle `None`; the proof deliberately makes no persistence,
+initialization-order, queue-history, or ownership claim. `from package import state_module` resolves
+to the exact hash-bound child module, and the provider overlay follows real callers and imported
+helpers without turning either file into an artificial Dagcert task. Conflicting overlay contracts,
+another module-level writer, an incompatible setter type, the wrong queue payload, or an undeclared
+external exception all refuse.
 
 Dagcert may enumerate a reachable application helper with an empty `symbols` list when that file
 is proof-only rather than a contract task. Maledictus still verifies every supported operation body

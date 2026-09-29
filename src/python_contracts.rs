@@ -468,6 +468,18 @@ pub struct ImportedContractModule {
     exception_hierarchy: ExceptionHierarchy,
 }
 
+#[derive(Clone, Debug)]
+pub(crate) struct HeapScalarContractExport {
+    pub(crate) name: String,
+    pub(crate) positional_parameters: Vec<(String, Sort, Option<ast::Expr>, bool)>,
+    pub(crate) keyword_only_parameters: Vec<(String, Sort, Option<ast::Expr>)>,
+    pub(crate) var_args: Option<(String, Sort)>,
+    pub(crate) keyword_args: Option<(String, Sort)>,
+    pub(crate) return_sort: Sort,
+    pub(crate) preconditions: Vec<ast::Expr>,
+    pub(crate) postconditions: Vec<ast::Expr>,
+}
+
 /// The part of an explicit external contract that can be bound to a Dagcert callable field.
 /// Preconditions are reported rather than discarded: the operation backend currently refuses
 /// them until it can prove them at the callback call site.
@@ -567,6 +579,47 @@ impl ImportedContractModule {
 
     pub fn function_names(&self) -> Vec<String> {
         self.functions.keys().cloned().collect()
+    }
+
+    pub(crate) fn heap_scalar_exports(&self) -> Vec<HeapScalarContractExport> {
+        self.functions
+            .iter()
+            .map(|(name, function)| HeapScalarContractExport {
+                name: name.clone(),
+                positional_parameters: function
+                    .positional_parameters
+                    .iter()
+                    .map(|parameter| {
+                        (
+                            parameter.name.clone(),
+                            parameter.sort.clone(),
+                            parameter.default.clone(),
+                            parameter.positional_only,
+                        )
+                    })
+                    .collect(),
+                keyword_only_parameters: function
+                    .keyword_only_parameters
+                    .iter()
+                    .map(|parameter| {
+                        (
+                            parameter.name.clone(),
+                            parameter.sort.clone(),
+                            parameter.default.clone(),
+                        )
+                    })
+                    .collect(),
+                var_args: function.var_args.clone(),
+                keyword_args: function.keyword_args.clone(),
+                return_sort: function.return_sort.clone(),
+                preconditions: function.preconditions.clone(),
+                postconditions: function
+                    .postconditions
+                    .iter()
+                    .map(|condition| condition.expression.clone())
+                    .collect(),
+            })
+            .collect()
     }
 
     pub fn declared_exception_types(&self) -> Vec<String> {

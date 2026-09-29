@@ -19,10 +19,10 @@ pub const TRANSITIVE_SOURCE_NOMINAL_REFERENCE_CONTRACTS: &str =
     "transitive-source-nominal-reference-contracts/v4";
 pub const TRANSITIVE_SOURCE_CHECKED_EXTERNAL_NOMINAL_REFERENCE_CONTRACTS: &str =
     "transitive-source+checked-external-nominal-reference-contracts/v4";
-pub const TRANSITIVE_SOURCE_HEAP_CONTRACTS: &str = "transitive-source-heap-contracts/v64";
-pub const CHECKED_EXTERNAL_HEAP_CONTRACTS: &str = "checked-external-heap-contracts/v6";
+pub const TRANSITIVE_SOURCE_HEAP_CONTRACTS: &str = "transitive-source-heap-contracts/v65";
+pub const CHECKED_EXTERNAL_HEAP_CONTRACTS: &str = "checked-external-heap-contracts/v7";
 pub const TRANSITIVE_SOURCE_CHECKED_EXTERNAL_HEAP_CONTRACTS: &str =
-    "transitive-source+checked-external-heap-contracts/v64";
+    "transitive-source+checked-external-heap-contracts/v65";
 pub const DAGCERT_CLOSED_TYPED_OPERATIONS: &str = "dagcert-closed-typed-operations/v3";
 
 pub const PYTHON_CAPABILITIES: [&str; 17] = [

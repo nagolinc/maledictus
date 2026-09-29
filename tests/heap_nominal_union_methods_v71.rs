@@ -142,7 +142,7 @@ fn transitive_source_issuance_preserves_union_dispatch() {
     );
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),

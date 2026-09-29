@@ -70,7 +70,7 @@ fn public_verifier_accepts_an_exact_predicate_export_from_verified_source() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id.starts_with("run:predicate-fold-body:state:") && obligation.satisfied()

@@ -1562,7 +1562,7 @@ fn verifier_composes_transitive_source_heap_permission_contracts() {
     assert_eq!(response.source_imports.len(), 1);
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(
         response
@@ -1679,7 +1679,7 @@ fn verifier_proves_explicit_empty_and_passive_package_initializers() {
         assert!(response.files.iter().any(|file| {
             file.path == "app.py"
                 && matches!(file.result, ProofStatus::Proved)
-                && file.fragment.as_deref() == Some("transitive-source-heap-contracts/v64")
+                && file.fragment.as_deref() == Some("transitive-source-heap-contracts/v65")
         }));
     }
 }
@@ -1755,7 +1755,7 @@ fn verifier_composes_properties_and_pure_results_across_a_source_heap_edge() {
     assert_eq!(response.source_imports.len(), 1);
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(
         response.obligations.iter().any(|obligation| {
@@ -1820,7 +1820,7 @@ fn verifier_transfers_non_neutral_permissions_across_a_source_heap_edge() {
     assert!(matches!(good.status, ProofStatus::Proved), "{good:#?}");
     assert_eq!(
         good.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(good.obligations.iter().any(|obligation| {
         obligation
@@ -1882,7 +1882,7 @@ fn verifier_composes_nominal_method_variance_across_a_source_heap_edge() {
     assert_eq!(response.source_imports.len(), 1);
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation
@@ -1936,7 +1936,7 @@ fn checked_external_heap_contract_reaches_json_backend_with_permission_effects()
     assert!(matches!(response.status, ProofStatus::Proved));
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("checked-external-heap-contracts/v6")
+        Some("checked-external-heap-contracts/v7")
     );
     assert_eq!(response.external_contracts[0].heap_types, ["provider.Cell"]);
     assert!(response.external_contracts[0].nominal_types.is_empty());
@@ -1995,7 +1995,7 @@ fn checked_external_heap_factory_reaches_json_backend_as_one_application_functio
     );
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("checked-external-heap-contracts/v6")
+        Some("checked-external-heap-contracts/v7")
     );
     assert_eq!(response.external_contracts[0].functions, ["open_resource"]);
     assert_eq!(
@@ -2007,6 +2007,359 @@ fn checked_external_heap_factory_reaches_json_backend_as_one_application_functio
             .scope
             .contains("heap-returning-factory")
     );
+}
+
+#[test]
+fn checked_external_generic_heap_contract_preserves_closed_payload_type() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("app.py"),
+        "from nagini_contracts.contracts import Acc, Ensures, Requires\nfrom queue_provider import Queue\n\nclass Job:\n    value: int\n\n    def __init__(self, value: int) -> None:\n        Ensures(Acc(self.value))\n        Ensures(self.value == value)\n        self.value = value\n\ndef enqueue(destination: Queue[Job], job: Job) -> None:\n    Requires(Acc(destination.state))\n    destination.put_nowait(job)\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("queue_contract.py"),
+        "from typing import Generic, TypeVar\nfrom nagini_contracts.contracts import Acc, ContractOnly, Ensures, Requires\n\nT = TypeVar('T')\n\nclass Queue(Generic[T]):\n    state: int\n\n    @ContractOnly\n    def __init__(self) -> None:\n        Ensures(Acc(self.state))\n        ...\n\n    @ContractOnly\n    def put_nowait(self, item: T) -> None:\n        Requires(Acc(self.state))\n        Ensures(Acc(self.state))\n        ...\n",
+    )
+    .unwrap();
+    let request = ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![SourceFile {
+            path: "app.py".to_owned(),
+            language: "python".to_owned(),
+            symbols: vec!["Job.__init__".to_owned(), "enqueue".to_owned()],
+        }],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "app.py".to_owned(),
+            module: "queue_provider".to_owned(),
+            stub_path: "queue_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::AssumeNoException,
+        }],
+    };
+
+    let response = maledictus::verify(&request);
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert_eq!(
+        response.external_contracts[0].heap_types,
+        ["queue_provider.Queue"]
+    );
+}
+
+#[test]
+fn external_generic_queue_adapter_consumes_source_owned_record_payload() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("records.py"),
+        "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Job:\n    value: str\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("adapter.py"),
+        "from nagini_contracts.contracts import Acc, Requires\nfrom dagcert.runtime import external_boundary\nfrom queue_provider import Queue\nfrom records import Job\n\n@external_boundary('queue.job.put')\ndef put_job(destination: Queue[Job], job: Job) -> bool:\n    Requires(Acc(destination.state))\n    destination.put_nowait(job)\n    return True\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("queue_contract.py"),
+        "from typing import Generic, TypeVar\nfrom nagini_contracts.contracts import Acc, ContractOnly, Ensures, Requires\n\nT = TypeVar('T')\n\nclass Queue(Generic[T]):\n    state: int\n\n    @ContractOnly\n    def __init__(self) -> None:\n        Ensures(Acc(self.state))\n        ...\n\n    @ContractOnly\n    def put_nowait(self, item: T) -> None:\n        Requires(Acc(self.state))\n        Ensures(Acc(self.state))\n        ...\n",
+    )
+    .unwrap();
+    let response = maledictus::verify(&ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "records.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "adapter.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["put_job".to_owned()],
+            },
+        ],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "adapter.py".to_owned(),
+            module: "queue_provider".to_owned(),
+            stub_path: "queue_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::AssumeNoException,
+        }],
+    });
+
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert_eq!(response.source_imports.len(), 1, "{response:#?}");
+    assert_eq!(
+        response.files[1].fragment.as_deref(),
+        Some("transitive-source+checked-external-heap-contracts/v65")
+    );
+}
+
+#[test]
+fn external_generic_queue_adapter_reads_typed_source_state_without_erasing_payload() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::create_dir(directory.path().join("app_state")).unwrap();
+    fs::write(directory.path().join("app_state").join("__init__.py"), "").unwrap();
+    fs::write(
+        directory.path().join("records.py"),
+        "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Job:\n    value: str\n\n@dataclass(frozen=True)\nclass PutRequest:\n    job: Job\n\n@dataclass(frozen=True)\nclass PutResponse:\n    accepted: bool\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("app_state").join("queue_state.py"),
+        "from queue import Queue\nfrom records import Job\n\nwork_queue: Queue[Job] | None = None\n\ndef configure_work_queue(value: Queue[Job]) -> None:\n    global work_queue\n    work_queue = value\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("adapter.py"),
+        "from dagcert.runtime import external_boundary\nfrom app_state import queue_state\nfrom records import PutRequest, PutResponse\n\n@external_boundary('queue.job.put')\ndef put_job(request: PutRequest) -> PutResponse:\n    destination = queue_state.work_queue\n    if destination is None:\n        return PutResponse(False)\n    destination.put_nowait(request.job)\n    return PutResponse(True)\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("queue_contract.py"),
+        "from typing import Generic, TypeVar\nfrom nagini_contracts.contracts import Acc, ContractOnly, Ensures\n\nT = TypeVar('T')\n\nclass Queue(Generic[T]):\n    state: int\n\n    @ContractOnly\n    def __init__(self) -> None:\n        Ensures(Acc(self.state))\n        ...\n\n    @ContractOnly\n    def put_nowait(self, item: T) -> None:\n        ...\n",
+    )
+    .unwrap();
+    let response = maledictus::verify(&ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "records.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "app_state/__init__.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "app_state/queue_state.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "adapter.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["put_job".to_owned()],
+            },
+        ],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "adapter.py".to_owned(),
+            module: "queue".to_owned(),
+            stub_path: "queue_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::AssumeNoException,
+        }],
+    });
+
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert!(response.source_imports.iter().any(|edge| {
+        edge.importer_path == "adapter.py"
+            && edge.module == "app_state.queue_state"
+            && edge.provider_path == "app_state/queue_state.py"
+            && edge.imported_symbols.is_empty()
+    }));
+    assert!(response.source_imports.iter().any(|edge| {
+        edge.importer_path == "app_state/queue_state.py"
+            && edge.module == "records"
+            && edge.provider_path == "records.py"
+            && edge.imported_symbols == ["Job"]
+    }));
+}
+
+#[test]
+fn external_generic_queue_rejects_the_wrong_source_owned_payload() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("records.py"),
+        "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Job:\n    value: str\n\n@dataclass(frozen=True)\nclass Other:\n    value: str\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("adapter.py"),
+        "from nagini_contracts.contracts import Acc, Requires\nfrom dagcert.runtime import external_boundary\nfrom queue_provider import Queue\nfrom records import Job, Other\n\n@external_boundary('queue.job.put')\ndef put_wrong(destination: Queue[Job], value: Other) -> bool:\n    Requires(Acc(destination.state))\n    destination.put_nowait(value)\n    return True\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("queue_contract.py"),
+        "from typing import Generic, TypeVar\nfrom nagini_contracts.contracts import Acc, ContractOnly, Ensures, Requires\n\nT = TypeVar('T')\n\nclass Queue(Generic[T]):\n    state: int\n\n    @ContractOnly\n    def __init__(self) -> None:\n        Ensures(Acc(self.state))\n        ...\n\n    @ContractOnly\n    def put_nowait(self, item: T) -> None:\n        Requires(Acc(self.state))\n        Ensures(Acc(self.state))\n        ...\n",
+    )
+    .unwrap();
+    let response = maledictus::verify(&ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "records.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "adapter.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["put_wrong".to_owned()],
+            },
+        ],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "adapter.py".to_owned(),
+            module: "queue_provider".to_owned(),
+            stub_path: "queue_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::AssumeNoException,
+        }],
+    });
+
+    assert!(matches!(response.status, ProofStatus::Refused));
+    assert!(
+        response.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "frontend.python.typecheck.arg-type"
+                || diagnostic.code.contains("argument-type")
+                || diagnostic.code.contains("type-mismatch")
+        }),
+        "{response:#?}"
+    );
+}
+
+#[test]
+fn external_heap_bridge_rejects_nominal_identity_loss_inside_variadic_tuple() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("records.py"),
+        "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Job:\n    value: str\n\n@dataclass(frozen=True)\nclass Batch:\n    jobs: tuple[Job, ...]\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("adapter.py"),
+        "from dagcert.runtime import external_boundary\nfrom queue_provider import Queue\nfrom records import Batch\n\n@external_boundary('queue.batch.put')\ndef put_batch(destination: Queue[Batch], batch: Batch) -> bool:\n    destination.put_nowait(batch)\n    return True\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("queue_contract.py"),
+        "from typing import Generic, TypeVar\nfrom nagini_contracts.contracts import Acc, ContractOnly, Ensures, Requires\n\nT = TypeVar('T')\n\nclass Queue(Generic[T]):\n    state: int\n\n    @ContractOnly\n    def __init__(self) -> None:\n        Ensures(Acc(self.state))\n        ...\n\n    @ContractOnly\n    def put_nowait(self, item: T) -> None:\n        Requires(Acc(self.state))\n        Ensures(Acc(self.state))\n        ...\n",
+    )
+    .unwrap();
+    let response = maledictus::verify(&ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "records.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "adapter.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["put_batch".to_owned()],
+            },
+        ],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "adapter.py".to_owned(),
+            module: "queue_provider".to_owned(),
+            stub_path: "queue_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::AssumeNoException,
+        }],
+    });
+
+    assert!(matches!(response.status, ProofStatus::Refused));
+    assert!(
+        response.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "frontend.python.heap.operation-record-field-unsupported"
+                || diagnostic.code == "frontend.python.heap.field-type-unsupported"
+        }),
+        "{response:#?}"
+    );
+}
+
+#[test]
+fn scalar_contract_with_exsures_is_not_laundered_through_the_heap_bridge() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("records.py"),
+        "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Response:\n    value: int\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("adapter.py"),
+        "import provider\nfrom dagcert.runtime import external_boundary\nfrom records import Response\n\n@external_boundary('provider.maybe')\ndef call_provider(flag: bool) -> Response:\n    return Response(provider.maybe_value(flag))\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("provider_contract.py"),
+        "from nagini_contracts.contracts import ContractOnly, Exsures\n\n@ContractOnly\ndef maybe_value(flag: bool) -> int:\n    Exsures(ValueError, flag)\n    ...\n",
+    )
+    .unwrap();
+    let response = maledictus::verify(&ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "records.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "adapter.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["call_provider".to_owned()],
+            },
+        ],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "adapter.py".to_owned(),
+            module: "provider".to_owned(),
+            stub_path: "provider_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::DeclaredByExsures,
+        }],
+    });
+
+    assert!(matches!(response.status, ProofStatus::Refused));
+    assert!(!response.files.iter().any(|file| {
+        file.path == "adapter.py"
+            && matches!(file.result, ProofStatus::Proved)
+            && file
+                .fragment
+                .as_deref()
+                .is_some_and(|fragment| fragment.contains("external-heap"))
+    }));
 }
 
 #[test]
@@ -2062,7 +2415,7 @@ fn verifier_composes_source_and_external_heap_contracts_in_one_adapter() {
     assert!(matches!(response.status, ProofStatus::Proved));
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source+checked-external-heap-contracts/v64")
+        Some("transitive-source+checked-external-heap-contracts/v65")
     );
     assert_eq!(response.source_imports.len(), 1);
     assert_eq!(response.external_contracts.len(), 1);
@@ -2126,6 +2479,59 @@ fn verifier_composes_source_and_external_scalar_contracts_in_one_adapter() {
     );
     assert_eq!(response.source_imports.len(), 1);
     assert_eq!(response.external_contracts.len(), 1);
+}
+
+#[test]
+fn external_adapter_composes_source_owned_records_with_scalar_provider_contract() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("records.py"),
+        "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Request:\n    key: str\n\n@dataclass(frozen=True)\nclass Response:\n    value: str\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("adapter.py"),
+        "import environment_provider\nfrom dagcert.runtime import external_boundary\nfrom records import Request, Response\n\n@external_boundary('environment.read')\ndef read_environment(request: Request) -> Response:\n    return Response(environment_provider.getenv(request.key, ''))\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.path().join("environment_contract.py"),
+        "from nagini_contracts.contracts import ContractOnly\n\n@ContractOnly\ndef getenv(key: str, default: str) -> str:\n    ...\n",
+    )
+    .unwrap();
+    let response = maledictus::verify(&ProofRequest {
+        schema: PROTOCOL_SCHEMA.to_owned(),
+        source_root: directory.path().display().to_string(),
+        source_fingerprint: "0".repeat(64),
+        proof_obligation: "no-undeclared-exceptional-exit".to_owned(),
+        files: vec![
+            SourceFile {
+                path: "records.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: Vec::new(),
+            },
+            SourceFile {
+                path: "adapter.py".to_owned(),
+                language: "python".to_owned(),
+                symbols: vec!["read_environment".to_owned()],
+            },
+        ],
+        python_callable_bindings: Vec::new(),
+        embedded_external_calls: Vec::new(),
+        cross_language_bindings: Vec::new(),
+        external_contract_overlays: vec![maledictus::protocol::ExternalOverlay {
+            adapter_path: "adapter.py".to_owned(),
+            module: "environment_provider".to_owned(),
+            stub_path: "environment_contract.py".to_owned(),
+            exception_policy: maledictus::protocol::ExternalExceptionPolicy::AssumeNoException,
+        }],
+    });
+
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert_eq!(response.source_imports.len(), 1, "{response:#?}");
 }
 
 #[test]
@@ -3887,7 +4293,7 @@ fn verifier_composes_old_identity_across_a_source_module_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id.starts_with("Caller.run:")
@@ -4180,7 +4586,7 @@ fn verifier_composes_result_field_identity_across_a_source_module_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(
         response.obligations.iter().any(|obligation| {
@@ -4440,7 +4846,7 @@ fn verifier_composes_late_bound_class_identity_from_a_fully_initialized_provider
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert_eq!(
         response
@@ -4497,7 +4903,7 @@ fn verifier_imports_a_class_with_an_internal_completed_provider_dependency() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert_eq!(
         response.source_imports[0].imported_symbols,
@@ -4567,7 +4973,7 @@ fn verifier_preserves_canonical_class_identity_across_two_source_provider_edges(
     );
     assert_eq!(
         response.files[2].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.source_imports.iter().any(|edge| {
         edge.importer_path == "b.py"
@@ -4645,7 +5051,7 @@ fn verifier_reexports_an_explicit_source_class_with_its_leaf_canonical_identity(
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[2].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(
         response.obligations.iter().any(|obligation| {
@@ -6635,7 +7041,7 @@ fn verifier_composes_exact_constructor_field_provenance_across_a_source_edge() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.source_imports.iter().any(|edge| {
         edge.importer_path == "app.py"
@@ -6947,7 +7353,7 @@ fn verifier_proves_a_checked_external_nominal_argument_to_a_source_setter() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[0].fragment.as_deref(),
-        Some("checked-external-heap-contracts/v6")
+        Some("checked-external-heap-contracts/v7")
     );
     assert_eq!(
         response.external_contracts[0].heap_types,
@@ -7082,7 +7488,7 @@ fn verifier_composes_a_nested_terminal_call_across_a_source_module_edge() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.source_imports.iter().any(|edge| {
         edge.importer_path == "app.py"
@@ -7393,7 +7799,7 @@ fn verifier_composes_raw_left_identity_across_a_source_module_edge() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.source_imports.iter().any(|edge| {
         edge.importer_path == "app.py"
@@ -7623,7 +8029,7 @@ fn verifier_composes_a_pure_nominal_identity_function_across_a_source_edge() {
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.source_imports.iter().any(|edge| {
         edge.importer_path == "app.py"
@@ -8186,7 +8592,7 @@ fn verifier_refutes_distinct_exact_raw_left_references_across_a_source_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id.starts_with("run:assert:")
@@ -8607,7 +9013,7 @@ fn verifier_preserves_typed_ifexp_joins_across_a_source_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id == "run:heap-function-complete" && obligation.satisfied()
@@ -8655,7 +9061,7 @@ fn verifier_joins_statement_if_reference_locals_across_a_source_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id == "run:heap-function-complete" && obligation.satisfied()
@@ -8718,7 +9124,7 @@ fn verifier_joins_checked_external_nominal_values_without_promoting_external_beh
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source+checked-external-heap-contracts/v64")
+        Some("transitive-source+checked-external-heap-contracts/v65")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation
@@ -8916,7 +9322,7 @@ fn verifier_proves_conditional_early_returns_across_a_source_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.obligations.iter().any(|obligation| {
         obligation.id.starts_with("choose:postcondition:") && obligation.satisfied()
@@ -9163,7 +9569,7 @@ fn verifier_composes_guarded_heap_effect_paths_across_a_source_edge() {
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.obligations.iter().any(|item| {
         item.id.contains("run:method-call-precondition:bump:") && item.satisfied()
@@ -10028,7 +10434,7 @@ fn verifier_composes_exact_short_circuit_condition_methods_across_a_source_edge(
     assert!(response.diagnostics.is_empty(), "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     for caller in ["run_if", "run_and", "run_or"] {
         assert!(response.obligations.iter().any(|item| {
@@ -10098,7 +10504,7 @@ fn verifier_refutes_an_exact_imported_condition_result_but_refuses_open_ingress(
                 );
                 assert_eq!(
                     response.files[1].fragment.as_deref(),
-                    Some("transitive-source-heap-contracts/v64")
+                    Some("transitive-source-heap-contracts/v65")
                 );
                 assert!(response.obligations.iter().any(|item| {
                     item.id.starts_with("run:postcondition:") && !item.satisfied()
@@ -10715,7 +11121,7 @@ fn verifier_composes_static_reference_return_permissions_across_a_source_edge() 
     assert_eq!(response.source_imports.len(), 1, "{response:#?}");
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(response.obligations.iter().any(|item| {
         item.id.starts_with("run:")
@@ -10959,7 +11365,7 @@ fn verifier_does_not_rebind_imported_pure_scalar_dependencies_to_consumer_global
     );
     assert_eq!(
         response.files[1].fragment.as_deref(),
-        Some("transitive-source-heap-contracts/v64")
+        Some("transitive-source-heap-contracts/v65")
     );
     assert!(
         response.obligations.iter().any(|obligation| {

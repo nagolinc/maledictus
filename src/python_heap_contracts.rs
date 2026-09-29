@@ -203,6 +203,227 @@ enum ModuleAnnotatedReturn {
     NominalConstructor(String),
 }
 
+/// A hash-sealed mutable module binding whose source proof preserves one closed nominal type.
+///
+/// This deliberately carries no value/history/ownership guarantee.  A consumer read observes a
+/// fresh atomic snapshot that may be `None`; temporal configuredness belongs in a separate claim.
+#[derive(Clone, Debug)]
+struct TypedModuleStateBinding {
+    identity: String,
+    value_type: MethodType,
+}
+
+#[derive(Clone, Debug)]
+struct TypedModuleStateSyntax {
+    binding: String,
+    setter: String,
+    value_annotation: ast::Expr,
+    parameter_annotation: ast::Expr,
+    declaration_offset: u32,
+    setter_offset: u32,
+}
+
+fn typed_module_state_syntax(
+    suite: &[ast::Stmt],
+) -> Result<Vec<TypedModuleStateSyntax>, ContractFailure> {
+    let mut declarations = BTreeMap::<String, (ast::Expr, u32)>::new();
+    for statement in suite {
+        let ast::Stmt::AnnAssign(assignment) = statement else {
+            continue;
+        };
+        let ast::Expr::Name(target) = assignment.target.as_ref() else {
+            continue;
+        };
+        if !matches!(assignment.value.as_deref(), Some(ast::Expr::Constant(value))
+            if value.value == ast::Constant::None)
+        {
+            continue;
+        }
+        if declarations
+            .insert(
+                target.id.to_string(),
+                (
+                    (*assignment.annotation).clone(),
+                    statement.range().start().into(),
+                ),
+            )
+            .is_some()
+        {
+            return fail(
+                "frontend.python.heap.typed-state-declaration-duplicate",
+                format!(
+                    "typed module state candidate {:?} is declared more than once",
+                    target.id
+                ),
+            );
+        }
+    }
+
+    let mut writers = BTreeMap::<String, (String, ast::Expr, u32)>::new();
+    for statement in suite {
+        let ast::Stmt::FunctionDef(function) = statement else {
+            continue;
+        };
+        if !function.decorator_list.is_empty()
+            || !function.type_params.is_empty()
+            || !function.args.posonlyargs.is_empty()
+            || function.args.vararg.is_some()
+            || function.args.kwarg.is_some()
+            || !function.args.kwonlyargs.is_empty()
+            || !matches!(function.returns.as_deref(), Some(ast::Expr::Constant(value))
+                if value.value == ast::Constant::None)
+        {
+            continue;
+        }
+        let [parameter] = function.args.args.as_slice() else {
+            continue;
+        };
+        if parameter.default.is_some() {
+            continue;
+        }
+        let Some(parameter_annotation) = parameter.def.annotation.as_deref() else {
+            continue;
+        };
+        let body = function
+            .body
+            .iter()
+            .filter(|statement| !class_docstring(statement))
+            .collect::<Vec<_>>();
+        let [ast::Stmt::Global(global), ast::Stmt::Assign(assignment)] = body.as_slice() else {
+            continue;
+        };
+        let [global_name] = global.names.as_slice() else {
+            continue;
+        };
+        let [ast::Expr::Name(target)] = assignment.targets.as_slice() else {
+            continue;
+        };
+        if target.id.as_str() != global_name.as_str()
+            || !matches!(assignment.value.as_ref(), ast::Expr::Name(value)
+                if value.id.as_str() == parameter.def.arg.as_str())
+            || !declarations.contains_key(global_name.as_str())
+        {
+            continue;
+        }
+        if writers
+            .insert(
+                global_name.to_string(),
+                (
+                    function.name.to_string(),
+                    parameter_annotation.clone(),
+                    function.range.start().into(),
+                ),
+            )
+            .is_some()
+        {
+            return fail(
+                "frontend.python.heap.typed-state-writer-ambiguous",
+                format!("typed module state {global_name:?} has more than one recognized writer"),
+            );
+        }
+    }
+
+    let mut result = Vec::new();
+    for (binding, (value_annotation, declaration_offset)) in declarations {
+        let Some((setter, parameter_annotation, setter_offset)) = writers.remove(&binding) else {
+            continue;
+        };
+        result.push(TypedModuleStateSyntax {
+            binding,
+            setter,
+            value_annotation,
+            parameter_annotation,
+            declaration_offset,
+            setter_offset,
+        });
+    }
+    for state in &result {
+        for statement in suite {
+            if u32::from(statement.range().start()) == state.declaration_offset {
+                continue;
+            }
+            let rebinds = match statement {
+                ast::Stmt::Assign(assignment) => assignment
+                    .targets
+                    .iter()
+                    .any(|target| assignment_target_binds_name(target, &state.binding)),
+                ast::Stmt::AnnAssign(assignment) => {
+                    assignment_target_binds_name(&assignment.target, &state.binding)
+                }
+                ast::Stmt::AugAssign(assignment) => {
+                    assignment_target_binds_name(&assignment.target, &state.binding)
+                }
+                _ => false,
+            };
+            if rebinds {
+                return fail(
+                    "frontend.python.heap.typed-state-module-rebind",
+                    format!(
+                        "typed module state {:?} may be written only by its proved setter {:?}",
+                        state.binding, state.setter
+                    ),
+                );
+            }
+        }
+    }
+    Ok(result)
+}
+
+fn close_typed_module_state_bindings(
+    syntax: &[TypedModuleStateSyntax],
+    module: &str,
+    classes: &BTreeMap<String, ClassShape>,
+) -> Result<BTreeMap<String, TypedModuleStateBinding>, ContractFailure> {
+    let class_names = classes.keys().cloned().collect::<BTreeSet<_>>();
+    let mut result = BTreeMap::new();
+    for item in syntax {
+        let mut value_type = method_annotation(Some(&item.value_annotation), &class_names)?;
+        let mut parameter_type = method_annotation(Some(&item.parameter_annotation), &class_names)?;
+        resolve_method_type_identity(&mut value_type, classes);
+        resolve_method_type_identity(&mut parameter_type, classes);
+        if value_type.sort != Sort::Reference
+            || !value_type.optional
+            || value_type.accepts_any
+            || value_type.nominal_class.is_none()
+            || parameter_type.sort != Sort::Reference
+            || parameter_type.optional
+            || parameter_type.accepts_any
+            || parameter_type.nominal_class != value_type.nominal_class
+        {
+            return fail(
+                "frontend.python.heap.typed-state-type-unsupported",
+                format!(
+                    "typed module state {:?} must be declared as one closed nominal T | None and its writer must accept exactly T",
+                    item.binding
+                ),
+            );
+        }
+        let nominal = value_type
+            .nominal_class
+            .as_ref()
+            .expect("typed state nominal was checked");
+        if !classes.values().any(|shape| &shape.identity == nominal)
+            && !classes.contains_key(nominal)
+        {
+            return fail(
+                "frontend.python.heap.typed-state-class-unresolved",
+                format!(
+                    "typed module state {:?} refers to unavailable nominal class {nominal:?}",
+                    item.binding
+                ),
+            );
+        }
+        result.insert(
+            item.binding.clone(),
+            TypedModuleStateBinding {
+                identity: format!("{module}.{}", item.binding),
+                value_type,
+            },
+        );
+    }
+    Ok(result)
+}
+
 #[derive(Clone, Debug)]
 struct ModuleAnnotatedFunctionSummary {
     name: String,
@@ -240,6 +461,7 @@ pub struct ImportedHeapContractModule {
     /// Verified parametric class summaries. These retain source-checked effects with nominal
     /// parameter placeholders; consumers must instantiate every placeholder before use.
     generic_classes: BTreeMap<String, ImportedHeapGenericClass>,
+    typed_state_bindings: BTreeMap<String, TypedModuleStateBinding>,
     /// Opaque proof that Level/WaitLevel descriptors originated in the ABI-validated canonical
     /// provider. Descriptor maps alone are intentionally insufficient to activate semantics.
     certified_level_intrinsics: Option<CertifiedLevelIntrinsics>,
@@ -266,6 +488,7 @@ impl ImportedHeapContractModule {
             verifier_intrinsics: provider.functions,
             verifier_intrinsic_classes: provider.classes,
             generic_classes: BTreeMap::new(),
+            typed_state_bindings: BTreeMap::new(),
             certified_level_intrinsics: Some(certified_level_intrinsics),
             proof_irrelevant_bindings: BTreeSet::new(),
         }
@@ -282,12 +505,17 @@ impl ImportedHeapContractModule {
     }
 
     pub fn class_names(&self) -> Vec<String> {
-        self.classes.keys().cloned().collect()
+        self.classes
+            .keys()
+            .chain(self.generic_classes.keys())
+            .cloned()
+            .collect()
     }
 
     pub fn qualified_class_names(&self) -> Vec<String> {
         self.classes
             .keys()
+            .chain(self.generic_classes.keys())
             .map(|name| format!("{}.{name}", self.module))
             .collect()
     }
@@ -334,6 +562,414 @@ impl ImportedHeapContractModule {
             .map(|name| format!("{}.{name}", self.module))
             .collect()
     }
+}
+
+/// Re-expose source-proved frozen Dagcert records as immutable heap classes.
+///
+/// The operation frontend remains the authority for record syntax, field closure, and
+/// constructibility. This bridge only translates that proved layout into the heap frontend's
+/// nominal IR so an external provider contract can consume the exact same application type.
+pub(crate) fn import_operation_records(
+    operation_module: &crate::dagcert_operations::ImportedOperationModule,
+) -> Result<ImportedHeapContractModule, ContractFailure> {
+    fn value_type(
+        value: &crate::dagcert_operations::ValueType,
+        module: &str,
+    ) -> Result<MethodType, ContractFailure> {
+        let scalar = |sort| Ok(MethodType::scalar(sort));
+        match value {
+            crate::dagcert_operations::ValueType::Int => scalar(Sort::Int),
+            crate::dagcert_operations::ValueType::Float => scalar(Sort::Float),
+            crate::dagcert_operations::ValueType::Bool => scalar(Sort::Bool),
+            crate::dagcert_operations::ValueType::Str
+            | crate::dagcert_operations::ValueType::StringSplitResult => scalar(Sort::String),
+            crate::dagcert_operations::ValueType::Bytes => scalar(Sort::Bytes),
+            crate::dagcert_operations::ValueType::VariadicTuple(element) => {
+                let element = value_type(element, module)?;
+                if element.nominal_class.is_some()
+                    || element.list_element_nominal_class.is_some()
+                    || !element.tuple_elements.is_empty()
+                {
+                    return fail(
+                        "frontend.python.heap.operation-record-field-unsupported",
+                        "external heap contracts cannot yet preserve nominal identity inside variadic tuple record fields",
+                    );
+                }
+                scalar(Sort::VariadicTuple(Box::new(element.sort)))
+            }
+            crate::dagcert_operations::ValueType::Record(name) => Ok(MethodType {
+                sort: Sort::Reference,
+                nominal_class: Some(format!("{module}.{name}")),
+                list_element_nominal_class: None,
+                tuple_elements: Vec::new(),
+                optional: false,
+                accepts_any: false,
+                accepts_any_tuple: false,
+                callable: None,
+            }),
+            crate::dagcert_operations::ValueType::RecordUnion(_)
+            | crate::dagcert_operations::ValueType::ExternalResult { .. }
+            | crate::dagcert_operations::ValueType::Callable(_) => fail(
+                "frontend.python.heap.operation-record-field-unsupported",
+                "external heap contracts cannot yet consume union, external-result, or callable record fields",
+            ),
+        }
+    }
+
+    let module = operation_module.module_name();
+    let mut classes = BTreeMap::new();
+    for name in operation_module.record_exports() {
+        let record = operation_module
+            .records()
+            .get(name)
+            .ok_or_else(|| ContractFailure {
+                code: "frontend.python.heap.operation-record-export-missing",
+                message: format!("operation module {module:?} omitted record export {name:?}"),
+            })?;
+        if !record.constructible {
+            return fail(
+                "frontend.python.heap.operation-record-not-constructible",
+                format!("operation record {module}.{name} is not constructible"),
+            );
+        }
+        let parameters = record
+            .fields
+            .iter()
+            .map(|(field, field_type)| {
+                value_type(field_type, module).map(|field_type| (field.clone(), field_type))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let fields = parameters
+            .iter()
+            .map(|(field, field_type)| {
+                (
+                    field.clone(),
+                    HeapFieldType {
+                        sort: field_type.sort.clone(),
+                        nominal_class: field_type.nominal_class.clone(),
+                        optional: field_type.optional,
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let field_names = fields.keys().cloned().collect::<BTreeSet<_>>();
+        let identity = format!("{module}.{name}");
+        classes.insert(
+            name.clone(),
+            ClassShape {
+                name: name.clone(),
+                identity: identity.clone(),
+                completed_provider: Some(module.to_owned()),
+                externally_assumed: false,
+                defines_custom_new: false,
+                defines_eq_override: true,
+                canonical_rd_binding: false,
+                defines_hash_override: true,
+                defines_instancecheck_override: false,
+                defines_dynamic_attribute_access: false,
+                verified_source_allocator: true,
+                has_explicit_constructor: true,
+                constructor_has_exceptional_outcome: false,
+                constructor_dependencies: BTreeSet::new(),
+                exact_constructed_fields: BTreeMap::new(),
+                constants: BTreeMap::new(),
+                fields,
+                externally_assumed_fields: BTreeSet::new(),
+                predicates: BTreeMap::new(),
+                properties: BTreeMap::new(),
+                methods: BTreeMap::new(),
+                abstract_methods: BTreeSet::new(),
+                constructor: Some(ConstructorSummary {
+                    declaration_offset: 0,
+                    receiver: "self".to_owned(),
+                    positional_only_count: 0,
+                    positional_parameter_count: parameters.len(),
+                    parameter_defaults: vec![None; parameters.len()],
+                    parameters,
+                    var_args: None,
+                    keyword_args: None,
+                    dataclass_fields: field_names,
+                    dataclass_frozen: true,
+                    proven_collection_aliases: BTreeSet::new(),
+                    proven_persistent_sequence_aliases: BTreeSet::new(),
+                    preconditions: Vec::new(),
+                    postconditions: Vec::new(),
+                    exception_postconditions: Vec::new(),
+                    modified_parameter_fields: BTreeMap::new(),
+                    late_class_dependencies: BTreeSet::new(),
+                    captured_environment: BTreeMap::new(),
+                    result_is_receiver: false,
+                }),
+                direct_base: None,
+                direct_base_fields: BTreeSet::new(),
+                direct_base_constructor: None,
+                override_obligations: Vec::new(),
+            },
+        );
+    }
+    let canonical_classes = classes
+        .values()
+        .map(|shape| (shape.identity.clone(), shape.clone()))
+        .collect();
+    Ok(ImportedHeapContractModule {
+        module: module.to_owned(),
+        classes,
+        canonical_classes,
+        factories: BTreeMap::new(),
+        functions: BTreeMap::new(),
+        canonical_functions: BTreeMap::new(),
+        reference_functions: BTreeMap::new(),
+        predicates: BTreeMap::new(),
+        verifier_intrinsics: BTreeMap::new(),
+        verifier_intrinsic_classes: BTreeMap::new(),
+        generic_classes: BTreeMap::new(),
+        typed_state_bindings: BTreeMap::new(),
+        certified_level_intrinsics: None,
+        proof_irrelevant_bindings: BTreeSet::new(),
+    })
+}
+
+pub(crate) fn import_scalar_contract(
+    scalar_module: &crate::python_contracts::ImportedContractModule,
+) -> Result<ImportedHeapContractModule, ContractFailure> {
+    let module = scalar_module.module();
+    let mut functions = BTreeMap::new();
+    for function in scalar_module.heap_scalar_exports() {
+        let positional_only_count = function
+            .positional_parameters
+            .iter()
+            .take_while(|(_, _, _, positional_only)| *positional_only)
+            .count();
+        let positional_parameter_count = function.positional_parameters.len();
+        let parameters = function
+            .positional_parameters
+            .iter()
+            .map(|(name, sort, _, _)| (name.clone(), sort.clone()))
+            .chain(
+                function
+                    .keyword_only_parameters
+                    .iter()
+                    .map(|(name, sort, _)| (name.clone(), sort.clone())),
+            )
+            .collect::<Vec<_>>();
+        let parameter_defaults = function
+            .positional_parameters
+            .iter()
+            .map(|(_, sort, default, _)| {
+                method_default(default.as_ref(), &MethodType::scalar(sort.clone())).map(|value| {
+                    value.map(|value| {
+                        method_default_term(&value, Some(&MethodType::scalar(sort.clone())))
+                    })
+                })
+            })
+            .chain(
+                function
+                    .keyword_only_parameters
+                    .iter()
+                    .map(|(_, sort, default)| {
+                        method_default(default.as_ref(), &MethodType::scalar(sort.clone())).map(
+                            |value| {
+                                value.map(|value| {
+                                    method_default_term(
+                                        &value,
+                                        Some(&MethodType::scalar(sort.clone())),
+                                    )
+                                })
+                            },
+                        )
+                    }),
+            )
+            .collect::<Result<Vec<_>, _>>()?;
+        functions.insert(
+            function.name.clone(),
+            HeapScalarFunctionSummary {
+                identity: format!("{module}.{}", function.name),
+                completed_provider: true,
+                declaration_offset: 0,
+                positional_only_count,
+                parameters,
+                accepts_any_parameters: BTreeSet::new(),
+                positional_parameter_count,
+                parameter_defaults,
+                var_args: function.var_args,
+                keyword_args: function.keyword_args,
+                return_sort: function.return_sort,
+                preconditions: function.preconditions,
+                postcondition_offsets: vec![0; function.postconditions.len()],
+                postconditions: function.postconditions,
+                body: Vec::new(),
+                direct_expression: None,
+                captured_environment: BTreeMap::new(),
+                captured_functions: BTreeMap::new(),
+            },
+        );
+    }
+    let canonical_functions = functions
+        .values()
+        .map(|function| (function.identity.clone(), function.clone()))
+        .collect();
+    Ok(ImportedHeapContractModule {
+        module: module.to_owned(),
+        classes: BTreeMap::new(),
+        canonical_classes: BTreeMap::new(),
+        factories: BTreeMap::new(),
+        functions,
+        canonical_functions,
+        reference_functions: BTreeMap::new(),
+        predicates: BTreeMap::new(),
+        verifier_intrinsics: BTreeMap::new(),
+        verifier_intrinsic_classes: BTreeMap::new(),
+        generic_classes: BTreeMap::new(),
+        typed_state_bindings: BTreeMap::new(),
+        certified_level_intrinsics: None,
+        proof_irrelevant_bindings: BTreeSet::new(),
+    })
+}
+
+pub(crate) fn source_heap_imports(
+    source: &str,
+    path: &str,
+) -> Result<Vec<String>, ContractFailure> {
+    let suite = ast::Suite::parse(source, path).map_err(|error| ContractFailure {
+        code: "frontend.python.parse-error",
+        message: error.to_string(),
+    })?;
+    let mut modules = BTreeSet::new();
+    for statement in suite {
+        match statement {
+            ast::Stmt::Import(import) => {
+                modules.extend(import.names.into_iter().map(|alias| alias.name.to_string()));
+            }
+            ast::Stmt::ImportFrom(import) => {
+                let Some(module) = import.module else {
+                    return fail(
+                        "frontend.python.heap.import-module-missing",
+                        "heap source imports require an explicit module name",
+                    );
+                };
+                if import.level.is_none_or(|level| level == 0_u32)
+                    && matches!(
+                        module.as_str(),
+                        "nagini_contracts.contracts"
+                            | "typing"
+                            | "dataclasses"
+                            | "abc"
+                            | "dagcert"
+                            | "dagcert.runtime"
+                    )
+                {
+                    continue;
+                }
+                modules.insert(module.to_string());
+            }
+            _ => {}
+        }
+    }
+    Ok(modules.into_iter().collect())
+}
+
+pub(crate) fn source_heap_import_bindings(
+    source: &str,
+    path: &str,
+) -> Result<Vec<crate::python_contracts::ContractImportBinding>, ContractFailure> {
+    let suite = ast::Suite::parse(source, path).map_err(|error| ContractFailure {
+        code: "frontend.python.parse-error",
+        message: error.to_string(),
+    })?;
+    let mut bindings = Vec::new();
+    for statement in suite {
+        let ast::Stmt::ImportFrom(import) = statement else {
+            continue;
+        };
+        let Some(module) = import.module else {
+            continue;
+        };
+        if import.level.is_some_and(|level| level != 0_u32)
+            || matches!(
+                module.as_str(),
+                "nagini_contracts.contracts"
+                    | "typing"
+                    | "dataclasses"
+                    | "abc"
+                    | "dagcert"
+                    | "dagcert.runtime"
+            )
+        {
+            continue;
+        }
+        for alias in import.names {
+            let imported_name = alias.name.to_string();
+            bindings.push(crate::python_contracts::ContractImportBinding {
+                module: module.to_string(),
+                local_name: alias
+                    .asname
+                    .map_or_else(|| imported_name.clone(), |name| name.to_string()),
+                imported_name,
+            });
+        }
+    }
+    Ok(bindings)
+}
+
+fn normalize_external_boundary_markers(
+    suite: Vec<ast::Stmt>,
+) -> Result<Vec<ast::Stmt>, ContractFailure> {
+    let mut canonical_binding = false;
+    let mut normalized = Vec::with_capacity(suite.len());
+    for statement in suite {
+        if let ast::Stmt::ImportFrom(import) = &statement
+            && import.level.is_none_or(|level| level == 0_u32)
+            && import
+                .module
+                .as_ref()
+                .is_some_and(|module| module.as_str() == "dagcert.runtime")
+        {
+            if import.names.len() == 1
+                && import.names[0].name.as_str() == "external_boundary"
+                && import.names[0].asname.is_none()
+            {
+                canonical_binding = true;
+                continue;
+            }
+            return fail(
+                "frontend.python.heap.dagcert-runtime-import-unsupported",
+                "heap-verified external adapters may import only canonical external_boundary from dagcert.runtime",
+            );
+        }
+        let ast::Stmt::FunctionDef(mut function) = statement else {
+            normalized.push(statement);
+            continue;
+        };
+        let boundary_decorator = function.decorator_list.iter().position(|decorator| {
+            matches!(decorator, ast::Expr::Call(call)
+                if matches!(call.func.as_ref(), ast::Expr::Name(name)
+                    if name.id.as_str() == "external_boundary"))
+        });
+        if let Some(index) = boundary_decorator {
+            if !canonical_binding || function.decorator_list.len() != 1 {
+                return fail(
+                    "frontend.python.heap.external-boundary-decorator-unsupported",
+                    "heap-verified external adapters require exactly the canonical imported @external_boundary decorator",
+                );
+            }
+            let ast::Expr::Call(call) = &function.decorator_list[index] else {
+                unreachable!("external-boundary decorator guard established a call")
+            };
+            if call.args.len() != 1
+                || !call.keywords.is_empty()
+                || !matches!(&call.args[0], ast::Expr::Constant(constant)
+                    if matches!(&constant.value, ast::Constant::Str(value) if !value.trim().is_empty()))
+            {
+                return fail(
+                    "frontend.python.heap.external-boundary-decorator-unsupported",
+                    "@external_boundary requires one nonempty literal boundary ID",
+                );
+            }
+            function.decorator_list.clear();
+        }
+        normalized.push(ast::Stmt::FunctionDef(function));
+    }
+    Ok(normalized)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -919,6 +1555,7 @@ impl HeapFunctionState {
 
 struct HeapBranchContext<'a> {
     classes: &'a BTreeMap<String, ClassShape>,
+    typed_state_bindings: &'a BTreeMap<String, TypedModuleStateBinding>,
     module_predicates: &'a BTreeMap<String, ModulePredicateSummary>,
     reference_identity_functions: Option<&'a BTreeMap<String, ReferenceIdentityFunctionSummary>>,
     scalar_calls: &'a ScalarCallContext<'a>,
@@ -953,6 +1590,19 @@ struct HeapConditionPartition {
     truthy: Vec<HeapFunctionState>,
     falsy: Vec<HeapFunctionState>,
     halted: Vec<HeapFunctionState>,
+}
+
+fn typed_module_state_read<'a>(
+    expression: &ast::Expr,
+    bindings: &'a BTreeMap<String, TypedModuleStateBinding>,
+) -> Option<&'a TypedModuleStateBinding> {
+    let ast::Expr::Attribute(attribute) = expression else {
+        return None;
+    };
+    let ast::Expr::Name(module) = attribute.value.as_ref() else {
+        return None;
+    };
+    bindings.get(&format!("{}.{}", module.id, attribute.attr))
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -2377,7 +3027,7 @@ fn monomorphize_heap_generics(
 
 fn imported_generic_argument_type(
     argument: &ast::Expr,
-    class_names: &BTreeSet<String>,
+    class_names: &BTreeMap<String, String>,
 ) -> Option<(String, MethodType)> {
     match argument {
         ast::Expr::Name(name) if name.id.as_str() == "int" => {
@@ -2389,11 +3039,11 @@ fn imported_generic_argument_type(
         ast::Expr::Name(name) if name.id.as_str() == "str" => {
             Some(("str".to_owned(), MethodType::scalar(Sort::String)))
         }
-        ast::Expr::Name(name) if class_names.contains(name.id.as_str()) => Some((
-            name.id.to_string(),
+        ast::Expr::Name(name) if class_names.contains_key(name.id.as_str()) => Some((
+            class_names[name.id.as_str()].clone(),
             MethodType {
                 sort: Sort::Reference,
-                nominal_class: Some(name.id.to_string()),
+                nominal_class: Some(class_names[name.id.as_str()].clone()),
                 list_element_nominal_class: None,
                 tuple_elements: Vec::new(),
                 optional: false,
@@ -2497,7 +3147,7 @@ fn instantiate_imported_generic_shape(
 
 struct ImportedGenericExpressionFolder<'a> {
     bindings: &'a BTreeMap<String, ImportedHeapGenericClass>,
-    class_names: &'a BTreeSet<String>,
+    class_names: &'a BTreeMap<String, String>,
     specializations: &'a mut BTreeMap<(String, Vec<String>), (String, ClassShape)>,
 }
 
@@ -2611,13 +3261,35 @@ fn materialize_imported_heap_generics(
         .iter()
         .map(|module| (module.module.as_str(), module))
         .collect::<BTreeMap<_, _>>();
-    let class_names = suite
+    let mut class_names = suite
         .iter()
         .filter_map(|statement| match statement {
-            ast::Stmt::ClassDef(class) => Some(class.name.to_string()),
+            ast::Stmt::ClassDef(class) => Some((class.name.to_string(), class.name.to_string())),
             _ => None,
         })
-        .collect::<BTreeSet<_>>();
+        .collect::<BTreeMap<_, _>>();
+    for statement in &suite {
+        let ast::Stmt::ImportFrom(import) = statement else {
+            continue;
+        };
+        let Some(imported) = import
+            .module
+            .as_ref()
+            .and_then(|module| imported_by_name.get(module.as_str()))
+        else {
+            continue;
+        };
+        for alias in &import.names {
+            let Some(shape) = imported.classes.get(alias.name.as_str()) else {
+                continue;
+            };
+            let local_name = alias
+                .asname
+                .as_ref()
+                .map_or(alias.name.as_str(), |name| name.as_str());
+            class_names.insert(local_name.to_owned(), shape.identity.clone());
+        }
+    }
     let mut bindings = BTreeMap::<String, ImportedHeapGenericClass>::new();
     let mut specializations = BTreeMap::new();
     let mut concrete = Vec::with_capacity(suite.len());
@@ -3945,6 +4617,7 @@ fn verify_heap_module_internal(
         code: "frontend.python.parse-error",
         message: error.to_string(),
     })?;
+    let preflight_suite = normalize_external_boundary_markers(preflight_suite)?;
     validate_canonical_optional_bindings(&preflight_suite)?;
     validate_canonical_union_bindings(&preflight_suite)?;
     validate_canonical_heap_typing_bindings(&preflight_suite)?;
@@ -4034,10 +4707,7 @@ fn verify_heap_module_internal(
     // above owns executable Optional/Union narrowing over primitive and `object` arms, while the
     // ordinary heap model admits only nominal references and closed Generic parameters.
     validate_optional_parameter_boundaries(&preflight_suite, imported_modules)?;
-    let suite = ast::Suite::parse(source, path).map_err(|error| ContractFailure {
-        code: "frontend.python.parse-error",
-        message: error.to_string(),
-    })?;
+    let suite = preflight_suite.clone();
     reject_duplicate_top_level_function_bindings(&suite)?;
     let suite = resolve_source_type_aliases(suite, source)?;
     let suite = python_sif_contracts::lower_canonical_low_contracts(suite, information_flow)?;
@@ -4069,6 +4739,15 @@ fn verify_heap_module_internal(
         .collect();
     let suite = inline_closed_constructor_factories(suite, &class_names)?;
     let suite = normalize_constructor_field_annotations(suite)?;
+    let typed_state_syntax = typed_module_state_syntax(&suite)?;
+    let typed_state_declaration_offsets = typed_state_syntax
+        .iter()
+        .map(|state| state.declaration_offset)
+        .collect::<BTreeSet<_>>();
+    let typed_state_setters = typed_state_syntax
+        .iter()
+        .map(|state| (state.setter.as_str(), state))
+        .collect::<BTreeMap<_, _>>();
     let dataclass_bindings = dataclass_bindings_before_classes(&suite)?;
     let abc_bindings = abc_bindings_before_classes(&suite)?;
     let mut annotation_class_names = class_names.clone();
@@ -4111,6 +4790,7 @@ fn verify_heap_module_internal(
         .chain(module_annotated_functions.keys())
         .chain(reference_identity_functions.keys())
         .chain(module_predicates.keys())
+        .chain(typed_state_syntax.iter().map(|state| &state.setter))
         .cloned()
         .collect::<BTreeSet<_>>();
     let mut scalar_functions =
@@ -4128,8 +4808,15 @@ fn verify_heap_module_internal(
                 message: format!("could not analyze {:?}: {}", error.path, error.message),
             })?
             .eligible_bindings();
+    let immutable_suite = suite
+        .iter()
+        .filter(|statement| {
+            !typed_state_declaration_offsets.contains(&u32::from(statement.range().start()))
+        })
+        .cloned()
+        .collect::<Vec<_>>();
     let module_globals = derive_immutable_heap_module_globals(
-        &suite,
+        &immutable_suite,
         source,
         HeapModuleGlobalDerivationContext {
             metadata: module_name.map(|name| HeapModuleMetadata { name, file: path }),
@@ -4208,6 +4895,7 @@ fn verify_heap_module_internal(
     }
     let mut namespace_obligations = Vec::new();
     let mut namespace_halted = false;
+    let mut imported_typed_state_bindings = BTreeMap::new();
     let mut built_source_classes = BTreeSet::new();
     let mut available_module_dispatch_functions = BTreeSet::new();
     let mut defined_non_scalar_names = classes.keys().cloned().collect::<BTreeSet<_>>();
@@ -4253,7 +4941,10 @@ fn verify_heap_module_internal(
                     imported_by_name
                         .get(alias.name.as_str())
                         .is_some_and(|module| {
-                            !module.verifier_intrinsics.is_empty() || !module.factories.is_empty()
+                            !module.verifier_intrinsics.is_empty()
+                                || !module.factories.is_empty()
+                                || !module.functions.is_empty()
+                                || !module.typed_state_bindings.is_empty()
                         })
                 }) =>
             {
@@ -4283,6 +4974,22 @@ fn verify_heap_module_internal(
                             return fail(
                                 "frontend.python.heap.factory-import-collision",
                                 format!("external heap factory {binding:?} is ambiguous"),
+                            );
+                        }
+                    }
+                    for (function_name, summary) in &imported.functions {
+                        callable_functions
+                            .insert(format!("{local_module}.{function_name}"), summary.clone());
+                    }
+                    for (binding_name, binding) in &imported.typed_state_bindings {
+                        let qualified = format!("{local_module}.{binding_name}");
+                        if imported_typed_state_bindings
+                            .insert(qualified.clone(), binding.clone())
+                            .is_some()
+                        {
+                            return fail(
+                                "frontend.python.heap.typed-state-import-collision",
+                                format!("typed module state binding {qualified:?} is ambiguous"),
                             );
                         }
                     }
@@ -4370,6 +5077,31 @@ fn verify_heap_module_internal(
                         .asname
                         .as_ref()
                         .map_or(imported_name, |name| name.as_str());
+                    let submodule_name = format!("{module_name}.{imported_name}");
+                    if let Some(submodule) = imported_by_name.get(submodule_name.as_str()) {
+                        used_imports.insert(submodule_name);
+                        for hidden in submodule.canonical_classes.values() {
+                            classes
+                                .entry(hidden.identity.clone())
+                                .or_insert_with(|| hidden.clone());
+                        }
+                        for (binding_name, binding) in &submodule.typed_state_bindings {
+                            let qualified = format!("{local_name}.{binding_name}");
+                            if imported_typed_state_bindings
+                                .insert(qualified.clone(), binding.clone())
+                                .is_some()
+                            {
+                                return fail(
+                                    "frontend.python.heap.typed-state-import-collision",
+                                    format!(
+                                        "typed module state binding {qualified:?} is ambiguous"
+                                    ),
+                                );
+                            }
+                        }
+                        defined_non_scalar_names.insert(local_name.to_owned());
+                        continue;
+                    }
                     if local_name != imported_name
                         && !imported.verifier_intrinsics.contains_key(imported_name)
                         && !imported
@@ -4773,6 +5505,14 @@ fn verify_heap_module_internal(
                     "a reference identity function cannot be rebound by a module assignment",
                 );
             }
+            ast::Stmt::AnnAssign(_)
+                if typed_state_declaration_offsets
+                    .contains(&u32::from(statement.range().start())) =>
+            {
+                // The exact `T | None = None` declaration and its sole type-preserving setter
+                // are validated as one typed-state unit. It intentionally contributes no
+                // immutable solver value or heap ownership.
+            }
             statement
                 if proof_irrelevant_binding_declaration(statement)
                     .is_some_and(|name| proof_irrelevant_bindings.contains(name)) =>
@@ -4972,6 +5712,11 @@ fn verify_heap_module_internal(
 
     validate_source_constructor_field_assignments(&suite, &built_source_classes, &classes)?;
     attach_exact_constructor_field_provenance(&suite, &built_source_classes, &mut classes);
+    let _typed_state_bindings = close_typed_module_state_bindings(
+        &typed_state_syntax,
+        module_name.unwrap_or(path),
+        &classes,
+    )?;
     let heap_module_functions = build_heap_module_function_summaries(
         &suite,
         &classes,
@@ -5121,7 +5866,18 @@ fn verify_heap_module_internal(
                 if selected_symbols.is_some() {
                     matched_selection.insert(function.name.to_string());
                 }
-                if let Some(summary) = module_predicates.get(function.name.as_str()) {
+                if let Some(state) = typed_state_setters.get(function.name.as_str()) {
+                    if !module_halted {
+                        obligations.push(obligation(
+                            format!("{}:typed-state-write-preserves-type", function.name),
+                            Vec::new(),
+                            Term::Bool { value: true },
+                            path,
+                            source,
+                            state.setter_offset,
+                        ));
+                    }
+                } else if let Some(summary) = module_predicates.get(function.name.as_str()) {
                     if !module_halted {
                         obligations.extend(lower_module_predicate_declaration(
                             source,
@@ -5182,6 +5938,7 @@ fn verify_heap_module_internal(
                                 path,
                                 function,
                                 &classes,
+                                &imported_typed_state_bindings,
                                 global_environment,
                                 &callable_functions,
                                 &post_init_available,
@@ -5225,6 +5982,7 @@ fn verify_heap_module_internal(
                         path,
                         function,
                         &classes,
+                        &imported_typed_state_bindings,
                         global_environment,
                         &callable_functions,
                         &post_init_available,
@@ -5571,25 +6329,41 @@ fn heap_scalar_function_catalog(
         }
     }
     for statement in suite {
-        let ast::Stmt::ImportFrom(import) = statement else {
-            continue;
-        };
-        let Some(imported) = import
-            .module
-            .as_ref()
-            .and_then(|module| imported_modules.get(module.as_str()))
-        else {
-            continue;
-        };
-        for alias in &import.names {
-            let Some(summary) = imported.functions.get(alias.name.as_str()) else {
-                continue;
-            };
-            let local_name = alias
-                .asname
-                .as_ref()
-                .map_or(alias.name.as_str(), |name| name.as_str());
-            catalog.insert(local_name.to_owned(), summary.clone());
+        match statement {
+            ast::Stmt::ImportFrom(import) => {
+                let Some(imported) = import
+                    .module
+                    .as_ref()
+                    .and_then(|module| imported_modules.get(module.as_str()))
+                else {
+                    continue;
+                };
+                for alias in &import.names {
+                    let Some(summary) = imported.functions.get(alias.name.as_str()) else {
+                        continue;
+                    };
+                    let local_name = alias
+                        .asname
+                        .as_ref()
+                        .map_or(alias.name.as_str(), |name| name.as_str());
+                    catalog.insert(local_name.to_owned(), summary.clone());
+                }
+            }
+            ast::Stmt::Import(import) => {
+                for alias in &import.names {
+                    let Some(imported) = imported_modules.get(alias.name.as_str()) else {
+                        continue;
+                    };
+                    let local_module = alias.asname.as_ref().map_or_else(
+                        || alias.name.as_str().split('.').next().unwrap_or_default(),
+                        |name| name.as_str(),
+                    );
+                    for (name, summary) in &imported.functions {
+                        catalog.insert(format!("{local_module}.{name}"), summary.clone());
+                    }
+                }
+            }
+            _ => {}
         }
     }
     catalog
@@ -7038,6 +7812,7 @@ fn derive_immutable_heap_module_globals(
                 captured_functions: &available_scalar_function_bindings,
                 predicates: None,
                 classes: None,
+                object_classes: None,
                 call_stack: Vec::new(),
                 source_prefix: true,
             };
@@ -7295,6 +8070,7 @@ fn lower_completed_provider_module_call(
         captured_functions,
         predicates: None,
         classes: None,
+        object_classes: None,
         call_stack: vec![summary.identity.clone()],
         source_prefix: false,
     };
@@ -7687,6 +8463,7 @@ fn evaluate_top_level_constructor_definedness(
         captured_functions: &no_captured_functions,
         predicates: None,
         classes: None,
+        object_classes: None,
         call_stack: Vec::new(),
         source_prefix: true,
     };
@@ -10289,6 +11066,11 @@ pub fn verify_and_export_source_heap_module(
     }
     let suite = inline_closed_constructor_factories(suite, &class_names)?;
     let suite = normalize_constructor_field_annotations(suite)?;
+    let typed_state_syntax = typed_module_state_syntax(&suite)?;
+    let typed_state_declaration_offsets = typed_state_syntax
+        .iter()
+        .map(|state| state.declaration_offset)
+        .collect::<BTreeSet<_>>();
     let dataclass_bindings = dataclass_bindings_before_classes(&suite)?;
     let abc_bindings = abc_bindings_before_classes(&suite)?;
     let module_dispatch_functions = build_module_dispatch_function_summaries(&suite, &class_names)?;
@@ -10302,6 +11084,7 @@ pub fn verify_and_export_source_heap_module(
         .chain(module_annotated_functions.keys())
         .chain(reference_identity_functions.keys())
         .chain(module_predicates.keys())
+        .chain(typed_state_syntax.iter().map(|state| &state.setter))
         .cloned()
         .collect::<BTreeSet<_>>();
     let mut scalar_functions =
@@ -10319,8 +11102,15 @@ pub fn verify_and_export_source_heap_module(
                 message: format!("could not analyze {:?}: {}", error.path, error.message),
             })?
             .eligible_bindings();
+    let immutable_suite = suite
+        .iter()
+        .filter(|statement| {
+            !typed_state_declaration_offsets.contains(&u32::from(statement.range().start()))
+        })
+        .cloned()
+        .collect::<Vec<_>>();
     let module_globals = derive_immutable_heap_module_globals(
-        &suite,
+        &immutable_suite,
         source,
         HeapModuleGlobalDerivationContext {
             metadata: Some(HeapModuleMetadata {
@@ -10513,6 +11303,8 @@ pub fn verify_and_export_source_heap_module(
         }
     }
     seal_exported_class_identities(module, &mut classes, &available_classes);
+    let typed_state_bindings =
+        close_typed_module_state_bindings(&typed_state_syntax, module, &available_classes)?;
     let mut exported_generic_classes = BTreeMap::new();
     for (name, generic) in &static_typing.generic_classes {
         if generic.provider_template_placeholders.is_empty() {
@@ -10713,6 +11505,7 @@ pub fn verify_and_export_source_heap_module(
             verifier_intrinsics: exported_verifier_intrinsics,
             verifier_intrinsic_classes: exported_verifier_intrinsic_classes,
             generic_classes: exported_generic_classes,
+            typed_state_bindings,
             certified_level_intrinsics,
             proof_irrelevant_bindings,
         },
@@ -10864,6 +11657,26 @@ pub fn parse_external_heap_contract_module(
             "external ContractOnly heap classes cannot assume __init_subclass__ class-creation effects",
         );
     }
+    let declared_class_names = suite
+        .iter()
+        .filter_map(|statement| match statement {
+            ast::Stmt::ClassDef(class) => Some(class.name.to_string()),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    let static_typing = collect_static_heap_typing(
+        &suite,
+        &BTreeMap::new(),
+        &declared_class_names,
+        source,
+        true,
+    )?;
+    let generic_parameter_names = static_typing
+        .generic_classes
+        .values()
+        .flat_map(|generic| generic.provider_template_placeholders.iter().cloned())
+        .collect::<BTreeSet<_>>();
+    let suite = monomorphize_heap_generics(suite, &static_typing)?;
     let class_names = suite
         .iter()
         .filter_map(|statement| match statement {
@@ -10880,6 +11693,44 @@ pub fn parse_external_heap_contract_module(
                     && import.module.as_ref().is_some_and(|module| {
                         matches!(module.as_str(), "nagini_contracts.contracts" | "typing")
                     }) => {}
+            ast::Stmt::Assign(assignment)
+                if static_typing
+                    .declaration_offsets
+                    .contains(&u32::from(assignment.range.start())) => {}
+            ast::Stmt::ClassDef(class) if generic_parameter_names.contains(class.name.as_str()) => {
+                classes.insert(
+                    class.name.to_string(),
+                    ClassShape {
+                        name: class.name.to_string(),
+                        identity: format!("{module}.{}", class.name),
+                        completed_provider: None,
+                        externally_assumed: true,
+                        defines_custom_new: false,
+                        defines_eq_override: false,
+                        canonical_rd_binding: false,
+                        defines_hash_override: false,
+                        defines_instancecheck_override: false,
+                        defines_dynamic_attribute_access: false,
+                        verified_source_allocator: false,
+                        has_explicit_constructor: false,
+                        constructor_has_exceptional_outcome: false,
+                        constructor_dependencies: BTreeSet::new(),
+                        exact_constructed_fields: BTreeMap::new(),
+                        constants: BTreeMap::new(),
+                        fields: BTreeMap::new(),
+                        externally_assumed_fields: BTreeSet::new(),
+                        predicates: BTreeMap::new(),
+                        properties: BTreeMap::new(),
+                        methods: BTreeMap::new(),
+                        abstract_methods: BTreeSet::new(),
+                        constructor: None,
+                        direct_base: None,
+                        direct_base_fields: BTreeSet::new(),
+                        direct_base_constructor: None,
+                        override_obligations: Vec::new(),
+                    },
+                );
+            }
             ast::Stmt::ClassDef(class) => {
                 if external_exception_declaration(class) {
                     validate_external_exception_declaration(class)?;
@@ -11101,7 +11952,14 @@ pub fn parse_external_heap_contract_module(
         }
     }
     let mut validation_shapes = classes.clone();
-    for shape in classes.values() {
+    for placeholder in &generic_parameter_names {
+        validation_shapes.remove(placeholder);
+    }
+    for shape in classes
+        .iter()
+        .filter(|(name, _)| !generic_parameter_names.contains(name.as_str()))
+        .map(|(_, shape)| shape)
+    {
         validation_shapes
             .entry(shape.identity.clone())
             .or_insert_with(|| shape.clone());
@@ -11110,6 +11968,32 @@ pub fn parse_external_heap_contract_module(
         validation_shapes.insert(format!("factory::{name}"), shape.clone());
     }
     validate_external_heap_contract_shapes(&validation_shapes)?;
+    let mut generic_classes = BTreeMap::new();
+    for (name, generic) in &static_typing.generic_classes {
+        if generic.provider_template_placeholders.is_empty() {
+            continue;
+        }
+        let shape = classes.remove(name).ok_or_else(|| ContractFailure {
+            code: "frontend.python.heap.typevar-template-internal-error",
+            message: format!("external generic provider class {name:?} produced no class summary"),
+        })?;
+        let placeholder_identities = generic
+            .provider_template_placeholders
+            .iter()
+            .map(|placeholder| format!("{module}.{placeholder}"))
+            .collect::<Vec<_>>();
+        for placeholder in &generic.provider_template_placeholders {
+            classes.remove(placeholder);
+        }
+        generic_classes.insert(
+            name.clone(),
+            ImportedHeapGenericClass {
+                parameters: generic.parameters.clone(),
+                placeholder_identities,
+                shape,
+            },
+        );
+    }
     let canonical_classes = classes
         .values()
         .map(|shape| (shape.identity.clone(), shape.clone()))
@@ -11125,7 +12009,8 @@ pub fn parse_external_heap_contract_module(
         predicates: BTreeMap::new(),
         verifier_intrinsics: BTreeMap::new(),
         verifier_intrinsic_classes: BTreeMap::new(),
-        generic_classes: BTreeMap::new(),
+        generic_classes,
+        typed_state_bindings: BTreeMap::new(),
         certified_level_intrinsics: None,
         proof_irrelevant_bindings: BTreeSet::new(),
     })
@@ -15951,6 +16836,7 @@ fn lower_module_predicate_declaration(
         captured_functions: &no_captured_functions,
         predicates: Some(module_predicates),
         classes: Some(classes),
+        object_classes: Some(&object_classes),
         call_stack: vec![function.name.to_string()],
         source_prefix: false,
     };
@@ -16759,6 +17645,7 @@ fn lower_method(
         captured_functions: &no_captured_functions,
         predicates: Some(context.module_predicates),
         classes: Some(context.classes),
+        object_classes: None,
         call_stack: vec![qualified.to_owned()],
         source_prefix: false,
     };
@@ -17042,6 +17929,7 @@ fn lower_method(
                     &return_sort,
                     &HeapBranchContext {
                         classes,
+                        typed_state_bindings: &BTreeMap::new(),
                         module_predicates: context.module_predicates,
                         reference_identity_functions: None,
                         scalar_calls: &scalar_calls,
@@ -19348,6 +20236,7 @@ fn lower_heap_scalar_function(
         captured_functions: &summary.captured_functions,
         predicates: None,
         classes: None,
+        object_classes: None,
         call_stack: vec![summary.identity.clone()],
         source_prefix: false,
     };
@@ -23629,6 +24518,34 @@ fn execute_heap_effect_statement_inner(
             return Ok(HeapEffectStatementOutcome::NotHandled);
         }
         if let ast::Expr::Name(target) = &assignment.targets[0] {
+            if let Some(binding) =
+                typed_module_state_read(&assignment.value, context.typed_state_bindings)
+            {
+                let nominal_class = binding
+                    .value_type
+                    .nominal_class
+                    .as_ref()
+                    .expect("typed state bindings are closed nominal references")
+                    .clone();
+                state.environment.insert(
+                    target.id.to_string(),
+                    Term::Variable {
+                        name: format!(
+                            "{}::snapshot:{}",
+                            binding.identity,
+                            u32::from(assignment.value.range().start())
+                        ),
+                        sort: Sort::Reference,
+                    },
+                );
+                state
+                    .object_classes
+                    .insert(target.id.to_string(), nominal_class);
+                state.optional_object_names.insert(target.id.to_string());
+                state.exact_object_names.remove(target.id.as_str());
+                state.source_constructed_names.remove(target.id.as_str());
+                return Ok(HeapEffectStatementOutcome::Handled);
+            }
             if let Some((class_name, call)) =
                 source_constructor_call(&assignment.value, context.classes)
             {
@@ -24262,8 +25179,13 @@ fn execute_heap_effect_statement_inner(
                     format!("method {:?} has no verified summary", attribute.attr),
                 );
             };
-            if class.externally_assumed
-                || summary.externally_assumed
+            let atomic_external = (class.externally_assumed || class.completed_provider.is_some())
+                && summary.externally_assumed
+                && summary.exception_postconditions.is_empty()
+                && summary.modified_parameter_fields.is_empty()
+                && summary.call_permission_neutral;
+            let verified_source = !class.externally_assumed && !summary.externally_assumed;
+            if (!atomic_external && !verified_source)
                 || summary.receiver_kind != MethodReceiverKind::Instance
                 || summary.return_type.sort != Sort::Unit
                 || !summary.exception_postconditions.is_empty()
@@ -24271,18 +25193,14 @@ fn execute_heap_effect_statement_inner(
                 return unsupported_path_effect_or_legacy_fallback(
                     path_mode,
                     "frontend.python.heap.conditional-statement-effect-target-unsupported",
-                    "path-local call statements require a verified nonexceptional Unit source method",
+                    "path-local call statements require a verified source method or a permission-neutral nonexceptional Unit external method",
                 );
             }
-            if (path_mode
-                && (!call.keywords.is_empty()
-                    || !call.args.iter().all(heap_effect_argument_is_plain)))
-                || (!path_mode && !heap_direct_method_actuals_are_call_free(call))
-            {
+            if !heap_direct_method_actuals_are_call_free(call) {
                 return unsupported_path_effect_or_legacy_fallback(
                     path_mode,
                     "frontend.python.heap.conditional-statement-effect-arguments-unsupported",
-                    "path-local call statement arguments must be effect-free positional expressions",
+                    "path-local call statement arguments must be call-free expressions",
                 );
             }
             let obligation_start = state.obligations.len();
@@ -27756,6 +28674,7 @@ fn evaluate_heap_module_call_variant(
         .method = method;
     let variant_context = HeapBranchContext {
         classes: context.classes,
+        typed_state_bindings: context.typed_state_bindings,
         module_predicates: context.module_predicates,
         reference_identity_functions: context.reference_identity_functions,
         scalar_calls: context.scalar_calls,
@@ -29155,6 +30074,7 @@ fn lower_finite_nominal_union_function(
         captured_functions: &no_captured_functions,
         predicates: Some(module_predicates),
         classes: Some(classes),
+        object_classes: None,
         call_stack: vec![function.name.to_string()],
         source_prefix: false,
     };
@@ -29422,6 +30342,7 @@ fn lower_heap_function(
     path: &str,
     function: &ast::StmtFunctionDef,
     classes: &BTreeMap<String, ClassShape>,
+    typed_state_bindings: &BTreeMap<String, TypedModuleStateBinding>,
     global_environment: &BTreeMap<String, Term>,
     scalar_functions: &BTreeMap<String, HeapScalarFunctionSummary>,
     available_scalar_functions: &BTreeSet<String>,
@@ -29582,6 +30503,17 @@ fn lower_heap_function(
                     }),
                 });
             }
+            if let Some(record) = classes.get(&class_name)
+                && class_is_frozen_dataclass(record)
+                && record.completed_provider.is_some()
+            {
+                assumptions.extend(
+                    record
+                        .fields
+                        .keys()
+                        .map(|field| read_permission(0, term.clone(), field)),
+                );
+            }
             object_classes.insert(argument.def.arg.to_string(), class_name);
         }
         if let Some(class_name) = list_element_nominal_class {
@@ -29611,6 +30543,7 @@ fn lower_heap_function(
         captured_functions: &no_captured_functions,
         predicates: Some(module_predicates),
         classes: Some(classes),
+        object_classes: None,
         call_stack: vec![function.name.to_string()],
         source_prefix: false,
     };
@@ -29772,6 +30705,7 @@ fn lower_heap_function(
     let mut path_exits = None;
     let branch_context = HeapBranchContext {
         classes,
+        typed_state_bindings,
         module_predicates,
         reference_identity_functions: Some(reference_identity_functions),
         scalar_calls: &scalar_calls,
@@ -30043,7 +30977,30 @@ fn lower_heap_function(
                 };
                 source_constructed_names.remove(target.id.as_str());
                 optional_object_names.remove(target.id.as_str());
-                if let Some((class_name, constructor, method)) =
+                if let Some(binding) =
+                    typed_module_state_read(&assignment.value, typed_state_bindings)
+                {
+                    let nominal_class = binding
+                        .value_type
+                        .nominal_class
+                        .as_ref()
+                        .expect("typed state bindings are closed nominal references")
+                        .clone();
+                    environment.insert(
+                        target.id.to_string(),
+                        Term::Variable {
+                            name: format!(
+                                "{}::snapshot:{}",
+                                binding.identity,
+                                u32::from(assignment.value.range().start())
+                            ),
+                            sort: Sort::Reference,
+                        },
+                    );
+                    object_classes.insert(target.id.to_string(), nominal_class);
+                    optional_object_names.insert(target.id.to_string());
+                    exact_object_names.remove(target.id.as_str());
+                } else if let Some((class_name, constructor, method)) =
                     chained_constructor_method_call(&assignment.value, classes)
                 {
                     ensure_heap_call_arguments_compatible(
@@ -30103,7 +31060,7 @@ fn lower_heap_function(
                         &object_classes,
                         classes,
                     )?;
-                    let value = apply_constructor_call(
+                    let value = apply_constructor_call_with_scalar_calls(
                         constructor,
                         class_name,
                         &classes[class_name],
@@ -30111,6 +31068,7 @@ fn lower_heap_function(
                         module_predicates,
                         &environment,
                         &object_classes,
+                        Some(&scalar_calls),
                         &mut heap,
                         &mut mask,
                         &mut assumptions,
@@ -30730,7 +31688,7 @@ fn lower_heap_function(
                             classes,
                         )?;
                         Lowered {
-                            term: apply_constructor_call(
+                            term: apply_constructor_call_with_scalar_calls(
                                 constructor_call,
                                 constructed_name,
                                 &classes[constructed_name],
@@ -30738,6 +31696,7 @@ fn lower_heap_function(
                                 module_predicates,
                                 &environment,
                                 &object_classes,
+                                Some(&scalar_calls),
                                 &mut heap,
                                 &mut mask,
                                 &mut assumptions,
@@ -38072,6 +39031,56 @@ fn apply_class_qualified_call(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn lower_constructor_argument(
+    expression: &ast::Expr,
+    environment: &BTreeMap<String, Term>,
+    object_classes: &BTreeMap<String, String>,
+    classes: &BTreeMap<String, ClassShape>,
+    class: &ClassShape,
+    heap: u32,
+    mask: u32,
+    scalar_calls: Option<&ScalarCallContext<'_>>,
+) -> Result<Lowered, ContractFailure> {
+    if let Some(scalar_calls) = scalar_calls {
+        let contextual_scalar_calls = ScalarCallContext {
+            functions: scalar_calls.functions,
+            available: scalar_calls.available,
+            globals: scalar_calls.globals,
+            captured_functions: scalar_calls.captured_functions,
+            predicates: scalar_calls.predicates,
+            classes: scalar_calls.classes,
+            object_classes: Some(object_classes),
+            call_stack: scalar_calls.call_stack.clone(),
+            source_prefix: scalar_calls.source_prefix,
+        };
+        lower_contextual_expression_with_scalar_calls(
+            expression,
+            environment,
+            object_classes,
+            classes,
+            class,
+            heap,
+            mask,
+            None,
+            false,
+            &contextual_scalar_calls,
+        )
+    } else {
+        lower_contextual_expression(
+            expression,
+            environment,
+            object_classes,
+            classes,
+            class,
+            heap,
+            mask,
+            None,
+            false,
+        )
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn apply_constructor_call(
     call: &ast::ExprCall,
     class_name: &str,
@@ -38080,6 +39089,43 @@ fn apply_constructor_call(
     module_predicates: &BTreeMap<String, ModulePredicateSummary>,
     caller_environment: &BTreeMap<String, Term>,
     caller_object_classes: &BTreeMap<String, String>,
+    heap_version: &mut u32,
+    mask: &mut u32,
+    assumptions: &mut Vec<Term>,
+    obligations: &mut Vec<Obligation>,
+    caller: &str,
+    path: &str,
+    source: &str,
+) -> Result<Term, ContractFailure> {
+    apply_constructor_call_with_scalar_calls(
+        call,
+        class_name,
+        class,
+        classes,
+        module_predicates,
+        caller_environment,
+        caller_object_classes,
+        None,
+        heap_version,
+        mask,
+        assumptions,
+        obligations,
+        caller,
+        path,
+        source,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn apply_constructor_call_with_scalar_calls(
+    call: &ast::ExprCall,
+    class_name: &str,
+    class: &ClassShape,
+    classes: &BTreeMap<String, ClassShape>,
+    module_predicates: &BTreeMap<String, ModulePredicateSummary>,
+    caller_environment: &BTreeMap<String, Term>,
+    caller_object_classes: &BTreeMap<String, String>,
+    scalar_calls: Option<&ScalarCallContext<'_>>,
     heap_version: &mut u32,
     mask: &mut u32,
     assumptions: &mut Vec<Term>,
@@ -38218,7 +39264,7 @@ fn apply_constructor_call(
                     },
                     reads: Vec::new(),
                 },
-                _ => lower_contextual_expression(
+                _ => lower_constructor_argument(
                     argument,
                     caller_environment,
                     caller_object_classes,
@@ -38226,12 +39272,11 @@ fn apply_constructor_call(
                     class,
                     heap,
                     current_mask,
-                    None,
-                    false,
+                    scalar_calls,
                 )?,
             }
         } else {
-            lower_contextual_expression(
+            lower_constructor_argument(
                 argument,
                 caller_environment,
                 caller_object_classes,
@@ -38239,8 +39284,7 @@ fn apply_constructor_call(
                 class,
                 heap,
                 current_mask,
-                None,
-                false,
+                scalar_calls,
             )?
         };
         add_read_obligations(
@@ -38289,7 +39333,7 @@ fn apply_constructor_call(
                     },
                     reads: Vec::new(),
                 },
-                _ => lower_contextual_expression(
+                _ => lower_constructor_argument(
                     &keyword.value,
                     caller_environment,
                     caller_object_classes,
@@ -38297,12 +39341,11 @@ fn apply_constructor_call(
                     class,
                     heap,
                     current_mask,
-                    None,
-                    false,
+                    scalar_calls,
                 )?,
             }
         } else {
-            lower_contextual_expression(
+            lower_constructor_argument(
                 &keyword.value,
                 caller_environment,
                 caller_object_classes,
@@ -38310,8 +39353,7 @@ fn apply_constructor_call(
                 class,
                 heap,
                 current_mask,
-                None,
-                false,
+                scalar_calls,
             )?
         };
         add_read_obligations(
@@ -38610,6 +39652,7 @@ fn apply_constructor_call(
         captured_functions: &no_captured_functions,
         predicates: Some(module_predicates),
         classes: Some(classes),
+        object_classes: Some(caller_object_classes),
         call_stack: vec![format!("{class_name}.__init__")],
         source_prefix: false,
     };
@@ -41007,6 +42050,7 @@ struct ScalarCallContext<'a> {
     captured_functions: &'a BTreeMap<String, String>,
     predicates: Option<&'a BTreeMap<String, ModulePredicateSummary>>,
     classes: Option<&'a BTreeMap<String, ClassShape>>,
+    object_classes: Option<&'a BTreeMap<String, String>>,
     call_stack: Vec<String>,
     source_prefix: bool,
 }
@@ -41525,7 +42569,8 @@ fn lower_heap_scalar_source_call(
         ScalarSourceItem::Positional(expression) => u32::from(expression.range().start()),
         ScalarSourceItem::Keyword(keyword) => u32::from(keyword.range.start()),
     });
-    let lower_actual = |expression: &ast::Expr| -> Result<Term, ContractFailure> {
+    let mut argument_reads = Vec::new();
+    let mut lower_actual = |expression: &ast::Expr| -> Result<Term, ContractFailure> {
         if let Some(classes) = context.classes
             && let Some(shape) = zero_argument_constructor_shape(expression, classes)
         {
@@ -41543,22 +42588,25 @@ fn lower_heap_scalar_source_call(
                 class: shape.identity.clone(),
             });
         }
+        let contextual_class = match (context.classes, context.object_classes) {
+            (Some(classes), Some(object_classes)) => {
+                heap_expression_class(expression, object_classes, classes)?
+                    .and_then(|name| classes.get(name.as_str()))
+                    .unwrap_or(class)
+            }
+            _ => class,
+        };
         let lowered = lower_expression_internal(
             expression,
             caller_environment,
-            class,
+            contextual_class,
             heap,
             mask,
             result,
             contracts_allowed,
             Some(context),
         )?;
-        if !lowered.reads.is_empty() {
-            return fail(
-                "frontend.python.heap.callable-function-effects-unsupported",
-                "primitive scalar call arguments cannot read heap state",
-            );
-        }
+        argument_reads.extend(lowered.reads);
         Ok(lowered.term)
     };
     let mut actual_items = Vec::with_capacity(source_items.len());
@@ -41659,6 +42707,7 @@ fn lower_heap_scalar_source_call(
         },
         predicates: context.predicates,
         classes: context.classes,
+        object_classes: context.object_classes,
         call_stack,
         source_prefix: nested_source_prefix,
     };
@@ -41685,8 +42734,24 @@ fn lower_heap_scalar_source_call(
             },
         });
     }
-    let mut lowered =
-        lower_scalar_summary_body(summary, callee_environment, class, heap, mask, &nested)?;
+    let mut lowered = if summary.completed_provider
+        && summary.direct_expression.is_none()
+        && summary.body.is_empty()
+    {
+        Lowered {
+            term: Term::Variable {
+                name: format!(
+                    "external-call::{}::{}",
+                    summary.identity,
+                    u32::from(call.range.start())
+                ),
+                sort: summary.return_sort.clone(),
+            },
+            reads: Vec::new(),
+        }
+    } else {
+        lower_scalar_summary_body(summary, callee_environment, class, heap, mask, &nested)?
+    };
     if !lowered.reads.is_empty() || lowered.term.sort().map_err(type_error)? != summary.return_sort
     {
         return fail(
@@ -41696,6 +42761,7 @@ fn lower_heap_scalar_source_call(
             ),
         );
     }
+    lowered.reads.extend(argument_reads);
     lowered.reads.extend(call_requirements);
     Ok(lowered)
 }
@@ -43558,6 +44624,31 @@ fn lower_expression_internal(
                     reads: receiver.reads,
                 });
             }
+            if let Some(context) = scalar_calls
+                && let ast::Expr::Attribute(attribute) = call.func.as_ref()
+                && let ast::Expr::Name(module) = attribute.value.as_ref()
+            {
+                let qualified = format!("{}.{}", module.id, attribute.attr);
+                if context.functions.contains_key(&qualified) {
+                    let mut direct = call.clone();
+                    *direct.func = ast::ExprName {
+                        range: attribute.range,
+                        id: qualified.as_str().into(),
+                        ctx: ast::ExprContext::Load,
+                    }
+                    .into();
+                    return lower_heap_scalar_source_call(
+                        &direct,
+                        environment,
+                        class,
+                        heap,
+                        mask,
+                        result,
+                        contracts_allowed,
+                        context,
+                    );
+                }
+            }
             let ast::Expr::Name(name) = call.func.as_ref() else {
                 return unsupported(expression);
             };
@@ -45389,6 +46480,27 @@ fn method_annotation(
                 callable: None,
             })
         }
+        Some(ast::Expr::BinOp(union)) if matches!(union.op, ast::Operator::BitOr) => {
+            let inner = match (union.left.as_ref(), union.right.as_ref()) {
+                (ast::Expr::Constant(value), other) if value.value == ast::Constant::None => other,
+                (other, ast::Expr::Constant(value)) if value.value == ast::Constant::None => other,
+                _ => {
+                    return fail(
+                        "frontend.python.heap.type-unsupported",
+                        "PEP 604 heap unions are supported only for one closed nominal T | None",
+                    );
+                }
+            };
+            let mut inner = method_annotation(Some(inner), class_names)?;
+            if inner.sort != Sort::Reference || inner.nominal_class.is_none() || inner.optional {
+                return fail(
+                    "frontend.python.heap.type-unsupported",
+                    "T | None annotations require one nonoptional source nominal reference type",
+                );
+            }
+            inner.optional = true;
+            Ok(inner)
+        }
         Some(ast::Expr::Subscript(subscript))
             if matches!(subscript.value.as_ref(), ast::Expr::Name(name)
                 if name.id.as_str() == "Optional") =>
@@ -45757,6 +46869,7 @@ mod tests {
                 },
             )]),
             generic_classes: BTreeMap::new(),
+            typed_state_bindings: BTreeMap::new(),
             certified_level_intrinsics: None,
             proof_irrelevant_bindings: BTreeSet::new(),
         }

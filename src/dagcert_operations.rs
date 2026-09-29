@@ -7,7 +7,7 @@ use rustpython_parser::ast::Ranged;
 use rustpython_parser::{Parse, ast};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-enum ValueType {
+pub(crate) enum ValueType {
     Int,
     Float,
     Bool,
@@ -27,7 +27,7 @@ enum ValueType {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct CallableSignature {
+pub(crate) struct CallableSignature {
     parameters: Vec<ValueType>,
     return_type: Box<ValueType>,
 }
@@ -41,8 +41,8 @@ pub use callables::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct RecordShape {
-    fields: Vec<(String, ValueType)>,
-    constructible: bool,
+    pub(crate) fields: Vec<(String, ValueType)>,
+    pub(crate) constructible: bool,
 }
 
 /// A source-owned operation module whose frozen record definitions were checked by this
@@ -56,6 +56,20 @@ pub(crate) struct ImportedOperationModule {
     record_exports: BTreeSet<String>,
     operations: BTreeMap<String, OperationShape>,
     external_boundaries: BTreeMap<String, ExternalBoundaryShape>,
+}
+
+impl ImportedOperationModule {
+    pub(crate) fn module_name(&self) -> &str {
+        &self.module
+    }
+
+    pub(crate) fn records(&self) -> &BTreeMap<String, RecordShape> {
+        &self.records
+    }
+
+    pub(crate) fn record_exports(&self) -> &BTreeSet<String> {
+        &self.record_exports
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

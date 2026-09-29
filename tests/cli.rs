@@ -65,8 +65,8 @@ fn capabilities_are_machine_readable_and_honest() {
         "checked-external-scalar-contracts/v26",
         "transitive-source-scalar-contracts/v33",
         "transitive-source+checked-external-scalar-contracts/v33",
-        "transitive-source-heap-contracts/v64",
-        "transitive-source+checked-external-heap-contracts/v64",
+        "transitive-source-heap-contracts/v65",
+        "transitive-source+checked-external-heap-contracts/v65",
         "python-to-js-primitive-total/v1",
         "python-call-argument-binding/v3",
     ] {
@@ -101,7 +101,7 @@ fn capabilities_are_machine_readable_and_honest() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|fragment| fragment == "transitive-source-heap-contracts/v64")
+            .any(|fragment| fragment == "transitive-source-heap-contracts/v65")
     );
     assert!(
         document["languages"][0]["fragments"]
@@ -109,7 +109,7 @@ fn capabilities_are_machine_readable_and_honest() {
             .unwrap()
             .iter()
             .any(|fragment| {
-                fragment == "transitive-source+checked-external-heap-contracts/v64"
+                fragment == "transitive-source+checked-external-heap-contracts/v65"
             })
     );
     assert_eq!(document["languages"][1]["language"], "javascript");

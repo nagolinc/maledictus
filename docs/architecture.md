@@ -1538,7 +1538,7 @@ the provider has completed and the ordinary and guarded executors select the sam
 summary. The combined checked-external variant may retain unrelated provider assumptions but
 cannot authorize v44's source-only effect dispatch. Lean models only the supplied transition and
 exact finite-path algebra, not import/frontend correspondence or provider truth.
-`checked-external-heap-contracts/v6` uses the identical `ClassShape` representation for a
+`checked-external-heap-contracts/v7` uses the identical `ClassShape` representation for a
 hash-bound provider stub. It requires explicit fields, a constructor contract, contract-only
 method bodies, and explicit permission effects. Version 6 also admits contract-only functions and
 methods returning one declared non-optional heap type. The contract must grant every permission on
@@ -1548,6 +1548,10 @@ function, including pending-return and exception-suppression semantics. Because 
 executable body and no frame-clause syntax, every external method conservatively invalidates all
 declared field values before applying its postconditions. Protocol output separates factories in
 `functions` and classes in `heap_types`; no external body is described as verified source.
+Version 7 closes generic provider classes at each source-owned nominal specialization and retains
+that nominal payload across imported frozen records and one optional typed module-state snapshot.
+The imported state is atomic but intentionally history-free: it proves neither prior configuration
+nor persistence between reads.
 The current Python fragments prove source symbol bodies after function entry; they do not claim to
 prove module import execution. The response therefore reports `all-source-symbol-bodies`, never
 `complete-file`.

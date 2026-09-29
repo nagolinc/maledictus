@@ -56,6 +56,8 @@ struct ResolvedExternalContracts {
     reference_by_adapter:
         BTreeMap<String, Vec<python_reference_contracts::ImportedReferenceContractModule>>,
     heap_by_adapter: BTreeMap<String, Vec<python_heap_contracts::ImportedHeapContractModule>>,
+    heap_bridges_by_adapter:
+        BTreeMap<String, Vec<python_heap_contracts::ImportedHeapContractModule>>,
     results: Vec<ExternalContractResult>,
 }
 
@@ -99,6 +101,7 @@ struct ResolvedHeapSourceImports {
             python_contracts::ContractFailure,
         >,
     >,
+    edges: Vec<SourceImportResult>,
 }
 
 struct ResolvedOperationSourceImports {
@@ -109,6 +112,7 @@ struct ResolvedOperationSourceImports {
             dagcert_operations::OperationFailure,
         >,
     >,
+    by_module: BTreeMap<String, dagcert_operations::ImportedOperationModule>,
 }
 
 #[derive(Clone)]
@@ -179,7 +183,8 @@ struct HeapSourceModuleResolver<'a> {
     units: BTreeMap<String, PythonSourceUnit>,
     external_by_adapter:
         &'a BTreeMap<String, Vec<python_heap_contracts::ImportedHeapContractModule>>,
-    states: BTreeMap<String, HeapSourceModuleState>,
+    operation_modules: &'a BTreeMap<String, dagcert_operations::ImportedOperationModule>,
+    states: BTreeMap<(String, Option<String>), HeapSourceModuleState>,
     package_initializers: BTreeMap<String, HeapPackageInitializerState>,
 }
 
@@ -447,14 +452,6 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
             return response;
         }
     };
-    let heap_source_imports =
-        match resolve_heap_source_imports(&root, request, &external_contracts.heap_by_adapter) {
-            Ok(imports) => imports.by_path,
-            Err(diagnostic) => {
-                response.diagnostics.push(diagnostic);
-                return response;
-            }
-        };
     let operation_source_imports = resolve_operation_source_imports(
         &root,
         request,
@@ -465,6 +462,41 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
             .map(|overlay| overlay.adapter_path.clone())
             .collect(),
     );
+    let heap_source_imports = match resolve_heap_source_imports(
+        &root,
+        request,
+        &external_contracts.heap_bridges_by_adapter,
+        &operation_source_imports.by_module,
+    ) {
+        Ok(imports) => {
+            response.source_imports.extend(imports.edges);
+            response.source_imports.sort_by(|left, right| {
+                (
+                    &left.importer_path,
+                    &left.module,
+                    &left.provider_path,
+                    &left.imported_symbols,
+                )
+                    .cmp(&(
+                        &right.importer_path,
+                        &right.module,
+                        &right.provider_path,
+                        &right.imported_symbols,
+                    ))
+            });
+            response.source_imports.dedup_by(|left, right| {
+                left.importer_path == right.importer_path
+                    && left.module == right.module
+                    && left.provider_path == right.provider_path
+                    && left.imported_symbols == right.imported_symbols
+            });
+            imports.by_path
+        }
+        Err(diagnostic) => {
+            response.diagnostics.push(diagnostic);
+            return response;
+        }
+    };
 
     // Fold/Unfold position checking needs the exact predicate identities exported by source
     // providers. Resolve and verify those providers first, then pass only their sealed predicate
@@ -789,7 +821,7 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                                     match verification {
                                         Ok(verification) => {
                                             let fragment = if external_contracts
-                                                .heap_by_adapter
+                                                .heap_bridges_by_adapter
                                                 .contains_key(&source.path)
                                             {
                                                 fragments::TRANSITIVE_SOURCE_CHECKED_EXTERNAL_HEAP_CONTRACTS
@@ -1708,6 +1740,7 @@ fn resolve_operation_source_imports(
         // operation-specific resolver is consulted.
         return ResolvedOperationSourceImports {
             by_path: BTreeMap::new(),
+            by_module: BTreeMap::new(),
         };
     };
     let requested_symbols = request
@@ -1750,7 +1783,24 @@ fn resolve_operation_source_imports(
             .collect();
         by_path.insert(path, resolved);
     }
-    ResolvedOperationSourceImports { by_path }
+    let candidate_modules = resolver
+        .units
+        .values()
+        .filter(|unit| dagcert_operations::is_operation_module_candidate(&unit.source, &unit.path))
+        .map(|unit| unit.module.clone())
+        .collect::<Vec<_>>();
+    for module in candidate_modules {
+        let _ = resolver.resolve_module(&module);
+    }
+    let by_module = resolver
+        .states
+        .into_iter()
+        .filter_map(|(module, state)| match state {
+            OperationSourceModuleState::Done(Ok(exported)) => Some((module, exported)),
+            OperationSourceModuleState::Visiting | OperationSourceModuleState::Done(Err(_)) => None,
+        })
+        .collect();
+    ResolvedOperationSourceImports { by_path, by_module }
 }
 
 impl OperationSourceModuleResolver<'_> {
@@ -2026,16 +2076,114 @@ impl ReferenceSourceModuleResolver<'_> {
     }
 }
 
+fn expanded_heap_source_imports(
+    source: &str,
+    path: &str,
+    units: &BTreeMap<String, PythonSourceUnit>,
+) -> Result<Vec<String>, python_contracts::ContractFailure> {
+    let mut modules = python_heap_contracts::source_heap_imports(source, path)?
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    for binding in python_heap_contracts::source_heap_import_bindings(source, path)? {
+        let submodule = format!("{}.{}", binding.module, binding.imported_name);
+        if units.contains_key(&submodule) {
+            modules.insert(submodule);
+        }
+    }
+    Ok(modules.into_iter().collect())
+}
+
 fn resolve_heap_source_imports(
     root: &Path,
     request: &ProofRequest,
     external_by_adapter: &BTreeMap<String, Vec<python_heap_contracts::ImportedHeapContractModule>>,
+    operation_modules: &BTreeMap<String, dagcert_operations::ImportedOperationModule>,
 ) -> Result<ResolvedHeapSourceImports, Diagnostic> {
     let units = collect_python_source_units(root, request)?;
+    let all_imports_by_module = units
+        .iter()
+        .map(|(module, unit)| {
+            let imports =
+                expanded_heap_source_imports(&unit.source, &unit.path, &units).unwrap_or_default();
+            (module.clone(), imports)
+        })
+        .collect::<BTreeMap<_, _>>();
+    let source_graph = all_imports_by_module
+        .iter()
+        .map(|(module, imports)| {
+            (
+                module.clone(),
+                imports
+                    .iter()
+                    .filter(|imported| units.contains_key(*imported))
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let mut reverse_source_graph = BTreeMap::<String, Vec<String>>::new();
+    for (importer, imported_modules) in &source_graph {
+        for imported in imported_modules {
+            reverse_source_graph
+                .entry(imported.clone())
+                .or_default()
+                .push(importer.clone());
+        }
+    }
+    let module_by_path = units
+        .values()
+        .map(|unit| (unit.path.clone(), unit.module.clone()))
+        .collect::<BTreeMap<_, _>>();
+    let mut overlay_roots_by_module = BTreeMap::<String, Vec<String>>::new();
+    for adapter_path in external_by_adapter.keys() {
+        let Some(adapter_module) = module_by_path.get(adapter_path) else {
+            continue;
+        };
+        // The overlay is needed both below the adapter (source helpers used to build
+        // provider arguments) and above it (production callers that import the adapter).
+        // Keep the two reachability walks separate: alternating forward and reverse edges
+        // would incorrectly spread one provider contract across an entire connected source
+        // component.
+        let mut pending = vec![adapter_module.clone()];
+        let mut visited = BTreeSet::new();
+        while let Some(module) = pending.pop() {
+            if !visited.insert(module.clone()) {
+                continue;
+            }
+            overlay_roots_by_module
+                .entry(module.clone())
+                .or_default()
+                .push(adapter_path.clone());
+            pending.extend(source_graph.get(&module).into_iter().flatten().cloned());
+        }
+        let mut pending = reverse_source_graph
+            .get(adapter_module)
+            .into_iter()
+            .flatten()
+            .cloned()
+            .collect::<Vec<_>>();
+        while let Some(module) = pending.pop() {
+            if !visited.insert(module.clone()) {
+                continue;
+            }
+            overlay_roots_by_module
+                .entry(module.clone())
+                .or_default()
+                .push(adapter_path.clone());
+            pending.extend(
+                reverse_source_graph
+                    .get(&module)
+                    .into_iter()
+                    .flatten()
+                    .cloned(),
+            );
+        }
+    }
     let mut resolver = HeapSourceModuleResolver {
         root,
         units,
         external_by_adapter,
+        operation_modules,
         states: BTreeMap::new(),
         package_initializers: BTreeMap::new(),
     };
@@ -2045,8 +2193,10 @@ fn resolve_heap_source_imports(
         .map(|unit| (unit.path.clone(), unit.module.clone(), unit.source.clone()))
         .collect::<Vec<_>>();
     let mut by_path = BTreeMap::new();
+    let mut edges = Vec::new();
     for (path, module, source) in paths {
-        let Ok(imported_names) = python_contracts::source_contract_imports(&source, &path) else {
+        let Ok(imported_names) = expanded_heap_source_imports(&source, &path, &resolver.units)
+        else {
             continue;
         };
         if !module.contains('.')
@@ -2056,12 +2206,108 @@ fn resolve_heap_source_imports(
         {
             continue;
         }
+        if let Ok(bindings) = python_heap_contracts::source_heap_import_bindings(&source, &path) {
+            for imported_name in imported_names
+                .iter()
+                .filter(|name| resolver.units.contains_key(*name))
+            {
+                let provider = &resolver.units[imported_name];
+                let imported_symbols: Vec<String> = bindings
+                    .iter()
+                    .filter(|binding| binding.module == *imported_name)
+                    .filter(|binding| {
+                        !resolver
+                            .units
+                            .contains_key(&format!("{}.{}", binding.module, binding.imported_name))
+                    })
+                    .map(|binding| binding.imported_name.clone())
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .collect();
+                let is_bound_submodule = bindings.iter().any(|binding| {
+                    format!("{}.{}", binding.module, binding.imported_name) == *imported_name
+                });
+                if imported_symbols.is_empty() && !is_bound_submodule {
+                    continue;
+                }
+                edges.push(SourceImportResult {
+                    importer_path: path.clone(),
+                    module: imported_name.clone(),
+                    provider_path: provider.path.clone(),
+                    provider_sha256: provider.sha256.clone(),
+                    imported_symbols,
+                });
+            }
+        }
+        let mut reachable_modules = vec![module.clone()];
+        let mut visited_modules = BTreeSet::new();
+        let mut required_external_modules = BTreeSet::new();
+        while let Some(reachable) = reachable_modules.pop() {
+            if !visited_modules.insert(reachable.clone()) {
+                continue;
+            }
+            for imported in all_imports_by_module.get(&reachable).into_iter().flatten() {
+                if resolver.units.contains_key(imported) {
+                    reachable_modules.push(imported.clone());
+                } else if resolver.external_by_adapter.values().any(|contracts| {
+                    contracts
+                        .iter()
+                        .any(|contract| contract.module() == imported)
+                }) {
+                    required_external_modules.insert(imported.clone());
+                }
+            }
+        }
+        let mut overlay_roots = overlay_roots_by_module
+            .get(&module)
+            .cloned()
+            .unwrap_or_default();
+        overlay_roots.retain(|root| {
+            required_external_modules.iter().all(|required| {
+                resolver.external_by_adapter[root]
+                    .iter()
+                    .any(|contract| contract.module() == required)
+            })
+        });
+        if required_external_modules.is_empty() {
+            overlay_roots.clear();
+        } else if overlay_roots.len() > 1 {
+            let signatures = overlay_roots
+                .iter()
+                .map(|root| {
+                    resolver.external_by_adapter[root]
+                        .iter()
+                        .map(|contract| (contract.module().to_owned(), format!("{contract:?}")))
+                        .collect::<Vec<_>>()
+                })
+                .collect::<BTreeSet<_>>();
+            if signatures.len() == 1 {
+                overlay_roots.truncate(1);
+            } else {
+                return Err(Diagnostic::file_error(
+                    "frontend.python.heap.external-overlay-context-ambiguous",
+                    format!(
+                        "source module {module:?} is reachable from more than one external adapter overlay: {overlay_roots:?}"
+                    ),
+                    &path,
+                ));
+            }
+        } else if overlay_roots.is_empty() {
+            return Err(Diagnostic::file_error(
+                "frontend.python.heap.external-overlay-context-missing",
+                format!(
+                    "source module {module:?} transitively imports external modules {required_external_modules:?}, but no declared adapter overlay covers that source closure"
+                ),
+                &path,
+            ));
+        }
+        let overlay_root = overlay_roots.first().map(String::as_str);
         let resolved = resolver
             .verify_parent_package_initializers(&module)
-            .and_then(|()| resolver.resolve_imports_for_path(&path, &imported_names));
+            .and_then(|()| resolver.resolve_imports_for_path(&path, &imported_names, overlay_root));
         by_path.insert(path, resolved);
     }
-    Ok(ResolvedHeapSourceImports { by_path })
+    Ok(ResolvedHeapSourceImports { by_path, edges })
 }
 
 impl HeapSourceModuleResolver<'_> {
@@ -2069,6 +2315,7 @@ impl HeapSourceModuleResolver<'_> {
         &mut self,
         path: &str,
         imported_names: &[String],
+        overlay_root: Option<&str>,
     ) -> Result<
         Vec<python_heap_contracts::ImportedHeapContractModule>,
         python_contracts::ContractFailure,
@@ -2076,12 +2323,16 @@ impl HeapSourceModuleResolver<'_> {
         let mut imports = Vec::new();
         for imported_name in imported_names {
             if self.units.contains_key(imported_name) {
-                imports.push(self.resolve_module(imported_name)?);
-            } else if let Some(external) = self.external_by_adapter.get(path).and_then(|modules| {
-                modules
-                    .iter()
-                    .find(|module| module.module() == imported_name)
-            }) {
+                imports.push(self.resolve_module(imported_name, overlay_root)?);
+            } else if let Some(external) = overlay_root
+                .and_then(|root| self.external_by_adapter.get(root))
+                .or_else(|| self.external_by_adapter.get(path))
+                .and_then(|modules| {
+                    modules
+                        .iter()
+                        .find(|module| module.module() == imported_name)
+                })
+            {
                 imports.push(external.clone());
             } else {
                 return Err(python_contracts::ContractFailure {
@@ -2098,9 +2349,11 @@ impl HeapSourceModuleResolver<'_> {
     fn resolve_module(
         &mut self,
         module: &str,
+        overlay_root: Option<&str>,
     ) -> Result<python_heap_contracts::ImportedHeapContractModule, python_contracts::ContractFailure>
     {
-        if let Some(state) = self.states.get(module) {
+        let state_key = (module.to_owned(), overlay_root.map(str::to_owned));
+        if let Some(state) = self.states.get(&state_key) {
             return match state {
                 HeapSourceModuleState::Visiting => Err(python_contracts::ContractFailure {
                     code: "frontend.python.heap.import-cycle",
@@ -2112,7 +2365,15 @@ impl HeapSourceModuleResolver<'_> {
             };
         }
         self.states
-            .insert(module.to_owned(), HeapSourceModuleState::Visiting);
+            .insert(state_key.clone(), HeapSourceModuleState::Visiting);
+        if let Some(operation_module) = self.operation_modules.get(module) {
+            let result = python_heap_contracts::import_operation_records(operation_module);
+            self.states.insert(
+                state_key,
+                HeapSourceModuleState::Done(Box::new(result.clone())),
+            );
+            return result;
+        }
         let unit = self
             .units
             .get(module)
@@ -2121,8 +2382,9 @@ impl HeapSourceModuleResolver<'_> {
         let result = (|| {
             self.verify_parent_package_initializers(module)?;
             let imported_names =
-                python_contracts::source_contract_imports(&unit.source, &unit.path)?;
-            let imports = self.resolve_imports_for_path(&unit.path, &imported_names)?;
+                expanded_heap_source_imports(&unit.source, &unit.path, &self.units)?;
+            let imports =
+                self.resolve_imports_for_path(&unit.path, &imported_names, overlay_root)?;
             let (_, exported) = python_heap_contracts::verify_and_export_source_heap_module(
                 &unit.source,
                 &unit.path,
@@ -2132,7 +2394,7 @@ impl HeapSourceModuleResolver<'_> {
             Ok(exported)
         })();
         self.states.insert(
-            module.to_owned(),
+            state_key,
             HeapSourceModuleState::Done(Box::new(result.clone())),
         );
         result
@@ -2213,7 +2475,7 @@ impl HeapSourceModuleResolver<'_> {
         let result = (|| {
             let imported_names =
                 python_contracts::source_contract_imports(&unit.source, &unit.path)?;
-            let imports = self.resolve_imports_for_path(&unit.path, &imported_names)?;
+            let imports = self.resolve_imports_for_path(&unit.path, &imported_names, None)?;
             let verification = python_heap_contracts::verify_heap_package_initializer_with_imports(
                 &unit.source,
                 &unit.path,
@@ -2559,6 +2821,7 @@ fn resolve_external_contracts(
     let mut scalar_modules = BTreeMap::<String, Vec<_>>::new();
     let mut reference_modules = BTreeMap::<String, Vec<_>>::new();
     let mut heap_modules = BTreeMap::<String, Vec<_>>::new();
+    let mut heap_bridge_modules = BTreeMap::<String, Vec<_>>::new();
     let mut results = Vec::new();
     for overlay in &request.external_contract_overlays {
         let Some(adapter) = request
@@ -2623,6 +2886,10 @@ fn resolve_external_contracts(
             &overlay.module,
         ) {
             Ok(contract) => {
+                let heap_bridge = python_heap_contracts::import_scalar_contract(&contract)
+                    .map_err(|error| {
+                        Diagnostic::file_error(error.code, error.message, &overlay.stub_path)
+                    })?;
                 let functions = contract.function_names();
                 let exception_types = contract.exception_type_names();
                 let declared_exceptions = contract.declared_exception_types();
@@ -2669,6 +2936,19 @@ fn resolve_external_contracts(
                     .entry(overlay.adapter_path.clone())
                     .or_default()
                     .push(contract);
+                // The heap bridge currently represents only a provider's normal return.  Never
+                // admit a contract with declared exceptional exits through that narrower model:
+                // doing so would erase its Exsures channel and could prove an uncaught call total.
+                // Scalar-only adapters continue to use the exception-aware scalar frontend.
+                if matches!(
+                    overlay.exception_policy,
+                    protocol::ExternalExceptionPolicy::AssumeNoException
+                ) {
+                    heap_bridge_modules
+                        .entry(overlay.adapter_path.clone())
+                        .or_default()
+                        .push(heap_bridge);
+                }
             }
             Err(scalar_error) => {
                 match python_reference_contracts::parse_external_reference_contract_module(
@@ -2753,6 +3033,10 @@ fn resolve_external_contracts(
                         heap_modules
                             .entry(overlay.adapter_path.clone())
                             .or_default()
+                            .push(contract.clone());
+                        heap_bridge_modules
+                            .entry(overlay.adapter_path.clone())
+                            .or_default()
                             .push(contract);
                     }
                 }
@@ -2779,6 +3063,7 @@ fn resolve_external_contracts(
         scalar_by_adapter: scalar_modules,
         reference_by_adapter: reference_modules,
         heap_by_adapter: heap_modules,
+        heap_bridges_by_adapter: heap_bridge_modules,
         results,
     })
 }

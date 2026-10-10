@@ -490,15 +490,16 @@ fn materialize_overlay_stubs(
     for (overlay_index, overlay) in overlays.iter().enumerate() {
         let segments = checked_module_segments(&overlay.module)?;
         reject_source_owned_overlay_module(root, &segments, &overlay.module)?;
-        // These foundational interfaces must keep their complete pinned
-        // typeshed surfaces. A partial native effect contract must not replace
-        // collections.abc and erase the interfaces used by the rest of the
-        // standard library. Application calls still receive strict typing;
+        // These standard-library interfaces must keep their complete pinned
+        // typeshed surfaces. A partial native effect contract must not erase
+        // unrelated APIs (for example io.BytesIO), inherited PathLike methods,
+        // or interfaces used by the rest of the standard library.
+        // Application calls still receive strict typing;
         // Maledictus separately parses, hash-binds and composes the supplied
         // ContractOnly methods and refuses missing formal effect coverage.
         if matches!(
             overlay.module.as_str(),
-            "builtins" | "collections.abc" | "contextlib" | "types"
+            "builtins" | "collections.abc" | "contextlib" | "types" | "io" | "pathlib"
         ) {
             continue;
         }

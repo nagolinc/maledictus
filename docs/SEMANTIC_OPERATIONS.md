@@ -134,6 +134,33 @@ can override its native `__getitem__` contract; selecting only the caller must
 not bypass that check. This feature does not prove arbitrary behavioral
 subtyping.
 
+## Native calls and standard-library interfaces
+
+Native method receivers and arguments may themselves be effectful expressions,
+including a constructor chain or a permission-checked source field used directly
+in a `with` statement. Evaluation retains each normal and exceptional path in
+Python order; it does not evaluate the expression outside the verified boundary
+or assume that context entry, body execution, or cleanup succeeds.
+This uses the full-path expression evaluator; other statement lowerers do not
+yet accept every equivalent expression. In particular, the inline context form
+can prove while a chained constructor/method call assigned to a local is still
+refused. That refusal is retained, not treated as proof or silently rewritten.
+
+The native `receiver / child` form is supported for a sealed `__truediv__`
+contract and a builtin string child. This covers path construction without
+rewriting production code into artificial tasks. It does not add reflected
+user-object dispatch or permit a nominal return contract to hide
+`NotImplemented`. Signed integer literal defaults such as `buffering=-1` retain
+their actual position and value; arbitrary expressions in native defaults remain
+unsupported.
+
+Partial `io` and `pathlib` effect contracts no longer replace the complete pinned
+standard-library typing interfaces. Strict typing therefore retains unrelated
+APIs such as `io.BytesIO` and inherited `PathLike` compatibility. This is not an
+effect-contract exemption: any native call used in a semantic proof still needs
+its own declared contract. The pinned typeshed interfaces check types, not
+exception closure or application-specific semantic postconditions.
+
 ## Behavioral regressions
 
 From the backend repository with its pinned mypy and solver runtime configured:
@@ -147,6 +174,9 @@ cargo test --release --test heap_record_list_aliases
 cargo test --release --test heap_type_only_admission
 cargo test --release --test heap_old_nested_scalar_paths
 cargo test --release --test external_nominal_index_reads
+cargo test --release --test external_native_expression_calls
+cargo test --release --test external_signed_integer_defaults
+cargo test --release --test external_stdlib_type_surfaces
 ```
 
 For raw Windows test executables, the pinned `libz3.dll` must be discoverable.

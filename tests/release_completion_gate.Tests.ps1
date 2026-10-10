@@ -1,6 +1,10 @@
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+$initialNativeExit = Get-Variable LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
+$hadInitialNativeExit = $null -ne $initialNativeExit
+$initialNativeExitCode = if ($hadInitialNativeExit) { $initialNativeExit.Value } else { $null }
+
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
 $testRoot = Join-Path $repositoryRoot ".cache/release-completion-gate-tests"
 $caseRoot = Join-Path $testRoot ([guid]::NewGuid().ToString("N"))
@@ -33,6 +37,9 @@ function Invoke-EvidenceCheck {
 
     $hostExecutable = (Get-Process -Id $PID).Path
     $priorErrorAction = $ErrorActionPreference
+    $priorNativeExit = Get-Variable LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
+    $hadNativeExit = $null -ne $priorNativeExit
+    $priorNativeExitCode = if ($hadNativeExit) { $priorNativeExit.Value } else { $null }
     $ErrorActionPreference = "Continue"
     try {
         $output = & $hostExecutable -NoProfile -NonInteractive -File `
@@ -44,6 +51,13 @@ function Invoke-EvidenceCheck {
         $exitCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $priorErrorAction
+        # The child's status is returned as test data. Do not leave an expected
+        # rejection in the global status that GitHub's PowerShell wrapper exits.
+        if ($hadNativeExit) {
+            $global:LASTEXITCODE = $priorNativeExitCode
+        } else {
+            Remove-Variable LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
+        }
     }
     return [pscustomobject]@{
         ExitCode = $exitCode
@@ -194,6 +208,12 @@ try {
     $malformed = Invoke-EvidenceCheck $requirementsPath $classificationPath $coveragePath $examples
     if ($malformed.ExitCode -eq 0 -or $malformed.Output -notlike "*formal coverage report is not valid JSON*") {
         throw "malformed evidence did not fail closed: $($malformed.Output)"
+    }
+
+    $finalNativeExit = Get-Variable LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
+    if (($null -ne $finalNativeExit) -ne $hadInitialNativeExit -or
+        ($hadInitialNativeExit -and $finalNativeExit.Value -ne $initialNativeExitCode)) {
+        throw "captured evidence checks changed the caller's native exit status"
     }
 
     Write-Output "release completion evidence passes only with exact classification, complete proofs, and the pinned example set"

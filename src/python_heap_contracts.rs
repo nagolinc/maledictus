@@ -33185,6 +33185,23 @@ fn external_expression_nominal_class(
     identity_functions: Option<&BTreeMap<String, ReferenceIdentityFunctionSummary>>,
 ) -> Result<Option<String>, ContractFailure> {
     match expression {
+        ast::Expr::BinOp(binary) if binary.op == ast::Operator::Div => {
+            if let Some(receiver) = external_expression_nominal_class(
+                &binary.left,
+                object_classes,
+                classes,
+                identity_functions,
+            )? && let Some(class) = classes
+                .get(&receiver)
+                .filter(|class| class.externally_assumed)
+                && let Some(method) = class
+                    .methods
+                    .get("__truediv__")
+                    .filter(|method| method.externally_assumed)
+            {
+                return Ok(method.return_type.nominal_class.clone());
+            }
+        }
         ast::Expr::Attribute(attribute) => {
             if let Some(receiver) = external_expression_nominal_class(
                 &attribute.value,
@@ -33572,12 +33589,360 @@ fn evaluate_native_property_paths(
     evaluate_heap_python_value_paths(&synthetic, state, &evaluation_context).map(Some)
 }
 
+// A native object divided by a builtin string has no reflected user-object
+// dispatch. The declared normal result must be one nominal value, not an
+// arbitrary object/NotImplemented result. Arithmetic on primitive values keeps
+// using the existing arithmetic lowerer.
+fn evaluate_native_string_division_paths(
+    expression: &ast::Expr,
+    state: HeapFunctionState,
+    context: &HeapBranchContext<'_>,
+) -> Result<Option<Vec<HeapPythonValuePath>>, ContractFailure> {
+    let ast::Expr::BinOp(binary) = expression else {
+        return Ok(None);
+    };
+    if binary.op != ast::Operator::Div {
+        return Ok(None);
+    }
+    let Some(class_name) = external_expression_nominal_class(
+        &binary.left,
+        &state.object_classes,
+        context.classes,
+        context.reference_identity_functions,
+    )?
+    else {
+        return Ok(None);
+    };
+    let Some(class) = context
+        .classes
+        .get(&class_name)
+        .filter(|class| class.externally_assumed)
+    else {
+        return Ok(None);
+    };
+    let Some(method) = class
+        .methods
+        .get("__truediv__")
+        .filter(|method| method.externally_assumed)
+    else {
+        return Ok(None);
+    };
+    if method.receiver_kind != MethodReceiverKind::Instance
+        || class.defines_dynamic_attribute_access
+        || class.fields.contains_key("__truediv__")
+        || class.properties.contains_key("__truediv__")
+        || class.constants.contains_key("__truediv__")
+        || method.return_type.nominal_class.is_none()
+        || method
+            .return_type
+            .nominal_class
+            .as_deref()
+            .is_some_and(|result_class| {
+                nominal_name_is_subtype(
+                    result_class,
+                    "types.NotImplementedType",
+                    context.classes,
+                    None,
+                )
+            })
+        || method.return_type.optional
+        || !method.return_type.union_variants.is_empty()
+        || method.return_type.accepts_any
+    {
+        return fail(
+            "frontend.python.heap.native-division-dispatch-unsupported",
+            "native string division requires an unshadowed instance contract returning one nominal value, never an open object or NotImplemented",
+        );
+    }
+    let method = method.clone();
+    let mut outcomes = Vec::new();
+    for mut left_path in evaluate_external_index_receiver_paths(&binary.left, state, context)? {
+        let Some(left) = left_path.value.take() else {
+            outcomes.push(left_path);
+            continue;
+        };
+        if left.optional
+            || left.nominal_class.as_deref() != Some(class_name.as_str())
+            || (!left.exact
+                && context.classes.values().any(|candidate| {
+                    !candidate.externally_assumed
+                        && nominal_name_is_subtype(
+                            &candidate.identity,
+                            &class_name,
+                            context.classes,
+                            None,
+                        )
+                        && candidate
+                            .methods
+                            .get("__truediv__")
+                            .is_some_and(|method| !method.externally_assumed)
+                }))
+        {
+            return fail(
+                "frontend.python.heap.native-division-dispatch-unsupported",
+                "native division cannot borrow a base contract for a nullable, mismatched, or source-overridden receiver",
+            );
+        }
+        let receiver = bind_external_index_temporary(
+            "division_receiver",
+            &binary.left,
+            left,
+            &mut left_path.state,
+            context,
+        )?;
+        for mut right_path in
+            evaluate_heap_python_value_paths(&binary.right, left_path.state, context)?
+        {
+            let Some(right) = right_path.value.take() else {
+                outcomes.push(right_path);
+                continue;
+            };
+            if right.term.sort().map_err(type_error)? != Sort::String
+                || right.nominal_class.is_some()
+            {
+                return fail(
+                    "frontend.python.heap.native-division-operand-unsupported",
+                    "native division currently requires a builtin string operand with no reflected user-object dispatch",
+                );
+            }
+            let argument = bind_external_index_temporary(
+                "division_argument",
+                &binary.right,
+                right,
+                &mut right_path.state,
+                context,
+            )?;
+            let method_name = format!(
+                "__maledictus_native_truediv_{}",
+                u32::from(binary.range.start())
+            );
+            let mut classes = context.classes.clone();
+            let class = classes
+                .get_mut(&class_name)
+                .expect("native division class remains available");
+            if class.methods.contains_key(&method_name)
+                || class.fields.contains_key(&method_name)
+                || class.properties.contains_key(&method_name)
+                || class.constants.contains_key(&method_name)
+            {
+                return fail(
+                    "frontend.python.heap.native-division-temporary-collision",
+                    "native division dispatch collides with a source member",
+                );
+            }
+            class.methods.insert(method_name.clone(), method.clone());
+            let call: ast::Expr = ast::ExprCall {
+                range: binary.range,
+                func: Box::new(
+                    ast::ExprAttribute {
+                        range: binary.range,
+                        value: Box::new(receiver.clone()),
+                        attr: method_name.into(),
+                        ctx: ast::ExprContext::Load,
+                    }
+                    .into(),
+                ),
+                args: vec![argument],
+                keywords: Vec::new(),
+            }
+            .into();
+            let evaluation_context = HeapBranchContext {
+                classes: &classes,
+                ..*context
+            };
+            outcomes.extend(evaluate_heap_python_value_paths(
+                &call,
+                right_path.state,
+                &evaluation_context,
+            )?);
+        }
+    }
+    Ok(Some(outcomes))
+}
+
+// Lift native receiver/argument expressions into values before invoking the
+// ordinary method executor. This preserves the complete exceptional path set;
+// the single-state expression lowerer must not swallow a throwing argument.
+fn evaluate_native_method_expression_paths(
+    expression: &ast::Expr,
+    state: HeapFunctionState,
+    context: &HeapBranchContext<'_>,
+) -> Result<Option<Vec<HeapPythonValuePath>>, ContractFailure> {
+    let ast::Expr::Call(call) = expression else {
+        return Ok(None);
+    };
+    let ast::Expr::Attribute(attribute) = call.func.as_ref() else {
+        return Ok(None);
+    };
+    let plain = |value: &ast::Expr| matches!(value, ast::Expr::Name(_) | ast::Expr::Constant(_));
+    if matches!(attribute.value.as_ref(), ast::Expr::Name(_))
+        && call.args.iter().all(plain)
+        && call.keywords.iter().all(|keyword| plain(&keyword.value))
+    {
+        return Ok(None);
+    }
+    let Some(class_name) = external_expression_nominal_class(
+        &attribute.value,
+        &state.object_classes,
+        context.classes,
+        context.reference_identity_functions,
+    )?
+    else {
+        return Ok(None);
+    };
+    let Some(class) = context
+        .classes
+        .get(&class_name)
+        .filter(|class| class.externally_assumed)
+    else {
+        return Ok(None);
+    };
+    let Some(method) = class.methods.get(attribute.attr.as_str()).filter(|method| {
+        method.externally_assumed && method.receiver_kind == MethodReceiverKind::Instance
+    }) else {
+        return Ok(None);
+    };
+    let _ = method;
+    if class.defines_dynamic_attribute_access
+        || class.fields.contains_key(attribute.attr.as_str())
+        || class.properties.contains_key(attribute.attr.as_str())
+        || class.constants.contains_key(attribute.attr.as_str())
+        || call
+            .args
+            .iter()
+            .any(|value| matches!(value, ast::Expr::Starred(_)))
+        || call.keywords.iter().any(|keyword| keyword.arg.is_none())
+    {
+        return fail(
+            "frontend.python.heap.native-call-expression-unsupported",
+            "native expression calls require unshadowed instance methods and explicit arguments",
+        );
+    }
+    let mut outcomes = Vec::new();
+    let mut active = Vec::new();
+    for mut path in evaluate_external_index_receiver_paths(&attribute.value, state, context)? {
+        let Some(receiver) = path.value.take() else {
+            outcomes.push(path);
+            continue;
+        };
+        if receiver.optional || receiver.nominal_class.as_deref() != Some(class_name.as_str()) {
+            return fail(
+                "frontend.python.heap.native-call-receiver-mismatch",
+                "native expression calls must retain their nonoptional nominal receiver",
+            );
+        }
+        if !receiver.exact
+            && context.classes.values().any(|candidate| {
+                !candidate.externally_assumed
+                    && nominal_name_is_subtype(
+                        &candidate.identity,
+                        &class_name,
+                        context.classes,
+                        None,
+                    )
+                    && candidate
+                        .methods
+                        .get(attribute.attr.as_str())
+                        .is_some_and(|method| !method.externally_assumed)
+            })
+        {
+            return fail(
+                "frontend.python.heap.native-call-dispatch-unsupported",
+                "native expression calls cannot borrow a base contract for source-owned overrides",
+            );
+        }
+        let receiver = bind_external_index_temporary(
+            "call_receiver",
+            &attribute.value,
+            receiver,
+            &mut path.state,
+            context,
+        )?;
+        let mut normalized = call.clone();
+        let ast::Expr::Attribute(target) = normalized.func.as_mut() else {
+            unreachable!();
+        };
+        *target.value = receiver;
+        active.push((path.state, normalized));
+    }
+    #[derive(Clone, Copy)]
+    enum Position {
+        Positional(usize),
+        Keyword(usize),
+    }
+    let mut positions =
+        call.args
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                (
+                    u32::from(value.range().start()),
+                    Position::Positional(index),
+                )
+            })
+            .chain(call.keywords.iter().enumerate().map(|(index, keyword)| {
+                (u32::from(keyword.range.start()), Position::Keyword(index))
+            }))
+            .collect::<Vec<_>>();
+    positions.sort_by_key(|(offset, _)| *offset);
+    for (_, position) in positions {
+        let original = match position {
+            Position::Positional(index) => &call.args[index],
+            Position::Keyword(index) => &call.keywords[index].value,
+        };
+        let mut next = Vec::new();
+        for (state, normalized) in active {
+            for mut path in evaluate_heap_python_value_paths(original, state, context)? {
+                let Some(value) = path.value.take() else {
+                    outcomes.push(path);
+                    continue;
+                };
+                let value = if matches!(original, ast::Expr::Constant(_)) {
+                    original.clone()
+                } else {
+                    bind_external_index_temporary(
+                        "call_argument",
+                        original,
+                        value,
+                        &mut path.state,
+                        context,
+                    )?
+                };
+                let mut normalized = normalized.clone();
+                match position {
+                    Position::Positional(index) => normalized.args[index] = value,
+                    Position::Keyword(index) => normalized.keywords[index].value = value,
+                }
+                next.push((path.state, normalized));
+            }
+        }
+        active = next;
+    }
+    for (state, normalized) in active {
+        outcomes.extend(evaluate_heap_python_value_paths(
+            &ast::Expr::Call(normalized),
+            state,
+            context,
+        )?);
+    }
+    Ok(Some(outcomes))
+}
+
 fn evaluate_heap_python_value_paths(
     expression: &ast::Expr,
     state: HeapFunctionState,
     context: &HeapBranchContext<'_>,
 ) -> Result<Vec<HeapPythonValuePath>, ContractFailure> {
     if let Some(paths) = evaluate_external_index_paths(expression, state.clone(), context)? {
+        return Ok(paths);
+    }
+    if let Some(paths) = evaluate_native_string_division_paths(expression, state.clone(), context)?
+    {
+        return Ok(paths);
+    }
+    if let Some(paths) =
+        evaluate_native_method_expression_paths(expression, state.clone(), context)?
+    {
         return Ok(paths);
     }
     if let Some(paths) = evaluate_heap_float_paths(expression, state.clone(), context)? {
@@ -52949,6 +53314,38 @@ fn method_default(
                 );
             }
         },
+        ast::Expr::UnaryOp(unary)
+            if matches!(unary.op, ast::UnaryOp::USub | ast::UnaryOp::UAdd) =>
+        {
+            let ast::Expr::Constant(constant) = unary.operand.as_ref() else {
+                return fail(
+                    "frontend.python.heap.method-default-unsupported",
+                    "signed integer method defaults require one directly signed integer literal",
+                );
+            };
+            if !matches!(constant.value, ast::Constant::Int(_)) || parameter_type.sort != Sort::Int
+            {
+                return fail(
+                    "frontend.python.heap.method-default-type-mismatch",
+                    "signed integer method default does not match its declared int parameter type",
+                );
+            }
+            // Python parses a signed literal as UnaryOp, not Constant. Reuse
+            // the checked literal folding used by sequence indices, including
+            // the negative endpoint whose unsigned magnitude exceeds i64.
+            let literal = if unary.op == ast::UnaryOp::UAdd {
+                unary.operand.as_ref()
+            } else {
+                expression
+            };
+            let value = constant_heap_sequence_index(literal)
+                .and_then(|value| i64::try_from(value).ok())
+                .ok_or_else(|| ContractFailure {
+                    code: "frontend.python.heap.method-default-out-of-range",
+                    message: "signed integer method default exceeds i64".to_owned(),
+                })?;
+            MethodDefault::Int(value)
+        }
         ast::Expr::Tuple(tuple) => {
             let Sort::Tuple(element_sorts) = &parameter_type.sort else {
                 return fail(

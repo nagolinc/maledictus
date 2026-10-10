@@ -11,8 +11,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1890,
-        "end_line": 1896
+        "begin_line": 1930,
+        "end_line": 1936
       },
       "is_opaque": false,
       "can_fail": true,
@@ -30,8 +30,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1864,
-        "end_line": 1867
+        "begin_line": 1904,
+        "end_line": 1907
       }
     },
     {
@@ -42,8 +42,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1871,
-        "end_line": 1875
+        "begin_line": 1911,
+        "end_line": 1915
       }
     },
     {
@@ -54,8 +54,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1878,
-        "end_line": 1887
+        "begin_line": 1918,
+        "end_line": 1927
       }
     }
   ],

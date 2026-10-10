@@ -42,6 +42,21 @@ $rawLoop = "  loop`n"
 if ((Get-OccurrenceCount $funs $rawLoop) -ne 3) {
     throw "Expected exactly three generated solver-sort loop invocations."
 }
+if ((Get-OccurrenceCount $funs "namespace SolverSortPredicates") -ne 1 -or
+    (Get-OccurrenceCount $funs "end SolverSortPredicates") -ne 1) {
+    throw "Expected exactly one generated solver-sort namespace boundary."
+}
+$rawModelFuns = $funs.Replace(
+    "namespace SolverSortPredicates",
+    "namespace SolverSortPredicatesRaw`n`nopen SolverSortPredicates"
+).Replace("end SolverSortPredicates", "end SolverSortPredicatesRaw")
+if ((Get-OccurrenceCount $rawModelFuns "import SolverSortPredicates.Code.FunsExternal") -ne 1) {
+    throw "Expected the exact generated solver-sort external-model import."
+}
+$rawModelFuns = $rawModelFuns.Replace(
+    "import SolverSortPredicates.Code.FunsExternal",
+    "import SolverSortPredicates.Code.FunsExternal`nimport SolverSortPredicates.Code.LoopMonotonicity"
+)
 $normalizedFuns = $funs.Replace(
     $rawLoop,
     "  runLoopFuel (iter.slice.val.length - iter.i + 1)`n"
@@ -50,9 +65,18 @@ $normalizedFuns = $funs.Replace(
 $outputRoot = [IO.Path]::GetFullPath($OutputDirectory)
 $outputCode = Join-Path $outputRoot "SolverSortPredicates/Code"
 [IO.Directory]::CreateDirectory($outputCode) | Out-Null
+$retainedRaw = Join-Path $outputRoot "raw"
+[IO.Directory]::CreateDirectory($retainedRaw) | Out-Null
+[IO.File]::WriteAllBytes(
+    (Join-Path $retainedRaw "Types.lean"), [IO.File]::ReadAllBytes($rawTypes)
+)
+[IO.File]::WriteAllBytes(
+    (Join-Path $retainedRaw "Funs.lean"), [IO.File]::ReadAllBytes($rawFuns)
+)
 $utf8 = [Text.UTF8Encoding]::new($false)
 [IO.File]::WriteAllText((Join-Path $outputCode "Types.lean"), $normalizedTypes, $utf8)
 [IO.File]::WriteAllText((Join-Path $outputCode "Funs.lean"), $normalizedFuns, $utf8)
+[IO.File]::WriteAllText((Join-Path $outputCode "RawFuns.lean"), $rawModelFuns, $utf8)
 [IO.File]::WriteAllBytes(
     (Join-Path $outputRoot "translation.json"),
     [IO.File]::ReadAllBytes($rawTranslation)

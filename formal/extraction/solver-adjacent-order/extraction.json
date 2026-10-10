@@ -5,54 +5,54 @@
   "counts_as_implementation_refinement": true,
   "source": {
     "path": "src/solver.rs",
-    "sha256": "98c8d342ae6b3ed9e88a4b37f07940624602e97874c4913a00faf41bd124000e",
+    "sha256": "c5c2283923921fde7e919997a62c378a55fbbfdf697590d304c07e2500752b96",
     "extracted_functions": [
       {
         "name": "is_exact_sorted_adjacent_order_theorem",
-        "line_start": 144,
-        "line_end": 235,
+        "line_start": 163,
+        "line_end": 254,
         "universally_proved": true
       },
       {
         "name": "unwrap_singleton_and",
-        "line_start": 237,
-        "line_end": 245,
+        "line_start": 256,
+        "line_end": 264,
         "universally_proved": true
       },
       {
         "name": "is_bound_variable",
-        "line_start": 247,
-        "line_end": 255,
+        "line_start": 266,
+        "line_end": 274,
         "universally_proved": true
       },
       {
         "name": "is_integer_literal",
-        "line_start": 257,
-        "line_end": 262,
+        "line_start": 276,
+        "line_end": 281,
         "universally_proved": true
       },
       {
         "name": "is_bound_successor",
-        "line_start": 264,
-        "line_end": 272,
+        "line_start": 283,
+        "line_end": 291,
         "universally_proved": true
       },
       {
         "name": "is_python_index_of",
-        "line_start": 274,
-        "line_end": 323,
-        "universally_proved": true
-      },
-      {
-        "name": "is_nonnegative_bound",
-        "line_start": 325,
+        "line_start": 293,
         "line_end": 342,
         "universally_proved": true
       },
       {
-        "name": "is_adjacent_upper_bound",
+        "name": "is_nonnegative_bound",
         "line_start": 344,
-        "line_end": 359,
+        "line_end": 361,
+        "universally_proved": true
+      },
+      {
+        "name": "is_adjacent_upper_bound",
+        "line_start": 363,
+        "line_end": 378,
         "universally_proved": true
       }
     ]
@@ -64,7 +64,13 @@
     "charon_commit": "4ad295c1bf982b5533ce7d85f4ddc889ff3127f8",
     "rust_toolchain": "nightly-2026-08-18",
     "rustc_version": "1.100.0-nightly (8fa1c96cf 2026-08-17)",
-    "lean_toolchain": "v4.31.0"
+    "lean_toolchain": "v4.31.0",
+    "aeneas_binary_sha256": "194d9ade88f9b49ace754f1aa7375f8e7c39ba66a488d1cd661dfc45dc9e629e",
+    "charon_binary_sha256": "0b292929bcbae54820fbffad8464a18ed704dec3556a807af928ab4e0572c076",
+    "container_image": "registry.gitlab.com/mopsa/mopsa-analyzer@sha256:64290feb025b34907c03898d2ee87ed08ea83ea35283bb69f441842eb00ea085",
+    "cargo_lock_sha256": "3e25c432fd8fd7f157caae1df9f26108ec92b2b7f98ba532d4fd82cef57cdf88",
+    "sysroot_mode": "default-rustc-sysroot-fallback",
+    "sysroot_diagnostic": "cargo-miri was unavailable; Charon selected the default rustc sysroot."
   },
   "extraction": {
     "roots": [
@@ -79,8 +85,8 @@
   },
   "llbc": {
     "checked_in": false,
-    "sha256": "8c15f1eb64ff831587b2095b4740c089d564cc1daa81d62c865b6b2c2729d16f",
-    "size_bytes": 1115503,
+    "sha256": "ade4c77da024b0a922e6e17d7e06974ee90ac19c764385db97ba1a2a03fc43d8",
+    "size_bytes": 1174903,
     "warnings": 0
   },
   "generated": [
@@ -90,15 +96,27 @@
     },
     {
       "path": "formal/extraction/solver-adjacent-order/generated/SolverAdjacentOrder/Code/Types.lean",
-      "sha256": "2cf14bcf38fca65d802cc064dba0306f52868b63f9db3147590aa01bce45215a"
+      "sha256": "71c73a96884dea5f8371bc32b59cfcdf023769b3e90f87cfa6f033b82899ed9e"
     },
     {
       "path": "formal/extraction/solver-adjacent-order/generated/SolverAdjacentOrder/Code/Funs.lean",
-      "sha256": "7c3f0a63ce5cfeafaddd877a70e3819bb0e1274f5bd1aabfe6e28f46751b946e"
+      "sha256": "c8afc1652e2758ab713d1e2be0bdac21402f7316ee314dc297d455de8feed080"
     },
     {
       "path": "formal/extraction/solver-adjacent-order/generated/translation.json",
-      "sha256": "6528b367e5fc9b4046c59cda835de5bc20be83fe537363fea90c99a8bedbaaa1"
+      "sha256": "41435b60d8cac02f2859505cb4a4a898d545f1c7b614c892b2d98d7b36882dec"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/generated/raw/Types.lean",
+      "sha256": "8d9776f8eae307c2d8cb6cf678d166d41c945f89841c633085762642f41009aa"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/generated/raw/Funs.lean",
+      "sha256": "dc7aa6be808195017104fcfdccd4477bf81d4610bc12d145268cd92d64bb2d41"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/generated/SolverAdjacentOrder/Code/RawFuns.lean",
+      "sha256": "fbace1da5f154cbd13fe20d2f195c1e2c9cd3928070df69b4c88c98f74bab03d"
     }
   ],
   "external_models": [
@@ -119,7 +137,7 @@
       "replaces": [
         "UTF-8 string and slice operations",
         "structural Term equality",
-        "Aeneas partial loop combinator"
+        "finite loop runner linked to the actual partial loop by RawCorrespondence"
       ]
     }
   ],
@@ -132,8 +150,19 @@
   },
   "lean_build": {
     "result": "passed",
-    "jobs": 1706,
-    "library": "SolverAdjacentOrderProofs.AxiomAudit"
+    "library": "SolverAdjacentOrderProofs.AxiomAudit",
+    "validation_command": "formal/extraction/solver-adjacent-order/test-axiom-audits.ps1",
+    "negative_sorry_control": "rejected",
+    "negative_project_axiom_control": "rejected",
+    "ci_native_exit_regression": {
+      "powershell_versions": [
+        "5.1",
+        "7.6.6"
+      ],
+      "real_audit_exit": 0,
+      "unexpected_success_exit": 1,
+      "unexpected_diagnostic_exit": 1
+    }
   },
   "proof_progress": {
     "all_input_exact_results_proved": true,
@@ -148,49 +177,287 @@
       "SolverAdjacentOrder.Proofs.is_bound_successor_all_inputs_exact",
       "SolverAdjacentOrder.Proofs.is_python_index_of_all_inputs_exact",
       "SolverAdjacentOrder.Proofs.is_nonnegative_bound_all_inputs_exact",
-      "SolverAdjacentOrder.Proofs.is_adjacent_upper_bound_all_inputs_exact"
+      "SolverAdjacentOrder.Proofs.is_adjacent_upper_bound_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.string_slice_is_not_adjacent_order",
+      "SolverAdjacentOrder.Proofs.unwrap_body_continuation_decreases",
+      "SolverAdjacentOrder.Proofs.raw_unwrap_body_equals_normalized",
+      "SolverAdjacentOrder.Proofs.raw_unwrap_loop_equals_normalized",
+      "SolverAdjacentOrder.Proofs.raw_unwrap_singleton_and_equals_normalized",
+      "SolverAdjacentOrder.Proofs.raw_is_integer_literal_equals_normalized",
+      "SolverAdjacentOrder.Proofs.raw_is_bound_variable_equals_normalized",
+      "SolverAdjacentOrder.Proofs.raw_is_bound_successor_equals_normalized",
+      "SolverAdjacentOrder.Proofs.raw_is_nonnegative_bound_equals_normalized",
+      "SolverAdjacentOrder.Proofs.raw_is_adjacent_upper_bound_equals_normalized",
+      "SolverAdjacentOrder.Proofs.raw_is_python_index_of_equals_normalized",
+      "SolverAdjacentOrder.Proofs.raw_is_exact_sorted_adjacent_order_equals_normalized",
+      "SolverAdjacentOrder.Proofs.raw_is_exact_sorted_adjacent_order_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_integer_literal_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_bound_variable_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_bound_successor_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_unwrap_singleton_and_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_python_index_of_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_nonnegative_bound_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_adjacent_upper_bound_all_inputs_exact"
     ],
-    "open_obligations": 0
+    "open_obligations": 0,
+    "raw_loop_correspondence_proved": true,
+    "raw_aeneas_definitions_retained": true,
+    "source_to_specification_theorems": [
+      "SolverAdjacentOrder.Proofs.raw_is_exact_sorted_adjacent_order_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_integer_literal_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_bound_variable_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_bound_successor_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_unwrap_singleton_and_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_python_index_of_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_nonnegative_bound_all_inputs_exact",
+      "SolverAdjacentOrder.Proofs.raw_is_adjacent_upper_bound_all_inputs_exact"
+    ]
   },
   "axiom_audits": [
     {
       "theorem": "SolverAdjacentOrder.Proofs.is_integer_literal_all_inputs_exact",
-      "axioms": ["propext", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     },
     {
       "theorem": "SolverAdjacentOrder.Proofs.is_bound_variable_all_inputs_exact",
-      "axioms": ["propext", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     },
     {
       "theorem": "SolverAdjacentOrder.Proofs.is_bound_successor_all_inputs_exact",
-      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     },
     {
       "theorem": "SolverAdjacentOrder.Proofs.unwrap_singleton_and_all_inputs_exact",
-      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     },
     {
       "theorem": "SolverAdjacentOrder.Proofs.is_python_index_of_all_inputs_exact",
-      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     },
     {
       "theorem": "SolverAdjacentOrder.Proofs.is_nonnegative_bound_all_inputs_exact",
-      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     },
     {
       "theorem": "SolverAdjacentOrder.Proofs.is_adjacent_upper_bound_all_inputs_exact",
-      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     },
     {
       "theorem": "SolverAdjacentOrder.Proofs.is_exact_sorted_adjacent_order_theorem_all_inputs_exact",
-      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.string_slice_is_not_adjacent_order",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.unwrap_body_continuation_decreases",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_unwrap_body_equals_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_unwrap_loop_equals_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_unwrap_singleton_and_equals_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_integer_literal_equals_normalized",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_bound_variable_equals_normalized",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_bound_successor_equals_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_nonnegative_bound_equals_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_adjacent_upper_bound_equals_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_python_index_of_equals_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_exact_sorted_adjacent_order_equals_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_exact_sorted_adjacent_order_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_integer_literal_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_bound_variable_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_bound_successor_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_unwrap_singleton_and_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_python_index_of_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_nonnegative_bound_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_adjacent_upper_bound_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     }
   ],
@@ -201,7 +468,7 @@
     },
     {
       "path": "formal/extraction/solver-adjacent-order/normalize-generated.ps1",
-      "sha256": "196f7c5b33ecbf89de0ffa604cb4867da63aee40d5b161378f467f40a9d901cd"
+      "sha256": "d93b888fdf01e150788c17077c95352f815fd0bbb536b260a8b35ebdd804b2cc"
     },
     {
       "path": "formal/extraction/solver-adjacent-order/lakefile.toml",
@@ -217,19 +484,19 @@
     },
     {
       "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs.lean",
-      "sha256": "3eb31027b445d657253bbc6c9326b89f1c48248aa78339fb6874d9da74fb5d5d"
+      "sha256": "2f9ed1eddb4508f84a3f993d45538dce12ed50d51c4c7f4cb85e89607b54ccbf"
     },
     {
       "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs/Refinement.lean",
-      "sha256": "397769fa98522eb211dcddc15c2209598b71dc2f255aadb0f133da1216d4747b"
+      "sha256": "784a7a1ff02223df80ed6ab76e462bd72c2e325ee70c37e2d5bad8d62245e042"
     },
     {
       "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs/Top.lean",
-      "sha256": "8cd732f358cb4751360443c75269a1e077efb42d7f2952895a34e0fb2204f384"
+      "sha256": "6a44bb1c97bc7778cb04cd82f99d5797ba52b8bb5af307b324a03cb8be6b1781"
     },
     {
       "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs/AxiomAudit.lean",
-      "sha256": "e078c622fbdad3df446915c1bed5fc41b40c0ac27067499663b91fb2434c0a6d"
+      "sha256": "d92af3a2fdaa024ac1aa80e8589ab4b4f99e4addd05a1a41d61a5aaa7242584c"
     },
     {
       "path": "formal/extraction/solver-adjacent-order/tests/AxiomAuditRejectsSorry.lean",
@@ -241,16 +508,35 @@
     },
     {
       "path": "formal/extraction/solver-adjacent-order/test-axiom-audits.ps1",
-      "sha256": "31cdc9810a54027e820c6ad0c0353383ba5d2dacf824fdaf47ee4d7de310e25e"
+      "sha256": "e36d71b38df73df135ee5fb9c35ab330f53a21e17d203671184c789cf6c9c042"
     },
     {
       "path": "formal/extraction/test-axiom-audits.ps1",
-      "sha256": "9a69fd859dd6285f85a549eb5d8aa84b8aa7605978061ce46f13812d049aebba"
+      "sha256": "cd0530d92ccc9f7c035e0b15acad44ee16a1e056ff4a75d88835ad9e72751156"
     },
     {
       "path": "formal/lake-projects.json",
       "sha256": "cc536fc6959683430fa5ec60f03a07856ba41709950dbcf205a1b1bc0f1e9f52"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs/LoopNormalization.lean",
+      "sha256": "4cee29b5d8322ec4b4a7a90d265fbbc9a789b7e71ac4d9ad3a76ff99b4a511a2"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs/RawCorrespondence.lean",
+      "sha256": "a443b7f56e83d3c5f78a1ee494e4e5eb75b6dafa0b1d8d7ce657a67d253b424a"
+    },
+    {
+      "path": "formal/extraction/solver-adjacent-order/proofs/SolverAdjacentOrderProofs/SourceRefinement.lean",
+      "sha256": "b31dcc10df75a97a1faec2050db8ff0c58f9b75431f9f8db79b729411ca47ef5"
     }
   ],
-  "open_obligations": []
+  "open_obligations": [],
+  "source_dependencies": [
+    {
+      "path": "src/vc.rs",
+      "sha256": "cc2f807e7dc0d81b4e86c1f3f33c52d15ba607ca31d289e5dfc94e91a115c70c",
+      "role": "extracted-type-definitions"
+    }
+  ]
 }

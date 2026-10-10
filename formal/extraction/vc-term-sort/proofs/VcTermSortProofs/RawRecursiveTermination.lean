@@ -619,6 +619,9 @@ def SortPredicatesTerminate (sort : VcTermSort.Sort) : Prop :=
   Terminates (VcTermSortRaw.is_finite_dict_value_sort sort) ∧
   Terminates (VcTermSortRaw.is_variadic_tuple_element_sort sort)
 
+/-- The variadic-tuple predicate returns immediately for Float; other admitted
+    shapes still follow the extracted ordinary-list or recursive tuple branch.
+    List-predicate unfolding is therefore optional, never an extra premise. -/
 theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
     SortPredicatesTerminate sort := by
   refine VcTermSort.Sort.rec
@@ -627,7 +630,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
       ∀ child, child ∈ elements → SortPredicatesTerminate child)
     ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ sort
   · constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       simp [Terminates]
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -636,10 +639,10 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_finite_dict_value_sort.eq_def]
           simp [Terminates]
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
           simp [Terminates]
   · constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       simp [Terminates]
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -648,10 +651,10 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_finite_dict_value_sort.eq_def]
           simp [Terminates]
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
           simp [Terminates]
   · constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       simp [Terminates]
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -660,10 +663,10 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_finite_dict_value_sort.eq_def]
           simp [Terminates]
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
           simp [Terminates]
   · constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       simp [Terminates]
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -672,10 +675,10 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_finite_dict_value_sort.eq_def]
           simp [Terminates]
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
           simp [Terminates]
   · constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       simp [Terminates]
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -684,10 +687,10 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_finite_dict_value_sort.eq_def]
           simp [Terminates]
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
           simp [Terminates]
   · constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       simp [Terminates]
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -696,10 +699,10 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_finite_dict_value_sort.eq_def]
           simp [Terminates]
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
           simp [Terminates]
   · constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       simp [Terminates]
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -708,10 +711,10 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_finite_dict_value_sort.eq_def]
           simp [Terminates]
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
           simp [Terminates]
   · constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       simp [Terminates]
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -720,10 +723,10 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_finite_dict_value_sort.eq_def]
           simp [Terminates]
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
           simp [Terminates]
   · constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       simp [Terminates]
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -732,7 +735,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_finite_dict_value_sort.eq_def]
           simp [Terminates]
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
           simp [Terminates]
   · intro elements childrenTerminate
     unfold VcTermSort.ModelVec at *
@@ -749,7 +752,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         intro child member
         exact (childrenTerminate child (List.mem_of_mem_take member)).2.2.1)
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       cases observed : VcTermSortRaw.all_list_element_sorts
           (VcTermSort.ModelVec.deref elements) with
       | div => simp [Terminates, observed] at listTerminates
@@ -772,7 +775,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           have tupleListTerminates :
               Terminates (VcTermSortRaw.is_list_element_sort (.Tuple elements)) := by
-            rw [VcTermSortRaw.is_list_element_sort.eq_def]
+            try rw [VcTermSortRaw.is_list_element_sort.eq_def]
             cases observed : VcTermSortRaw.all_list_element_sorts
                 (VcTermSort.ModelVec.deref elements) with
             | div => simp [Terminates, observed] at listTerminates
@@ -785,7 +788,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
   · intro element childTerminates
     have listTerminates :
         Terminates (VcTermSortRaw.is_list_element_sort (.VariadicTuple element)) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       cases observed : VcTermSortRaw.is_list_element_sort element with
       | div => exact (childTerminates.1 observed).elim
       | fail error => simp [Terminates, observed]
@@ -823,7 +826,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
   · intro element childTerminates
     have listTerminates :
         Terminates (VcTermSortRaw.is_list_element_sort (.List element)) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       cases observed : VcTermSortRaw.is_list_element_sort element with
       | div => exact (childTerminates.1 observed).elim
       | fail error => simp [Terminates, observed]
@@ -846,7 +849,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
   · intro element childTerminates
     have listTerminates :
         Terminates (VcTermSortRaw.is_list_element_sort (.Set element)) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       cases observed : VcTermSortRaw.is_finite_dict_key_sort element with
       | div => exact (childTerminates.2.1 observed).elim
       | fail error => simp [Terminates, observed]
@@ -869,7 +872,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
   · intro key value keyTerminates valueTerminates
     have listTerminates :
         Terminates (VcTermSortRaw.is_list_element_sort (.Dict key value)) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       cases keyObserved : VcTermSortRaw.is_finite_dict_key_sort key with
       | div => exact (keyTerminates.2.1 keyObserved).elim
       | fail error => simp [Terminates, keyObserved]
@@ -909,7 +912,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
   · intro key value keyTerminates valueTerminates
     have listTerminates :
         Terminates (VcTermSortRaw.is_list_element_sort (.FiniteDict key value)) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       cases keyObserved : VcTermSortRaw.is_finite_dict_key_sort key with
       | div => exact (keyTerminates.2.1 keyObserved).elim
       | fail error => simp [Terminates, keyObserved]
@@ -950,7 +953,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
       | ok accepted => cases accepted <;> simp [Terminates, observed]
   · intro key keyTerminates
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
       simp [Terminates]
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -959,7 +962,7 @@ theorem sort_predicates_terminate (sort : VcTermSort.Sort) :
         · rw [VcTermSortRaw.is_finite_dict_value_sort.eq_def]
           simp [Terminates]
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
           simp [Terminates]
   · intro child member
     simp at member
@@ -2320,6 +2323,56 @@ theorem term_sort_string_length_terminates_of_smaller
   rw [VcTermSortRaw.Term.sort_typed.eq_def]
   exact require_sort_then_ok_terminates _ requiredTerminates .Int
 
+/-- The source, start, and length checks preserve the generated left-to-right
+    `?` chain, and every recursive operand is strictly smaller than the slice. -/
+theorem term_sort_string_slice_terminates_of_smaller
+    (source start length : VcTermSort.Term)
+    (smallerTerminates : ∀ child,
+      TermStrictlySmaller child (.StringSlice source start length) →
+        Terminates (VcTermSortRaw.Term.sort_typed child)) :
+    Terminates (VcTermSortRaw.Term.sort_typed (.StringSlice source start length)) := by
+  have sourceRequired := require_sort_terminates_of_term_sort_terminates
+    source .String VcTermSort.SortContext.StringSliceReceiver
+    (smallerTerminates source (by simp [TermStrictlySmaller] <;> omega))
+  have startRequired := require_sort_terminates_of_term_sort_terminates
+    start .Int VcTermSort.SortContext.StringSliceStart
+    (smallerTerminates start (by simp [TermStrictlySmaller] <;> omega))
+  have lengthRequired := require_sort_terminates_of_term_sort_terminates
+    length .Int VcTermSort.SortContext.StringSliceLength
+    (smallerTerminates length (by simp [TermStrictlySmaller] <;> omega))
+  rw [VcTermSortRaw.Term.sort_typed.eq_def]
+  dsimp only
+  cases sourceObserved : VcTermSortRaw.require_sort source .String
+      VcTermSort.SortContext.StringSliceReceiver with
+  | div => simp [Terminates, sourceObserved] at sourceRequired
+  | fail error => simp [Terminates]
+  | ok checked =>
+      cases checked with
+      | Err error =>
+          simp [Terminates, core.result.Result.Insts.CoreOpsTry.branch,
+            core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual]
+      | Ok checkedUnit =>
+          cases startObserved : VcTermSortRaw.require_sort start .Int
+              VcTermSort.SortContext.StringSliceStart with
+          | div => simp [Terminates, startObserved] at startRequired
+          | fail error =>
+              simp [Terminates, core.result.Result.Insts.CoreOpsTry.branch]
+          | ok startChecked =>
+              cases startChecked with
+              | Err error =>
+                  simp [Terminates, core.result.Result.Insts.CoreOpsTry.branch,
+                    core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual]
+              | Ok startUnit =>
+                  cases lengthObserved : VcTermSortRaw.require_sort length .Int
+                      VcTermSort.SortContext.StringSliceLength with
+                  | div => simp [Terminates, lengthObserved] at lengthRequired
+                  | fail error =>
+                      simp [Terminates, core.result.Result.Insts.CoreOpsTry.branch]
+                  | ok lengthChecked =>
+                      cases lengthChecked <;>
+                        simp [Terminates, core.result.Result.Insts.CoreOpsTry.branch,
+                          core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual]
+
 /-- Bytes length connects another generated unary branch to the same
     well-founded child relation. -/
 theorem term_sort_bytes_length_terminates_of_smaller
@@ -2812,6 +2865,15 @@ theorem term_sort_field_read_terminates_of_smaller
               core.result.Result.Insts.CoreOpsTry.branch,
               VcTermSortRaw.is_list_element_sort]
           all_goals try exact sort_clone_then_result_ok_terminates _
+          case VariadicTuple element =>
+            have predicateTerminates := is_variadic_tuple_element_sort_terminates element
+            cases predicateObserved : VcTermSortRaw.is_variadic_tuple_element_sort element with
+            | div => simp [Terminates, predicateObserved] at predicateTerminates
+            | fail error => simp [Terminates, predicateObserved]
+            | ok accepted =>
+                cases accepted <;> simp [Terminates, predicateObserved]
+                · exact sort_clone_then_result_error_terminates _ _
+                · exact sort_clone_then_result_ok_terminates _
           case List element =>
             have predicateTerminates := is_list_element_sort_terminates element
             cases predicateObserved : VcTermSortRaw.is_list_element_sort element with
@@ -4919,6 +4981,15 @@ theorem validate_bound_occurrences_terminates_of_smaller
       apply validate_bound_occurrences_one_terminates_of_validate
       apply smallerValidate value
       simp [TermStrictlySmaller]
+  | StringSlice source start length =>
+      simp only [Box.Insts.CoreConvertAsRef.as_ref,
+        VcTermSort.Term.Insts.CoreCloneClone.clone, bind_tc_ok, lift]
+      apply validate_bound_occurrences_all_terminates
+      intro child member
+      simp only [Array.to_slice, Array.make, List.mem_cons, List.not_mem_nil,
+        or_false] at member
+      rcases member with rfl | rfl | rfl <;>
+        apply smallerValidate <;> simp [TermStrictlySmaller] <;> omega
   | BytesLength value =>
       apply validate_bound_occurrences_one_terminates_of_validate
       apply smallerValidate value
@@ -5283,6 +5354,7 @@ theorem require_comprehension_body_terminates
                     filterTerm VcTermSort.Sort.Bool
                     VcTermSort.SortContext.ComprehensionFilter) filterRequired
 
+set_option maxHeartbeats 400000 in
 theorem all_nominal_references_body_terminates
     (iter : core.slice.iter.Iter VcTermSort.Term) (result : Bool) :
     Terminates (VcTermSortRaw.all_nominal_references_loop.body iter result) := by
@@ -5927,6 +5999,9 @@ theorem term_sort_terminates (term : VcTermSort.Term) :
   | StringLength value =>
       exact term_sort_string_length_terminates_of_smaller
         value smallerTerminates
+  | StringSlice source start length =>
+      exact term_sort_string_slice_terminates_of_smaller
+        source start length smallerTerminates
   | BytesConcat values =>
       exact term_sort_bytes_concat_terminates_of_smaller
         values smallerTerminates

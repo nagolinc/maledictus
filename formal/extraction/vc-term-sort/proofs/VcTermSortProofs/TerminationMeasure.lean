@@ -1,4 +1,4 @@
-import VcTermSortProofs.DerivedTraits
+import VcTermSortProofs.TermDerivedClone
 
 namespace VcTermSort.Proofs
 

@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use proc_macro2::Span;
 use serde::{Deserialize, Serialize};
@@ -816,6 +816,14 @@ fn load_proofs(
         let proof_obligations_closed =
             proof_functions_are_universally_proved(&manifest, manifest_function_names);
         validate_manifest_artifact_hashes(project, &proof.manifest, &manifest)?;
+        let has_source_inventory =
+            validate_extracted_source_closure(project, &proof.manifest, &manifest)?;
+        if proof.basis == Basis::UnconditionalSourceBound && !has_source_inventory {
+            return Err(format!(
+                "{} cannot claim unconditional source refinement without a sealed extraction inventory",
+                proof.manifest
+            ));
+        }
         let checked_theorem = manifest
             .pointer("/lean_build/public_theorem")
             .and_then(|value| value.as_str())
@@ -916,10 +924,21 @@ fn validate_manifest_artifact_hashes(
     manifest_path: &str,
     manifest: &serde_json::Value,
 ) -> Result<(), String> {
-    for key in ["manifest", "generated", "external_models", "proof_project"] {
+    for key in [
+        "manifest",
+        "generated",
+        "external_models",
+        "proof_project",
+        "source_dependencies",
+    ] {
         let Some(value) = manifest.get(key) else {
             continue;
         };
+        if key == "source_dependencies" && !value.is_array() {
+            return Err(format!(
+                "{manifest_path} source_dependencies must be an array of source artifact records"
+            ));
+        }
         let records: Vec<&serde_json::Value> = match value {
             serde_json::Value::Array(items) => items.iter().collect(),
             serde_json::Value::Object(_) => vec![value],
@@ -931,12 +950,22 @@ fn validate_manifest_artifact_hashes(
         };
         for record in records {
             let Some(path) = record.get("path").and_then(|value| value.as_str()) else {
+                if key == "source_dependencies" {
+                    return Err(format!(
+                        "{manifest_path} source dependency omits a string path"
+                    ));
+                }
                 continue;
             };
             let Some(expected) = record.get("sha256").and_then(|value| value.as_str()) else {
                 return Err(format!("{manifest_path} artifact {path} omits sha256"));
             };
-            let bytes = fs::read(project.join(path))
+            let artifact_path = if key == "source_dependencies" {
+                source_dependency_path(project, path)?
+            } else {
+                project.join(path)
+            };
+            let bytes = fs::read(artifact_path)
                 .map_err(|error| format!("cannot read artifact {path}: {error}"))?;
             if sha256(&bytes) != expected {
                 return Err(format!("{manifest_path} artifact {path} has a stale hash"));
@@ -944,6 +973,132 @@ fn validate_manifest_artifact_hashes(
         }
     }
     Ok(())
+}
+
+fn source_dependency_path(project: &Path, path: &str) -> Result<PathBuf, String> {
+    let relative = Path::new(path);
+    if path.is_empty()
+        || !relative
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)))
+    {
+        return Err(format!(
+            "source dependency {path:?} must be a relative file path inside the project"
+        ));
+    }
+    let root = project
+        .canonicalize()
+        .map_err(|error| format!("cannot resolve project {}: {error}", project.display()))?;
+    let target = root
+        .join(relative)
+        .canonicalize()
+        .map_err(|error| format!("cannot read artifact {path}: {error}"))?;
+    if !target.starts_with(&root) || !target.is_file() {
+        return Err(format!(
+            "source dependency {path:?} must resolve to a file inside the project"
+        ));
+    }
+    Ok(target)
+}
+
+fn add_extracted_source_paths(
+    paths: &mut BTreeMap<String, String>,
+    record: &serde_json::Value,
+) -> Result<(), String> {
+    let path = record["path"]
+        .as_str()
+        .ok_or_else(|| "source record omits a string path".to_owned())?;
+    let mut extracted = vec![path];
+    if let Some(aliases) = record.get("extracted_paths") {
+        let aliases = aliases
+            .as_array()
+            .ok_or_else(|| format!("source {path} extracted_paths must be an array"))?;
+        for alias in aliases {
+            extracted.push(
+                alias
+                    .as_str()
+                    .filter(|alias| !alias.is_empty())
+                    .ok_or_else(|| format!("source {path} has an invalid extracted path"))?,
+            );
+        }
+    }
+    for extracted_path in extracted {
+        if let Some(previous) = paths.insert(extracted_path.to_owned(), path.to_owned())
+            && previous != path
+        {
+            return Err(format!(
+                "extracted source {extracted_path} ambiguously maps to {previous} and {path}"
+            ));
+        }
+    }
+    Ok(())
+}
+
+// Aeneas records the source origin of local functions, types, globals and traits.
+// Check the sealed inventory rather than trusting a voluntarily enumerated list
+// of dependencies. Standalone extraction aliases must be declared explicitly;
+// a matching basename is not evidence that two files are the same source.
+fn validate_extracted_source_closure(
+    project: &Path,
+    manifest_path: &str,
+    manifest: &serde_json::Value,
+) -> Result<bool, String> {
+    let mut sources = BTreeMap::new();
+    add_extracted_source_paths(&mut sources, &manifest["source"])?;
+    if let Some(dependencies) = manifest["source_dependencies"].as_array() {
+        for dependency in dependencies {
+            add_extracted_source_paths(&mut sources, dependency)?;
+        }
+    }
+    let generated: Vec<_> = match manifest.get("generated") {
+        Some(serde_json::Value::Array(records)) => records.iter().collect(),
+        Some(record @ serde_json::Value::Object(_)) => vec![record],
+        _ => Vec::new(),
+    };
+    let mut has_inventory = false;
+    for artifact in generated {
+        let Some(path) = artifact["path"].as_str() else {
+            continue;
+        };
+        if !path.ends_with("translation.json") {
+            continue;
+        }
+        has_inventory = true;
+        let bytes = fs::read(project.join(path))
+            .map_err(|error| format!("cannot read extraction inventory {path}: {error}"))?;
+        let inventory: serde_json::Value = serde_json::from_slice(&bytes)
+            .map_err(|error| format!("invalid extraction inventory {path}: {error}"))?;
+        for kind in [
+            "functions",
+            "types",
+            "globals",
+            "trait_decls",
+            "trait_impls",
+        ] {
+            let records = inventory[kind].as_array().ok_or_else(|| {
+                format!("extraction inventory {path} has missing or invalid {kind}")
+            })?;
+            for record in records {
+                let is_local = record["is_local"].as_bool().ok_or_else(|| {
+                    format!("extraction inventory {path} has a {kind} record without is_local")
+                })?;
+                if !is_local {
+                    continue;
+                }
+                let source = record["source"]["file"].as_str().ok_or_else(|| {
+                    format!(
+                        "extraction inventory {path} has a local {kind} record without source.file"
+                    )
+                })?;
+                if !sources.contains_key(source) {
+                    return Err(format!(
+                        "{manifest_path} omits a sealed source dependency for {source} required by {path}"
+                    ));
+                }
+            }
+        }
+    }
+    Ok(has_inventory)
 }
 
 fn load_model_artifacts(project: &Path) -> Result<Vec<ModelArtifact>, String> {
@@ -1162,5 +1317,249 @@ mod tests {
         });
         assert!(axiom_audit_names_theorem(&audit, "Proofs.second"));
         assert!(!axiom_audit_names_theorem(&audit, "Proofs.unrelated"));
+    }
+
+    #[test]
+    fn imported_source_dependencies_are_checked_by_the_proof_loader() {
+        let fixture = Fixture::new("fn verify_internal() {}\n");
+        let dependency = b"pub enum Term { Unit }\n";
+        fs::write(fixture.root.join("src/types.rs"), dependency).unwrap();
+        let manifest = serde_json::json!({
+            "source": {
+                "path": "src/lib.rs",
+                "sha256": sha256(&fs::read(fixture.root.join("src/lib.rs")).unwrap()),
+                "extracted_functions": [{"name": "verify_internal", "universally_proved": true}]
+            },
+            "source_dependencies": [{"path": "src/types.rs", "sha256": sha256(dependency)}],
+            "counts_as_implementation_refinement": true,
+            "public_theorem": "Proofs.check",
+            "axiom_audits": [{"theorem": "Proofs.check", "contains_sorry_ax": false}]
+        });
+        fs::write(
+            fixture.root.join("formal/extraction.json"),
+            serde_json::to_vec_pretty(&manifest).unwrap(),
+        )
+        .unwrap();
+        let mut proofs = [ProofConfig {
+            id: "fixture".to_owned(),
+            basis: Basis::ConditionalSourceBound,
+            source_file: "src/lib.rs".to_owned(),
+            function_names: vec!["verify_internal".to_owned()],
+            function_symbols: Vec::new(),
+            manifest_function_names: Vec::new(),
+            manifest: "formal/extraction.json".to_owned(),
+            theorem: "Proofs.check".to_owned(),
+        }];
+        let loaded = load_proofs(&fixture.root, &proofs).unwrap();
+        assert!(loaded["fixture"].current_source_hash_matches);
+        assert!(loaded["fixture"].proof_obligations_closed);
+        proofs[0].basis = Basis::UnconditionalSourceBound;
+        let error = load_proofs(&fixture.root, &proofs).unwrap_err();
+        assert!(
+            error.contains("without a sealed extraction inventory"),
+            "{error}"
+        );
+        proofs[0].basis = Basis::ConditionalSourceBound;
+
+        // Only an imported type changes: the directly proved file remains exact.
+        fs::write(
+            fixture.root.join("src/types.rs"),
+            b"pub enum Term { Unit, NewVariant }\n",
+        )
+        .unwrap();
+        let error = load_proofs(&fixture.root, &proofs).unwrap_err();
+        assert!(error.contains("src/types.rs has a stale hash"), "{error}");
+    }
+
+    #[test]
+    fn imported_source_dependencies_use_exact_bytes() {
+        let fixture = Fixture::new("fn verify_internal() {}\n");
+        let dependency = b"pub enum Term { Unit }\n";
+        fs::write(
+            fixture.root.join("src/types.rs"),
+            b"pub enum Term { Unit }\r\n",
+        )
+        .unwrap();
+        let manifest = serde_json::json!({
+            "source_dependencies": [{"path": "src/types.rs", "sha256": sha256(dependency)}]
+        });
+        let error =
+            validate_manifest_artifact_hashes(&fixture.root, "proof.json", &manifest).unwrap_err();
+        assert!(error.contains("has a stale hash"), "{error}");
+    }
+
+    #[test]
+    fn missing_imported_source_dependency_is_not_ignored() {
+        let fixture = Fixture::new("fn verify_internal() {}\n");
+        let manifest = serde_json::json!({
+            "source_dependencies": [{"path": "src/absent.rs", "sha256": sha256(b"absent")}]
+        });
+        let error =
+            validate_manifest_artifact_hashes(&fixture.root, "proof.json", &manifest).unwrap_err();
+        assert!(
+            error.contains("cannot read artifact src/absent.rs"),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn malformed_imported_source_dependencies_are_not_ignored() {
+        let fixture = Fixture::new("fn verify_internal() {}\n");
+        for invalid in [
+            serde_json::json!(null),
+            serde_json::json!({"path": "src/lib.rs", "sha256": "not-an-array"}),
+            serde_json::json!([null]),
+            serde_json::json!([{}]),
+            serde_json::json!([{"path": 42, "sha256": "invalid"}]),
+            serde_json::json!([{"path": "src/lib.rs"}]),
+            serde_json::json!([{"path": "src/lib.rs", "sha256": 42}]),
+        ] {
+            let manifest = serde_json::json!({"source_dependencies": invalid});
+            assert!(
+                validate_manifest_artifact_hashes(&fixture.root, "proof.json", &manifest).is_err(),
+                "accepted malformed dependency: {manifest}"
+            );
+        }
+    }
+
+    #[test]
+    fn imported_source_dependencies_cannot_escape_the_project() {
+        let fixture = Fixture::new("fn verify_internal() {}\n");
+        let outside = Fixture::new("fn another_project() {}\n");
+        let absolute = outside.root.join("src/lib.rs");
+        let traversal = format!(
+            "../{}/src/lib.rs",
+            outside.root.file_name().unwrap().to_str().unwrap()
+        );
+        for path in ["", "../outside.rs", "src/../../outside.rs", &traversal] {
+            let error = source_dependency_path(&fixture.root, path).unwrap_err();
+            assert!(error.contains("inside the project"), "{error}");
+        }
+        let error = source_dependency_path(&fixture.root, absolute.to_str().unwrap()).unwrap_err();
+        assert!(error.contains("inside the project"), "{error}");
+        let error = source_dependency_path(&fixture.root, "src").unwrap_err();
+        assert!(error.contains("resolve to a file"), "{error}");
+        assert_eq!(
+            source_dependency_path(&fixture.root, "src/lib.rs").unwrap(),
+            fixture.root.join("src/lib.rs").canonicalize().unwrap()
+        );
+    }
+
+    #[test]
+    fn extraction_inventory_requires_the_entire_local_source_closure() {
+        let fixture = Fixture::new("fn verify_internal() {}\n");
+        let inventory = serde_json::json!({
+            "functions": [{"is_local": true, "source": {"file": "src/lib.rs"}}],
+            "types": [{"is_local": true, "source": {"file": "src/types.rs"}}],
+            "globals": [{"is_local": false, "source": {"file": "/rustc/core.rs"}}],
+            "trait_decls": [],
+            "trait_impls": []
+        });
+        let inventory_bytes = serde_json::to_vec(&inventory).unwrap();
+        fs::write(
+            fixture.root.join("formal/translation.json"),
+            &inventory_bytes,
+        )
+        .unwrap();
+        fs::write(
+            fixture.root.join("src/types.rs"),
+            b"pub enum Term { Unit }\n",
+        )
+        .unwrap();
+        let mut manifest = serde_json::json!({
+            "source": {"path": "src/lib.rs"},
+            "source_dependencies": [{
+                "path": "src/types.rs",
+                "sha256": sha256(&fs::read(fixture.root.join("src/types.rs")).unwrap())
+            }],
+            "generated": [{
+                "path": "formal/translation.json", "sha256": sha256(&inventory_bytes)
+            }]
+        });
+        validate_manifest_artifact_hashes(&fixture.root, "proof.json", &manifest).unwrap();
+        validate_extracted_source_closure(&fixture.root, "proof.json", &manifest).unwrap();
+        manifest
+            .as_object_mut()
+            .unwrap()
+            .remove("source_dependencies");
+        let error =
+            validate_extracted_source_closure(&fixture.root, "proof.json", &manifest).unwrap_err();
+        assert!(
+            error.contains("omits a sealed source dependency for src/types.rs"),
+            "{error}"
+        );
+        manifest["source_dependencies"] = serde_json::json!([]);
+        assert!(validate_extracted_source_closure(&fixture.root, "proof.json", &manifest).is_err());
+    }
+
+    #[test]
+    fn standalone_extraction_aliases_must_be_explicit_and_unambiguous() {
+        let fixture = Fixture::new("fn verify_internal() {}\n");
+        let inventory = serde_json::json!({
+            "functions": [{"is_local": true, "source": {"file": "src/lib.rs"}}],
+            "types": [],
+            "globals": [],
+            "trait_decls": [],
+            "trait_impls": []
+        });
+        fs::write(
+            fixture.root.join("formal/translation.json"),
+            serde_json::to_vec(&inventory).unwrap(),
+        )
+        .unwrap();
+        let mut manifest = serde_json::json!({
+            "source": {"path": "src/actual.rs"},
+            "generated": [{"path": "formal/translation.json"}]
+        });
+        assert!(validate_extracted_source_closure(&fixture.root, "proof.json", &manifest).is_err());
+        manifest["source"]["extracted_paths"] = serde_json::json!(["src/lib.rs"]);
+        validate_extracted_source_closure(&fixture.root, "proof.json", &manifest).unwrap();
+        manifest["source_dependencies"] = serde_json::json!([{
+            "path": "src/other.rs", "extracted_paths": ["src/lib.rs"]
+        }]);
+        let error =
+            validate_extracted_source_closure(&fixture.root, "proof.json", &manifest).unwrap_err();
+        assert!(error.contains("ambiguously maps"), "{error}");
+    }
+
+    #[test]
+    fn malformed_extraction_inventory_is_not_a_closed_source_set() {
+        let fixture = Fixture::new("fn verify_internal() {}\n");
+        let manifest = serde_json::json!({
+            "source": {"path": "src/lib.rs"},
+            "generated": [{"path": "formal/translation.json"}]
+        });
+        for invalid in [
+            serde_json::json!({}),
+            serde_json::json!({"types": {}}),
+            serde_json::json!({"functions": [], "types": [{"is_local": true}]}),
+            serde_json::json!({"functions": [], "types": [{"source": {"file": "src/lib.rs"}}]}),
+        ] {
+            fs::write(
+                fixture.root.join("formal/translation.json"),
+                serde_json::to_vec(&invalid).unwrap(),
+            )
+            .unwrap();
+            assert!(
+                validate_extracted_source_closure(&fixture.root, "proof.json", &manifest).is_err()
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn imported_source_dependency_symlinks_cannot_escape_the_project() {
+        let fixture = Fixture::new("fn verify_internal() {}\n");
+        let outside = Fixture::new("fn another_project() {}\n");
+        std::os::unix::fs::symlink(
+            outside.root.join("src/lib.rs"),
+            fixture.root.join("src/alias.rs"),
+        )
+        .unwrap();
+        let error = source_dependency_path(&fixture.root, "src/alias.rs").unwrap_err();
+        assert!(
+            error.contains("resolve to a file inside the project"),
+            "{error}"
+        );
     }
 }

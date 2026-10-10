@@ -22,7 +22,7 @@ namespace SolverSortPredicates
 mutual
 
 /-- [maledictus::solver::is_z3_collection_key_sort]: loop 0:
-    Source: 'src/solver.rs', lines 3179:12-3183:13 -/
+    Source: 'src/solver.rs', lines 3220:12-3224:13 -/
 @[rust_loop]
 def solver.is_z3_collection_key_sort_loop
   (iter : core.slice.iter.Iter vc.Sort) (valid : Bool) : Result Bool := do
@@ -33,7 +33,7 @@ def solver.is_z3_collection_key_sort_loop
 partial_fixpoint
 
 /-- [maledictus::solver::is_z3_collection_key_sort]: loop body 0:
-    Source: 'src/solver.rs', lines 3179:12-3183:13 -/
+    Source: 'src/solver.rs', lines 3220:12-3224:13 -/
 @[rust_loop_body]
 def solver.is_z3_collection_key_sort_loop.body
   (iter : core.slice.iter.Iter vc.Sort) (valid : Bool) :
@@ -51,7 +51,7 @@ def solver.is_z3_collection_key_sort_loop.body
 partial_fixpoint
 
 /-- [maledictus::solver::is_z3_collection_key_sort]:
-    Source: 'src/solver.rs', lines 3174:0-3189:1 -/
+    Source: 'src/solver.rs', lines 3215:0-3230:1 -/
 def solver.is_z3_collection_key_sort (sort : vc.Sort) : Result Bool := do
   match sort with
   | vc.Sort.Bool => ok true
@@ -81,7 +81,7 @@ end
 mutual
 
 /-- [maledictus::solver::is_z3_collection_value_sort]: loop 0:
-    Source: 'src/solver.rs', lines 3196:12-3200:13 -/
+    Source: 'src/solver.rs', lines 3237:12-3241:13 -/
 @[rust_loop]
 def solver.is_z3_collection_value_sort_loop
   (iter : core.slice.iter.Iter vc.Sort) (valid : Bool) : Result Bool := do
@@ -92,7 +92,7 @@ def solver.is_z3_collection_value_sort_loop
 partial_fixpoint
 
 /-- [maledictus::solver::is_z3_collection_value_sort]: loop body 0:
-    Source: 'src/solver.rs', lines 3196:12-3200:13 -/
+    Source: 'src/solver.rs', lines 3237:12-3241:13 -/
 @[rust_loop_body]
 def solver.is_z3_collection_value_sort_loop.body
   (iter : core.slice.iter.Iter vc.Sort) (valid : Bool) :
@@ -110,12 +110,12 @@ def solver.is_z3_collection_value_sort_loop.body
 partial_fixpoint
 
 /-- [maledictus::solver::is_z3_collection_value_sort]:
-    Source: 'src/solver.rs', lines 3191:0-3210:1 -/
+    Source: 'src/solver.rs', lines 3232:0-3251:1 -/
 def solver.is_z3_collection_value_sort (sort : vc.Sort) : Result Bool := do
   match sort with
   | vc.Sort.Bool => ok true
   | vc.Sort.Int => ok true
-  | vc.Sort.Float => ok false
+  | vc.Sort.Float => ok true
   | vc.Sort.String => ok true
   | vc.Sort.Unit => ok false
   | vc.Sort.Reference => ok true
@@ -148,7 +148,7 @@ end
 mutual
 
 /-- [maledictus::solver::is_z3_nested_equality_sort]: loop 0:
-    Source: 'src/solver.rs', lines 3217:12-3221:13 -/
+    Source: 'src/solver.rs', lines 3258:12-3262:13 -/
 @[rust_loop]
 def solver.is_z3_nested_equality_sort_loop
   (iter : core.slice.iter.Iter vc.Sort) (valid : Bool) : Result Bool := do
@@ -159,7 +159,7 @@ def solver.is_z3_nested_equality_sort_loop
 partial_fixpoint
 
 /-- [maledictus::solver::is_z3_nested_equality_sort]: loop body 0:
-    Source: 'src/solver.rs', lines 3217:12-3221:13 -/
+    Source: 'src/solver.rs', lines 3258:12-3262:13 -/
 @[rust_loop_body]
 def solver.is_z3_nested_equality_sort_loop.body
   (iter : core.slice.iter.Iter vc.Sort) (valid : Bool) :
@@ -177,7 +177,7 @@ def solver.is_z3_nested_equality_sort_loop.body
 partial_fixpoint
 
 /-- [maledictus::solver::is_z3_nested_equality_sort]:
-    Source: 'src/solver.rs', lines 3212:0-3227:1 -/
+    Source: 'src/solver.rs', lines 3253:0-3268:1 -/
 def solver.is_z3_nested_equality_sort (sort : vc.Sort) : Result Bool := do
   match sort with
   | vc.Sort.Bool => ok true

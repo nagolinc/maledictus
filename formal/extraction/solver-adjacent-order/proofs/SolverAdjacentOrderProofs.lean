@@ -1,2 +1,4 @@
 import SolverAdjacentOrderProofs.Top
+import SolverAdjacentOrderProofs.RawCorrespondence
+import SolverAdjacentOrderProofs.SourceRefinement
 import SolverAdjacentOrderProofs.AxiomAudit

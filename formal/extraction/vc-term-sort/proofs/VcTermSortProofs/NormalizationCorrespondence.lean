@@ -600,6 +600,15 @@ theorem raw_validate_bound_occurrences_eq_normalized_of_smaller
       simp at childBelow ⊢
       omega
     | skip
+  case StringSlice source start length =>
+    simp only [Box.Insts.CoreConvertAsRef.as_ref,
+      VcTermSort.Term.Insts.CoreCloneClone.clone, bind_tc_ok, lift]
+    apply raw_validate_all_eq_normalized_of_children
+    intro child member
+    simp only [Array.to_slice, Array.make, List.mem_cons, List.not_mem_nil,
+      or_false] at member
+    rcases member with rfl | rfl | rfl <;>
+      apply smallerEq <;> simp [TermStrictlySmaller] <;> omega
   case PermissionMaskTransition preMask postMask field consumed produced =>
     have consumedEq :
         VcTermSortRaw.validate_bound_occurrences.all_transfers
@@ -968,6 +977,8 @@ local macro "solve_sort_predicate_base" : tactic =>
     VcTermSortRaw.is_variadic_tuple_element_sort.eq_def,
     VcTermSort.is_variadic_tuple_element_sort.eq_def])
 
+/-- Preserve the direct Float case as well as every recursive collection case;
+    it does not imply that Float is an ordinary list-element sort. -/
 theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
     SortPredicatesCorrespond sort := by
   refine VcTermSort.Sort.rec
@@ -977,8 +988,8 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
     ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ sort
   · unfold SortPredicatesCorrespond
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       simp
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -989,13 +1000,13 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
           simp
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           rw [VcTermSort.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
-          rw [VcTermSort.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSort.is_list_element_sort.eq_def]
           simp
   · unfold SortPredicatesCorrespond
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       simp
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -1006,13 +1017,13 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
           simp
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           rw [VcTermSort.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
-          rw [VcTermSort.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSort.is_list_element_sort.eq_def]
           simp
   · unfold SortPredicatesCorrespond
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       simp
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -1023,13 +1034,13 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
           simp
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           rw [VcTermSort.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
-          rw [VcTermSort.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSort.is_list_element_sort.eq_def]
           simp
   · unfold SortPredicatesCorrespond
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       simp
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -1040,13 +1051,13 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
           simp
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           rw [VcTermSort.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
-          rw [VcTermSort.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSort.is_list_element_sort.eq_def]
           simp
   · unfold SortPredicatesCorrespond
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       simp
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -1057,13 +1068,13 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
           simp
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           rw [VcTermSort.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
-          rw [VcTermSort.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSort.is_list_element_sort.eq_def]
           simp
   · unfold SortPredicatesCorrespond
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       simp
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -1074,13 +1085,13 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
           simp
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           rw [VcTermSort.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
-          rw [VcTermSort.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSort.is_list_element_sort.eq_def]
           simp
   · unfold SortPredicatesCorrespond
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       simp
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -1091,13 +1102,13 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
           simp
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           rw [VcTermSort.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
-          rw [VcTermSort.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSort.is_list_element_sort.eq_def]
           simp
   · unfold SortPredicatesCorrespond
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       simp
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -1108,13 +1119,13 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
           simp
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           rw [VcTermSort.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
-          rw [VcTermSort.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSort.is_list_element_sort.eq_def]
           simp
   · unfold SortPredicatesCorrespond
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       simp
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -1125,8 +1136,8 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
           simp
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           rw [VcTermSort.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
-          rw [VcTermSort.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSort.is_list_element_sort.eq_def]
           simp
   · intro elements childrenEq
     unfold VcTermSort.ModelVec at *
@@ -1146,8 +1157,8 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
     have tupleListEq :
         VcTermSortRaw.is_list_element_sort (.Tuple elements) =
           VcTermSort.is_list_element_sort (.Tuple elements) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       cases rawObserved : VcTermSortRaw.all_list_element_sorts
           (VcTermSort.ModelVec.deref elements) <;>
         cases normalizedObserved : VcTermSort.all_list_element_sorts
@@ -1180,8 +1191,8 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
     have wholeListEq :
         VcTermSortRaw.is_list_element_sort (.VariadicTuple element) =
           VcTermSort.is_list_element_sort (.VariadicTuple element) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       cases rawObserved : VcTermSortRaw.is_list_element_sort element <;>
         cases normalizedObserved : VcTermSort.is_list_element_sort element <;>
         simp [rawObserved, normalizedObserved] at listEq ⊢ <;>
@@ -1218,8 +1229,8 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
     have wholeListEq :
         VcTermSortRaw.is_list_element_sort (.List element) =
           VcTermSort.is_list_element_sort (.List element) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       cases rawObserved : VcTermSortRaw.is_list_element_sort element <;>
         cases normalizedObserved : VcTermSort.is_list_element_sort element <;>
         simp [rawObserved, normalizedObserved] at listEq ⊢ <;>
@@ -1242,8 +1253,8 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
     have wholeListEq :
         VcTermSortRaw.is_list_element_sort (.Set element) =
           VcTermSort.is_list_element_sort (.Set element) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       cases rawObserved : VcTermSortRaw.is_finite_dict_key_sort element <;>
         cases normalizedObserved : VcTermSort.is_finite_dict_key_sort element <;>
         simp [rawObserved, normalizedObserved] at keyEq ⊢ <;>
@@ -1268,8 +1279,8 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
     have wholeListEq :
         VcTermSortRaw.is_list_element_sort (.Dict key value) =
           VcTermSort.is_list_element_sort (.Dict key value) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       cases rawKeyObserved : VcTermSortRaw.is_finite_dict_key_sort key <;>
         cases normalizedKeyObserved : VcTermSort.is_finite_dict_key_sort key <;>
         simp [rawKeyObserved, normalizedKeyObserved] at keyKeyEq ⊢ <;>
@@ -1305,8 +1316,8 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
     have wholeListEq :
         VcTermSortRaw.is_list_element_sort (.FiniteDict key value) =
           VcTermSort.is_list_element_sort (.FiniteDict key value) := by
-      rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+      try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       cases rawKeyObserved : VcTermSortRaw.is_finite_dict_key_sort key <;>
         cases normalizedKeyObserved : VcTermSort.is_finite_dict_key_sort key <;>
         simp [rawKeyObserved, normalizedKeyObserved] at keyKeyEq ⊢ <;>
@@ -1337,8 +1348,8 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
   · intro key keyEq
     unfold SortPredicatesCorrespond
     constructor
-    · rw [VcTermSortRaw.is_list_element_sort.eq_def]
-      rw [VcTermSort.is_list_element_sort.eq_def]
+    · try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+      try rw [VcTermSort.is_list_element_sort.eq_def]
       simp
     · constructor
       · rw [VcTermSortRaw.is_finite_dict_key_sort.eq_def]
@@ -1349,8 +1360,8 @@ theorem raw_sort_predicates_eq_normalized (sort : VcTermSort.Sort) :
           simp
         · rw [VcTermSortRaw.is_variadic_tuple_element_sort.eq_def]
           rw [VcTermSort.is_variadic_tuple_element_sort.eq_def]
-          rw [VcTermSortRaw.is_list_element_sort.eq_def]
-          rw [VcTermSort.is_list_element_sort.eq_def]
+          try rw [VcTermSortRaw.is_list_element_sort.eq_def]
+          try rw [VcTermSort.is_list_element_sort.eq_def]
           simp
   · intro child member
     simp at member
@@ -1910,7 +1921,7 @@ theorem set_comprehension_tuple_prefix_preserved
               simp [exactObserved, projectionObserved] at observed
               simp_all
 
-set_option maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 theorem raw_term_sort_typed_eq_normalized (term : VcTermSort.Term) :
     VcTermSortRaw.Term.sort_typed term = VcTermSort.Term.sort_typed term := by
   apply term_strictly_smaller_well_founded.induction term

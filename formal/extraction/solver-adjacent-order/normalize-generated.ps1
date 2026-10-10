@@ -61,14 +61,29 @@ $rawLoop = "  loop`n"
 if ((Get-OccurrenceCount $funs $rawLoop) -ne 1) {
     throw "Expected exactly one generated unwrap loop invocation."
 }
+$rawModelFuns = Replace-ExactlyOnce $funs `
+    "namespace SolverAdjacentOrder" `
+    "namespace SolverAdjacentOrderRaw`n`nopen SolverAdjacentOrder"
+$rawModelFuns = Replace-ExactlyOnce $rawModelFuns `
+    "end SolverAdjacentOrder" `
+    "end SolverAdjacentOrderRaw"
 $funs = $funs.Replace($rawLoop, "  runLoopFuel (sizeOf term + 1)`n")
 
 $outputRoot = [IO.Path]::GetFullPath($OutputDirectory)
 $outputCode = Join-Path $outputRoot "SolverAdjacentOrder/Code"
 [IO.Directory]::CreateDirectory($outputCode) | Out-Null
+$retainedRaw = Join-Path $outputRoot "raw"
+[IO.Directory]::CreateDirectory($retainedRaw) | Out-Null
+[IO.File]::WriteAllBytes(
+    (Join-Path $retainedRaw "Types.lean"), [IO.File]::ReadAllBytes($rawTypes)
+)
+[IO.File]::WriteAllBytes(
+    (Join-Path $retainedRaw "Funs.lean"), [IO.File]::ReadAllBytes($rawFuns)
+)
 $utf8 = [Text.UTF8Encoding]::new($false)
 [IO.File]::WriteAllText((Join-Path $outputCode "Types.lean"), $types, $utf8)
 [IO.File]::WriteAllText((Join-Path $outputCode "Funs.lean"), $funs, $utf8)
+[IO.File]::WriteAllText((Join-Path $outputCode "RawFuns.lean"), $rawModelFuns, $utf8)
 [IO.File]::WriteAllBytes(
     (Join-Path $outputRoot "translation.json"),
     [IO.File]::ReadAllBytes($rawTranslation)

@@ -31,7 +31,7 @@ def alloc.string.String.Insts.CoreCmpPartialEqStr : core.cmp.PartialEq String
 }
 
 /-- Trait implementation: [maledictus::vc::{impl core::cmp::PartialEq<maledictus::vc::Term> for maledictus::vc::Term}]
-    Source: 'src/vc.rs', lines 487:27-487:36 -/
+    Source: 'src/vc.rs', lines 493:27-493:36 -/
 @[reducible]
 impl_def vc.Term.Insts.CoreCmpPartialEqTerm : core.cmp.PartialEq vc.Term
   vc.Term := {
@@ -40,7 +40,7 @@ impl_def vc.Term.Insts.CoreCmpPartialEqTerm : core.cmp.PartialEq vc.Term
 }
 
 /-- [maledictus::solver::is_integer_literal]:
-    Source: 'src/solver.rs', lines 257:0-262:1 -/
+    Source: 'src/solver.rs', lines 276:0-281:1 -/
 def solver.is_integer_literal
   (term : vc.Term) (expected : Std.I64) : Result Bool := do
   match term with
@@ -84,6 +84,7 @@ def solver.is_integer_literal
   | vc.Term.Negate _ => ok false
   | vc.Term.StringConcat _ => ok false
   | vc.Term.StringLength _ => ok false
+  | vc.Term.StringSlice _ _ _ => ok false
   | vc.Term.BytesConcat _ => ok false
   | vc.Term.BytesLength _ => ok false
   | vc.Term.BytesGet _ _ => ok false
@@ -114,7 +115,7 @@ def solver.is_integer_literal
   | vc.Term.DictKeys _ _ => ok false
 
 /-- [maledictus::solver::is_bound_variable]:
-    Source: 'src/solver.rs', lines 247:0-255:1 -/
+    Source: 'src/solver.rs', lines 266:0-274:1 -/
 def solver.is_bound_variable
   (term : vc.Term) (binder : Str) : Result Bool := do
   match term with
@@ -176,6 +177,7 @@ def solver.is_bound_variable
   | vc.Term.Negate _ => ok false
   | vc.Term.StringConcat _ => ok false
   | vc.Term.StringLength _ => ok false
+  | vc.Term.StringSlice _ _ _ => ok false
   | vc.Term.BytesConcat _ => ok false
   | vc.Term.BytesLength _ => ok false
   | vc.Term.BytesGet _ _ => ok false
@@ -206,7 +208,7 @@ def solver.is_bound_variable
   | vc.Term.DictKeys _ _ => ok false
 
 /-- [maledictus::solver::is_bound_successor]:
-    Source: 'src/solver.rs', lines 264:0-272:1 -/
+    Source: 'src/solver.rs', lines 283:0-291:1 -/
 def solver.is_bound_successor
   (term : vc.Term) (binder : Str) : Result Bool := do
   match term with
@@ -258,6 +260,7 @@ def solver.is_bound_successor
   | vc.Term.Negate _ => ok false
   | vc.Term.StringConcat _ => ok false
   | vc.Term.StringLength _ => ok false
+  | vc.Term.StringSlice _ _ _ => ok false
   | vc.Term.BytesConcat _ => ok false
   | vc.Term.BytesLength _ => ok false
   | vc.Term.BytesGet _ _ => ok false
@@ -288,7 +291,7 @@ def solver.is_bound_successor
   | vc.Term.DictKeys _ _ => ok false
 
 /-- [maledictus::solver::is_adjacent_upper_bound]:
-    Source: 'src/solver.rs', lines 344:0-359:1 -/
+    Source: 'src/solver.rs', lines 363:0-378:1 -/
 def solver.is_adjacent_upper_bound
   (term : vc.Term) (binder : Str) (sorted : vc.Term)
   (remaining : Slice vc.Term) :
@@ -372,6 +375,7 @@ def solver.is_adjacent_upper_bound
         | vc.Term.Negate _ => ok false
         | vc.Term.StringConcat _ => ok false
         | vc.Term.StringLength _ => ok false
+        | vc.Term.StringSlice _ _ _ => ok false
         | vc.Term.BytesConcat _ => ok false
         | vc.Term.BytesLength _ => ok false
         | vc.Term.BytesGet _ _ => ok false
@@ -413,6 +417,7 @@ def solver.is_adjacent_upper_bound
     | vc.Term.Negate _ => ok false
     | vc.Term.StringConcat _ => ok false
     | vc.Term.StringLength _ => ok false
+    | vc.Term.StringSlice _ _ _ => ok false
     | vc.Term.BytesConcat _ => ok false
     | vc.Term.BytesLength _ => ok false
     | vc.Term.BytesGet _ _ => ok false
@@ -453,7 +458,7 @@ def solver.is_adjacent_upper_bound
 partial_fixpoint
 
 /-- [maledictus::solver::is_nonnegative_bound]:
-    Source: 'src/solver.rs', lines 325:0-342:1 -/
+    Source: 'src/solver.rs', lines 344:0-361:1 -/
 def solver.is_nonnegative_bound
   (term : vc.Term) (binder : Str) (remaining : Slice vc.Term) :
   Result Bool
@@ -510,6 +515,7 @@ def solver.is_nonnegative_bound
     | vc.Term.Negate _ => ok false
     | vc.Term.StringConcat _ => ok false
     | vc.Term.StringLength _ => ok false
+    | vc.Term.StringSlice _ _ _ => ok false
     | vc.Term.BytesConcat _ => ok false
     | vc.Term.BytesLength _ => ok false
     | vc.Term.BytesGet _ _ => ok false
@@ -550,7 +556,7 @@ def solver.is_nonnegative_bound
 partial_fixpoint
 
 /-- [maledictus::solver::unwrap_singleton_and]: loop body 0:
-    Source: 'src/solver.rs', lines 238:4-243:5 -/
+    Source: 'src/solver.rs', lines 257:4-262:5 -/
 @[rust_loop_body]
 def solver.unwrap_singleton_and_loop.body
   (term : vc.Term) : Result (ControlFlow vc.Term vc.Term) := do
@@ -603,6 +609,7 @@ def solver.unwrap_singleton_and_loop.body
   | vc.Term.Negate _ => ok (done term)
   | vc.Term.StringConcat _ => ok (done term)
   | vc.Term.StringLength _ => ok (done term)
+  | vc.Term.StringSlice _ _ _ => ok (done term)
   | vc.Term.BytesConcat _ => ok (done term)
   | vc.Term.BytesLength _ => ok (done term)
   | vc.Term.BytesGet _ _ => ok (done term)
@@ -633,7 +640,7 @@ def solver.unwrap_singleton_and_loop.body
   | vc.Term.DictKeys _ _ => ok (done term)
 
 /-- [maledictus::solver::unwrap_singleton_and]: loop 0:
-    Source: 'src/solver.rs', lines 238:4-243:5 -/
+    Source: 'src/solver.rs', lines 257:4-262:5 -/
 @[rust_loop]
 def solver.unwrap_singleton_and_loop (term : vc.Term) : Result vc.Term := do
   runLoopFuel (sizeOf term + 1)
@@ -641,13 +648,13 @@ def solver.unwrap_singleton_and_loop (term : vc.Term) : Result vc.Term := do
     term
 
 /-- [maledictus::solver::unwrap_singleton_and]:
-    Source: 'src/solver.rs', lines 237:0-245:1 -/
+    Source: 'src/solver.rs', lines 256:0-264:1 -/
 @[reducible]
 def solver.unwrap_singleton_and (term : vc.Term) : Result vc.Term := do
   solver.unwrap_singleton_and_loop term
 
 /-- [maledictus::solver::is_python_index_of]:
-    Source: 'src/solver.rs', lines 274:0-323:1 -/
+    Source: 'src/solver.rs', lines 293:0-342:1 -/
 def solver.is_python_index_of
   (term : vc.Term) (binder : Str) (sorted : vc.Term) (successor : Bool) :
   Result Bool
@@ -812,6 +819,7 @@ def solver.is_python_index_of
                   | vc.Term.Negate _ => ok false
                   | vc.Term.StringConcat _ => ok false
                   | vc.Term.StringLength _ => ok false
+                  | vc.Term.StringSlice _ _ _ => ok false
                   | vc.Term.BytesConcat _ => ok false
                   | vc.Term.BytesLength _ => ok false
                   | vc.Term.BytesGet _ _ => ok false
@@ -853,6 +861,7 @@ def solver.is_python_index_of
                 | vc.Term.Negate _ => ok false
                 | vc.Term.StringConcat _ => ok false
                 | vc.Term.StringLength _ => ok false
+                | vc.Term.StringSlice _ _ _ => ok false
                 | vc.Term.BytesConcat _ => ok false
                 | vc.Term.BytesLength _ => ok false
                 | vc.Term.BytesGet _ _ => ok false
@@ -964,6 +973,7 @@ def solver.is_python_index_of
                   | vc.Term.Negate _ => ok false
                   | vc.Term.StringConcat _ => ok false
                   | vc.Term.StringLength _ => ok false
+                  | vc.Term.StringSlice _ _ _ => ok false
                   | vc.Term.BytesConcat _ => ok false
                   | vc.Term.BytesLength _ => ok false
                   | vc.Term.BytesGet _ _ => ok false
@@ -1005,6 +1015,7 @@ def solver.is_python_index_of
                 | vc.Term.Negate _ => ok false
                 | vc.Term.StringConcat _ => ok false
                 | vc.Term.StringLength _ => ok false
+                | vc.Term.StringSlice _ _ _ => ok false
                 | vc.Term.BytesConcat _ => ok false
                 | vc.Term.BytesLength _ => ok false
                 | vc.Term.BytesGet _ _ => ok false
@@ -1046,6 +1057,7 @@ def solver.is_python_index_of
       | vc.Term.Negate _ => ok false
       | vc.Term.StringConcat _ => ok false
       | vc.Term.StringLength _ => ok false
+      | vc.Term.StringSlice _ _ _ => ok false
       | vc.Term.BytesConcat _ => ok false
       | vc.Term.BytesLength _ => ok false
       | vc.Term.BytesGet _ _ => ok false
@@ -1086,6 +1098,7 @@ def solver.is_python_index_of
     | vc.Term.Negate _ => ok false
     | vc.Term.StringConcat _ => ok false
     | vc.Term.StringLength _ => ok false
+    | vc.Term.StringSlice _ _ _ => ok false
     | vc.Term.BytesConcat _ => ok false
     | vc.Term.BytesLength _ => ok false
     | vc.Term.BytesGet _ _ => ok false
@@ -1116,7 +1129,7 @@ def solver.is_python_index_of
     | vc.Term.DictKeys _ _ => ok false
 
 /-- [maledictus::solver::is_exact_sorted_adjacent_order_theorem]:
-    Source: 'src/solver.rs', lines 144:0-235:1 -/
+    Source: 'src/solver.rs', lines 163:0-254:1 -/
 def solver.is_exact_sorted_adjacent_order_theorem
   (term : vc.Term) : Result Bool := do
   match term with
@@ -1160,6 +1173,7 @@ def solver.is_exact_sorted_adjacent_order_theorem
   | vc.Term.Negate _ => ok false
   | vc.Term.StringConcat _ => ok false
   | vc.Term.StringLength _ => ok false
+  | vc.Term.StringSlice _ _ _ => ok false
   | vc.Term.BytesConcat _ => ok false
   | vc.Term.BytesLength _ => ok false
   | vc.Term.BytesGet _ _ => ok false
@@ -1294,6 +1308,7 @@ def solver.is_exact_sorted_adjacent_order_theorem
           | vc.Term.Negate _ => ok false
           | vc.Term.StringConcat _ => ok false
           | vc.Term.StringLength _ => ok false
+          | vc.Term.StringSlice _ _ _ => ok false
           | vc.Term.BytesConcat _ => ok false
           | vc.Term.BytesLength _ => ok false
           | vc.Term.BytesGet _ _ => ok false
@@ -1347,6 +1362,7 @@ def solver.is_exact_sorted_adjacent_order_theorem
             | vc.Term.Negate _ => ok false
             | vc.Term.StringConcat _ => ok false
             | vc.Term.StringLength _ => ok false
+            | vc.Term.StringSlice _ _ _ => ok false
             | vc.Term.BytesConcat _ => ok false
             | vc.Term.BytesLength _ => ok false
             | vc.Term.BytesGet _ _ => ok false
@@ -1408,6 +1424,7 @@ def solver.is_exact_sorted_adjacent_order_theorem
                 | vc.Term.Negate _ => ok false
                 | vc.Term.StringConcat _ => ok false
                 | vc.Term.StringLength _ => ok false
+                | vc.Term.StringSlice _ _ _ => ok false
                 | vc.Term.BytesConcat _ => ok false
                 | vc.Term.BytesLength _ => ok false
                 | vc.Term.BytesGet _ _ => ok false
@@ -1861,6 +1878,16 @@ def solver.is_exact_sorted_adjacent_order_theorem
                             lift (Array.to_slice (Std.Array.empty vc.Term))
                           solver.is_adjacent_upper_bound t5 s1 current_list s3
                         else ok false
+                      | vc.Term.StringSlice _ _ _ =>
+                        let s2 ←
+                          lift (Array.to_slice (Std.Array.empty vc.Term))
+                        let b3 ← solver.is_nonnegative_bound t5 s1 s2
+                        if b3
+                        then
+                          let s3 ←
+                            lift (Array.to_slice (Std.Array.empty vc.Term))
+                          solver.is_adjacent_upper_bound t5 s1 current_list s3
+                        else ok false
                       | vc.Term.BytesConcat _ =>
                         let s2 ←
                           lift (Array.to_slice (Std.Array.empty vc.Term))
@@ -2195,6 +2222,7 @@ def solver.is_exact_sorted_adjacent_order_theorem
         | vc.Term.Negate _ => ok false
         | vc.Term.StringConcat _ => ok false
         | vc.Term.StringLength _ => ok false
+        | vc.Term.StringSlice _ _ _ => ok false
         | vc.Term.BytesConcat _ => ok false
         | vc.Term.BytesLength _ => ok false
         | vc.Term.BytesGet _ _ => ok false
@@ -2236,6 +2264,7 @@ def solver.is_exact_sorted_adjacent_order_theorem
       | vc.Term.Negate _ => ok false
       | vc.Term.StringConcat _ => ok false
       | vc.Term.StringLength _ => ok false
+      | vc.Term.StringSlice _ _ _ => ok false
       | vc.Term.BytesConcat _ => ok false
       | vc.Term.BytesLength _ => ok false
       | vc.Term.BytesGet _ _ => ok false

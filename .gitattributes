@@ -1,3 +1,11 @@
 # These proof-provenance artifacts use exact byte hashes on every platform.
+src/vc.rs text eol=lf
+src/solver.rs text eol=lf
+formal/coverage-tool/src/main.rs text eol=lf
+formal/extraction/test-axiom-audits.ps1 text eol=lf
+formal/extraction/**/extraction.json text eol=lf
+formal/extraction/vc-term-sort/** text eol=lf
+formal/extraction/solver-sort-predicates/** text eol=lf
+formal/extraction/solver-adjacent-order/** text eol=lf
 formal/extraction/vc-term-sort/setup-extraction-workspace.ps1 text eol=lf
 formal/extraction/vc-term-sort/tests/setup-extraction-workspace.Tests.ps1 text eol=lf

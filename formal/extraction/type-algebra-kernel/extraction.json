@@ -5,6 +5,7 @@
   "counts_as_implementation_refinement": true,
   "source": {
     "path": "src/python_type_algebra_kernel.rs",
+    "extracted_paths": ["../../../src/python_type_algebra_kernel.rs"],
     "sha256": "c3f8999f5396f5f352ddb32993820f1354f2ab2fd3da92b7cb565b63e072fc4e",
     "extracted_functions": [
       { "name": "normalize_union", "universally_proved": true },

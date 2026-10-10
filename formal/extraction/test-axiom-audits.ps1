@@ -78,11 +78,25 @@ foreach ($project in $projects) {
         }
     )
     foreach ($negativeCase in $negativeCases) {
-        $negativeOutput = & $runner `
-            -Project $project.Project `
-            -LakePath $LakePath `
-            env lean $negativeCase.Path 2>&1 | Out-String
-        if ($LASTEXITCODE -eq 0) {
+        $priorNativeExit = Get-Variable LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
+        $hadNativeExit = $null -ne $priorNativeExit
+        $priorNativeExitCode = if ($hadNativeExit) { $priorNativeExit.Value } else { $null }
+        try {
+            $negativeOutput = & $runner `
+                -Project $project.Project `
+                -LakePath $LakePath `
+                env lean $negativeCase.Path 2>&1 | Out-String
+            $negativeExitCode = $LASTEXITCODE
+        } finally {
+            # Expected proof rejection is test data, not the enclosing CI status.
+            # Assertions below still fail on accepted or incorrectly rejected fixtures.
+            if ($hadNativeExit) {
+                $global:LASTEXITCODE = $priorNativeExitCode
+            } else {
+                Remove-Variable LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
+            }
+        }
+        if ($negativeExitCode -eq 0) {
             throw "negative axiom-audit fixture $($negativeCase.Path) unexpectedly passed for $($project.Target)"
         }
         if (!$negativeOutput.Contains($negativeCase.Expected)) {

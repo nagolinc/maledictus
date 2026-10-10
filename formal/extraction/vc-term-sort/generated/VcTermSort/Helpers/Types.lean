@@ -15,7 +15,7 @@ set_option maxRecDepth 2048
 namespace VcTermSort
 
 /-- [maledictus_vc_term_sort_extraction::ObligationExpectation]
-    Source: 'src/lib.rs', lines 1864:0-1867:1
+    Source: 'src/lib.rs', lines 1904:0-1907:1
     Visibility: public -/
 @[discriminant isize]
 inductive ObligationExpectation where
@@ -23,7 +23,7 @@ inductive ObligationExpectation where
 | Refute : ObligationExpectation
 
 /-- [maledictus_vc_term_sort_extraction::ObligationStatus]
-    Source: 'src/lib.rs', lines 1871:0-1875:1
+    Source: 'src/lib.rs', lines 1911:0-1915:1
     Visibility: public -/
 @[discriminant isize]
 inductive ObligationStatus where
@@ -32,7 +32,7 @@ inductive ObligationStatus where
 | Unknown : ObligationStatus
 
 /-- [maledictus_vc_term_sort_extraction::ObligationResult]
-    Source: 'src/lib.rs', lines 1878:0-1887:1
+    Source: 'src/lib.rs', lines 1918:0-1927:1
     Visibility: public -/
 structure ObligationResult where
   id : String

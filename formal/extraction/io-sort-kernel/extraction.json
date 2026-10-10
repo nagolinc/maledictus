@@ -161,7 +161,7 @@
     },
     {
       "path": "formal/extraction/test-axiom-audits.ps1",
-      "sha256": "9a69fd859dd6285f85a549eb5d8aa84b8aa7605978061ce46f13812d049aebba"
+      "sha256": "cd0530d92ccc9f7c035e0b15acad44ee16a1e056ff4a75d88835ad9e72751156"
     },
     {
       "path": "formal/test-lake-cache-hygiene.ps1",

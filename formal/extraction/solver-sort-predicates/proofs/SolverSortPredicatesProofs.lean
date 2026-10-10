@@ -1,2 +1,3 @@
 import SolverSortPredicatesProofs.Refinement
+import SolverSortPredicatesProofs.RawCorrespondence
 import SolverSortPredicatesProofs.AxiomAudit

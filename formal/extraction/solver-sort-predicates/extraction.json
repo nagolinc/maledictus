@@ -5,24 +5,24 @@
   "counts_as_implementation_refinement": true,
   "source": {
     "path": "src/solver.rs",
-    "sha256": "98c8d342ae6b3ed9e88a4b37f07940624602e97874c4913a00faf41bd124000e",
+    "sha256": "c5c2283923921fde7e919997a62c378a55fbbfdf697590d304c07e2500752b96",
     "extracted_functions": [
       {
         "name": "is_z3_collection_key_sort",
-        "line_start": 3174,
-        "line_end": 3189,
+        "line_start": 3215,
+        "line_end": 3230,
         "universally_proved": true
       },
       {
         "name": "is_z3_collection_value_sort",
-        "line_start": 3191,
-        "line_end": 3210,
+        "line_start": 3232,
+        "line_end": 3251,
         "universally_proved": true
       },
       {
         "name": "is_z3_nested_equality_sort",
-        "line_start": 3212,
-        "line_end": 3227,
+        "line_start": 3253,
+        "line_end": 3268,
         "universally_proved": true
       }
     ]
@@ -34,7 +34,13 @@
     "charon_commit": "4ad295c1bf982b5533ce7d85f4ddc889ff3127f8",
     "rust_toolchain": "nightly-2026-08-18",
     "rustc_version": "1.100.0-nightly (8fa1c96cf 2026-08-17)",
-    "lean_toolchain": "v4.31.0"
+    "lean_toolchain": "v4.31.0",
+    "aeneas_binary_sha256": "194d9ade88f9b49ace754f1aa7375f8e7c39ba66a488d1cd661dfc45dc9e629e",
+    "charon_binary_sha256": "0b292929bcbae54820fbffad8464a18ed704dec3556a807af928ab4e0572c076",
+    "container_image": "registry.gitlab.com/mopsa/mopsa-analyzer@sha256:64290feb025b34907c03898d2ee87ed08ea83ea35283bb69f441842eb00ea085",
+    "cargo_lock_sha256": "3e25c432fd8fd7f157caae1df9f26108ec92b2b7f98ba532d4fd82cef57cdf88",
+    "sysroot_mode": "default-rustc-sysroot-fallback",
+    "sysroot_diagnostic": "cargo-miri was unavailable; Charon selected the default rustc sysroot."
   },
   "extraction": {
     "roots": [
@@ -48,8 +54,8 @@
   },
   "llbc": {
     "checked_in": false,
-    "sha256": "25240a7db0dc6dcc023007de0b122d33249f311ef4bbc36e61310de311e4ac2a",
-    "size_bytes": 778711,
+    "sha256": "11bb500c6a886da8b7bf1c1b535fd22d6228800204b37f4a6cf9710ab355516d",
+    "size_bytes": 836296,
     "warnings": 0
   },
   "generated": [
@@ -63,11 +69,23 @@
     },
     {
       "path": "formal/extraction/solver-sort-predicates/generated/SolverSortPredicates/Code/Funs.lean",
-      "sha256": "e48f4cdf39b1fd12663b6873b3b103e0d4175fa57fc7d0dfc538aac350cc9245"
+      "sha256": "0920b8be9c92cb08675bfd33f386cc672cedcdfad4fe6ef530e42bc93a8f2772"
     },
     {
       "path": "formal/extraction/solver-sort-predicates/generated/translation.json",
-      "sha256": "231b653bd1a4872c35d3df4b0f015192cc47e310a61432dbc66449287c27bbf1"
+      "sha256": "2f971f8e8411d9e16fce8b482e26d177765179c27ca7be88772f5acc096816e9"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/generated/raw/Types.lean",
+      "sha256": "51d61921e29ec458e516a4d094f58c9d6414d6b6019b913253f0d615eba7c916"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/generated/raw/Funs.lean",
+      "sha256": "8747f63592cbab726b6eda3b50dd46605fcd0d083436656837e9a21f358dc2f7"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/generated/SolverSortPredicates/Code/RawFuns.lean",
+      "sha256": "30a316f652605672d84798ba26992e970b6631e72d2215de05696d92199332ae"
     }
   ],
   "external_models": [
@@ -78,7 +96,16 @@
       "trusted": false,
       "replaces": [
         "shared Vec::into_iter",
-        "Aeneas partial loop combinator"
+        "finite loop runner linked to the actual partial loop by RawCorrespondence"
+      ]
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/generated/SolverSortPredicates/Code/LoopMonotonicity.lean",
+      "sha256": "24f15d99a11c4bd753e57b939770a27cbc4af1f52cbbc85807c7697272bef906",
+      "constructive": true,
+      "trusted": false,
+      "replaces": [
+        "higher-order partial-loop monotonicity registration"
       ]
     }
   ],
@@ -91,8 +118,16 @@
   },
   "lean_build": {
     "result": "passed",
-    "jobs": 1704,
-    "library": "SolverSortPredicatesProofs.AxiomAudit"
+    "library": "SolverSortPredicatesProofs.AxiomAudit",
+    "validation_command": "formal/extraction/solver-sort-predicates/test-axiom-audits.ps1",
+    "negative_sorry_control": "rejected",
+    "negative_project_axiom_control": "rejected",
+    "ci_native_exit_regression": {
+      "powershell_versions": ["5.1", "7.6.6"],
+      "real_audit_exit": 0,
+      "unexpected_success_exit": 1,
+      "unexpected_diagnostic_exit": 1
+    }
   },
   "proof_progress": {
     "all_input_exact_results_proved": true,
@@ -102,24 +137,143 @@
     "checked_theorems": [
       "SolverSortPredicates.Proofs.collection_key_sort_all_inputs_exact",
       "SolverSortPredicates.Proofs.collection_value_sort_all_inputs_exact",
-      "SolverSortPredicates.Proofs.nested_equality_sort_all_inputs_exact"
+      "SolverSortPredicates.Proofs.nested_equality_sort_all_inputs_exact",
+      "SolverSortPredicates.Proofs.float_collection_value_is_admitted",
+      "SolverSortPredicates.Proofs.nested_float_collection_value_is_admitted",
+      "SolverSortPredicates.Proofs.float_collection_key_is_rejected",
+      "SolverSortPredicates.Proofs.float_nested_equality_is_still_rejected",
+      "SolverSortPredicates.RawProofs.collection_key_sort_all_inputs_exact",
+      "SolverSortPredicates.RawProofs.collection_value_sort_all_inputs_exact",
+      "SolverSortPredicates.RawProofs.nested_equality_sort_all_inputs_exact",
+      "SolverSortPredicates.RawProofs.collection_key_raw_eq_normalized",
+      "SolverSortPredicates.RawProofs.collection_value_raw_eq_normalized",
+      "SolverSortPredicates.RawProofs.nested_equality_raw_eq_normalized"
     ],
-    "open_obligations": 0
+    "open_obligations": 0,
+    "raw_loop_correspondence_proved": true,
+    "raw_aeneas_definitions_retained": true,
+    "source_to_specification_theorems": [
+      "SolverSortPredicates.RawProofs.collection_key_sort_all_inputs_exact",
+      "SolverSortPredicates.RawProofs.collection_value_sort_all_inputs_exact",
+      "SolverSortPredicates.RawProofs.nested_equality_sort_all_inputs_exact"
+    ]
   },
   "axiom_audits": [
     {
       "theorem": "SolverSortPredicates.Proofs.collection_key_sort_all_inputs_exact",
-      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     },
     {
       "theorem": "SolverSortPredicates.Proofs.collection_value_sort_all_inputs_exact",
-      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     },
     {
       "theorem": "SolverSortPredicates.Proofs.nested_equality_sort_all_inputs_exact",
-      "axioms": ["propext", "Classical.choice", "Quot.sound"],
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.Proofs.float_collection_value_is_admitted",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.Proofs.nested_float_collection_value_is_admitted",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.Proofs.float_collection_key_is_rejected",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.Proofs.float_nested_equality_is_still_rejected",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.RawProofs.collection_key_sort_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.RawProofs.collection_value_sort_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.RawProofs.nested_equality_sort_all_inputs_exact",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.RawProofs.collection_key_raw_eq_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.RawProofs.collection_value_raw_eq_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "SolverSortPredicates.RawProofs.nested_equality_raw_eq_normalized",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
       "contains_sorry_ax": false
     }
   ],
@@ -130,7 +284,7 @@
     },
     {
       "path": "formal/extraction/solver-sort-predicates/normalize-generated.ps1",
-      "sha256": "d89167038a409a0a013cd716f2265f86e48988a18eb0ba97d9b982a4cd16f8e7"
+      "sha256": "4cbbfd985453607f4bf57c2590274ab2c1d610d91d6813c50da4e2157271cb75"
     },
     {
       "path": "formal/extraction/solver-sort-predicates/lakefile.toml",
@@ -146,15 +300,15 @@
     },
     {
       "path": "formal/extraction/solver-sort-predicates/proofs/SolverSortPredicatesProofs.lean",
-      "sha256": "3311bf1de1513dd6cf18c979d64d50efa74c5d8c8fe17932868ae03eec707404"
+      "sha256": "9ea8245cee019a3e8386f7089c1f9242020a13f8f4727e7163b0769fe1af6c0b"
     },
     {
       "path": "formal/extraction/solver-sort-predicates/proofs/SolverSortPredicatesProofs/Refinement.lean",
-      "sha256": "c46d800799a3ce26a668b1c1d440511a26c8d1a7574b09476a34dea32e7514fc"
+      "sha256": "d7ddbee9a37a4ee09725f9c3212fb1e02931000ec554119bdedf158fb9b3fd0c"
     },
     {
       "path": "formal/extraction/solver-sort-predicates/proofs/SolverSortPredicatesProofs/AxiomAudit.lean",
-      "sha256": "a1b06e87e13e6994f0e664987945ac8dac83e99e5f6fce61ee0da25fe7a2f5cf"
+      "sha256": "d90ff6143fccb74ac57583c0f01c177d10ceb097d90e4d9312ae93f602d06a32"
     },
     {
       "path": "formal/extraction/solver-sort-predicates/tests/AxiomAuditRejectsSorry.lean",
@@ -166,16 +320,31 @@
     },
     {
       "path": "formal/extraction/solver-sort-predicates/test-axiom-audits.ps1",
-      "sha256": "0d1d3d33c87af0d8fcfc78e8d0273a0138bfcca2b2a5c9e766b3e74bdcbcdc38"
+      "sha256": "5246e088ecba89f83947ce15265c09d860da21715e6cddeef32e4fa7e7fdca52"
     },
     {
       "path": "formal/extraction/test-axiom-audits.ps1",
-      "sha256": "9a69fd859dd6285f85a549eb5d8aa84b8aa7605978061ce46f13812d049aebba"
+      "sha256": "cd0530d92ccc9f7c035e0b15acad44ee16a1e056ff4a75d88835ad9e72751156"
     },
     {
       "path": "formal/lake-projects.json",
       "sha256": "cc536fc6959683430fa5ec60f03a07856ba41709950dbcf205a1b1bc0f1e9f52"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/proofs/SolverSortPredicatesProofs/LoopNormalization.lean",
+      "sha256": "3ad8795be8f993f404c1665403f3fb53d3c419ccd1553276c82659fc3fdd4362"
+    },
+    {
+      "path": "formal/extraction/solver-sort-predicates/proofs/SolverSortPredicatesProofs/RawCorrespondence.lean",
+      "sha256": "e3b52fcac0ef56031f5148a9928ed327e5add5fddc1748b49bbf282aa3cad8b9"
     }
   ],
-  "open_obligations": []
+  "open_obligations": [],
+  "source_dependencies": [
+    {
+      "path": "src/vc.rs",
+      "sha256": "cc2f807e7dc0d81b4e86c1f3f33c52d15ba607ca31d289e5dfc94e91a115c70c",
+      "role": "extracted-type-definitions"
+    }
+  ]
 }

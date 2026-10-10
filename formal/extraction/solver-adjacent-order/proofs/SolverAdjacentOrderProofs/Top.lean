@@ -215,4 +215,10 @@ theorem is_exact_sorted_adjacent_order_theorem_all_inputs_exact (term : vc.Term)
                               try simp
 end
 
+theorem string_slice_is_not_adjacent_order (source start length : vc.Term) :
+    solver.is_exact_sorted_adjacent_order_theorem (.StringSlice source start length) =
+      .ok false := by
+  rw [is_exact_sorted_adjacent_order_theorem_all_inputs_exact]
+  rfl
+
 end SolverAdjacentOrder.Proofs

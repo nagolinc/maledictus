@@ -44,7 +44,7 @@ end
 mutual
 
 def collectionValueSpec : vc.Sort -> Bool
-  | .Bool | .Int | .String | .Reference | .Bytes => true
+  | .Bool | .Int | .Float | .String | .Reference | .Bytes => true
   | .Tuple elements => collectionValueListSpec (elements.take Usize.max)
   | .VariadicTuple element | .List element => collectionValueSpec element
   | .Set element => collectionKeySpec element
@@ -364,5 +364,25 @@ decreasing_by
   all_goals exact sizeOf_mem_take_lt member
 
 end
+
+theorem float_collection_value_is_admitted :
+    solver.is_z3_collection_value_sort .Float = .ok true := by
+  rw [collection_value_sort_all_inputs_exact]
+  simp [collectionValueSpec]
+
+theorem nested_float_collection_value_is_admitted :
+    solver.is_z3_collection_value_sort (.List (.VariadicTuple .Float)) = .ok true := by
+  rw [collection_value_sort_all_inputs_exact]
+  simp [collectionValueSpec]
+
+theorem float_collection_key_is_rejected :
+    solver.is_z3_collection_key_sort .Float = .ok false := by
+  rw [collection_key_sort_all_inputs_exact]
+  simp [collectionKeySpec]
+
+theorem float_nested_equality_is_still_rejected :
+    solver.is_z3_nested_equality_sort (.VariadicTuple .Float) = .ok false := by
+  rw [nested_equality_sort_all_inputs_exact]
+  simp [nestedEqualitySpec]
 
 end SolverSortPredicates.Proofs

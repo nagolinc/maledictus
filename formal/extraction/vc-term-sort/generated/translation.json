@@ -123,7 +123,7 @@
       "reducible": false
     },
     {
-      "def_id": 209,
+      "def_id": 210,
       "lean_name": "alloc.string.String.Insts.CoreCmpPartialEqString.eq",
       "lean_file": "VcTermSort/Code/FunsExternal_Template.lean",
       "rust_name": "alloc::string::{impl core::cmp::PartialEq<alloc::string::String> for alloc::string::String}::eq",
@@ -140,7 +140,7 @@
       "reducible": false
     },
     {
-      "def_id": 227,
+      "def_id": 228,
       "lean_name": "alloc.string.String.Insts.CoreCmpPartialOrdString.partial_cmp",
       "lean_file": "VcTermSort/Code/FunsExternal_Template.lean",
       "rust_name": "alloc::string::{impl core::cmp::PartialOrd<alloc::string::String> for alloc::string::String}::partial_cmp",
@@ -268,6 +268,19 @@
       "reducible": false
     },
     {
+      "def_id": 208,
+      "lean_name": "Term.Insts.CoreCloneClone.clone",
+      "lean_file": "VcTermSort/Code/FunsExternal_Template.lean",
+      "rust_name": "maledictus_vc_term_sort_extraction::{impl core::clone::Clone for maledictus_vc_term_sort_extraction::Term}::clone",
+      "is_local": true,
+      "source": { "file": "src/lib.rs", "begin_line": 493, "end_line": 493 },
+      "is_opaque": true,
+      "can_fail": true,
+      "can_diverge": false,
+      "is_rec": false,
+      "reducible": false
+    },
+    {
       "def_id": 2,
       "lean_name": "VcTermSort.is_finite_dict_key_sort",
       "lean_file": "VcTermSort/Code/Funs.lean",
@@ -275,8 +288,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1797,
-        "end_line": 1801
+        "begin_line": 1837,
+        "end_line": 1841
       },
       "is_opaque": false,
       "can_fail": true,
@@ -292,8 +305,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1805,
-        "end_line": 1809
+        "begin_line": 1845,
+        "end_line": 1849
       },
       "is_opaque": false,
       "can_fail": true,
@@ -311,8 +324,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1805,
-        "end_line": 1809
+        "begin_line": 1845,
+        "end_line": 1849
       },
       "is_opaque": false,
       "can_fail": true,
@@ -330,8 +343,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1803,
-        "end_line": 1811
+        "begin_line": 1843,
+        "end_line": 1851
       },
       "is_opaque": false,
       "can_fail": true,
@@ -347,8 +360,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1813,
-        "end_line": 1825
+        "begin_line": 1853,
+        "end_line": 1865
       },
       "is_opaque": false,
       "can_fail": true,
@@ -364,8 +377,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1829,
-        "end_line": 1833
+        "begin_line": 1869,
+        "end_line": 1873
       },
       "is_opaque": false,
       "can_fail": true,
@@ -383,8 +396,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1829,
-        "end_line": 1833
+        "begin_line": 1869,
+        "end_line": 1873
       },
       "is_opaque": false,
       "can_fail": true,
@@ -402,8 +415,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1827,
-        "end_line": 1835
+        "begin_line": 1867,
+        "end_line": 1875
       },
       "is_opaque": false,
       "can_fail": true,
@@ -419,8 +432,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1571,
-        "end_line": 1795
+        "begin_line": 1598,
+        "end_line": 1835
       },
       "is_opaque": false,
       "can_fail": true,
@@ -436,8 +449,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1576,
-        "end_line": 1578
+        "begin_line": 1603,
+        "end_line": 1605
       },
       "is_opaque": false,
       "can_fail": true,
@@ -453,8 +466,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1579,
-        "end_line": 1587
+        "begin_line": 1606,
+        "end_line": 1614
       },
       "is_opaque": false,
       "can_fail": true,
@@ -470,8 +483,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1590,
-        "end_line": 1594
+        "begin_line": 1617,
+        "end_line": 1621
       },
       "is_opaque": false,
       "can_fail": true,
@@ -489,8 +502,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1590,
-        "end_line": 1594
+        "begin_line": 1617,
+        "end_line": 1621
       },
       "is_opaque": false,
       "can_fail": true,
@@ -508,8 +521,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1588,
-        "end_line": 1596
+        "begin_line": 1615,
+        "end_line": 1623
       },
       "is_opaque": false,
       "can_fail": true,
@@ -525,8 +538,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1603,
-        "end_line": 1607
+        "begin_line": 1630,
+        "end_line": 1634
       },
       "is_opaque": false,
       "can_fail": true,
@@ -544,8 +557,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1603,
-        "end_line": 1607
+        "begin_line": 1630,
+        "end_line": 1634
       },
       "is_opaque": false,
       "can_fail": true,
@@ -563,8 +576,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1597,
-        "end_line": 1609
+        "begin_line": 1624,
+        "end_line": 1636
       },
       "is_opaque": false,
       "can_fail": true,
@@ -580,8 +593,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1616,
-        "end_line": 1620
+        "begin_line": 1643,
+        "end_line": 1647
       },
       "is_opaque": false,
       "can_fail": true,
@@ -599,8 +612,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1616,
-        "end_line": 1620
+        "begin_line": 1643,
+        "end_line": 1647
       },
       "is_opaque": false,
       "can_fail": true,
@@ -618,8 +631,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1610,
-        "end_line": 1622
+        "begin_line": 1637,
+        "end_line": 1649
       },
       "is_opaque": false,
       "can_fail": true,
@@ -635,8 +648,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1485,
-        "end_line": 1497
+        "begin_line": 1511,
+        "end_line": 1523
       },
       "is_opaque": false,
       "can_fail": true,
@@ -652,8 +665,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1501,
-        "end_line": 1505
+        "begin_line": 1527,
+        "end_line": 1531
       },
       "is_opaque": false,
       "can_fail": true,
@@ -671,8 +684,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1501,
-        "end_line": 1505
+        "begin_line": 1527,
+        "end_line": 1531
       },
       "is_opaque": false,
       "can_fail": true,
@@ -690,8 +703,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1499,
-        "end_line": 1507
+        "begin_line": 1525,
+        "end_line": 1533
       },
       "is_opaque": false,
       "can_fail": true,
@@ -707,8 +720,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1509,
-        "end_line": 1512
+        "begin_line": 1535,
+        "end_line": 1539
       },
       "is_opaque": false,
       "can_fail": true,
@@ -724,8 +737,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1477,
-        "end_line": 1481
+        "begin_line": 1503,
+        "end_line": 1507
       },
       "is_opaque": false,
       "can_fail": true,
@@ -743,8 +756,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1477,
-        "end_line": 1481
+        "begin_line": 1503,
+        "end_line": 1507
       },
       "is_opaque": false,
       "can_fail": true,
@@ -762,8 +775,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1475,
-        "end_line": 1483
+        "begin_line": 1501,
+        "end_line": 1509
       },
       "is_opaque": false,
       "can_fail": true,
@@ -779,8 +792,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1465,
-        "end_line": 1473
+        "begin_line": 1491,
+        "end_line": 1499
       },
       "is_opaque": false,
       "can_fail": true,
@@ -796,8 +809,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1447,
-        "end_line": 1451
+        "begin_line": 1473,
+        "end_line": 1477
       },
       "is_opaque": false,
       "can_fail": true,
@@ -815,8 +828,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1447,
-        "end_line": 1451
+        "begin_line": 1473,
+        "end_line": 1477
       },
       "is_opaque": false,
       "can_fail": true,
@@ -834,8 +847,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1445,
-        "end_line": 1453
+        "begin_line": 1471,
+        "end_line": 1479
       },
       "is_opaque": false,
       "can_fail": true,
@@ -851,8 +864,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1455,
-        "end_line": 1463
+        "begin_line": 1481,
+        "end_line": 1489
       },
       "is_opaque": false,
       "can_fail": true,
@@ -868,8 +881,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1433,
-        "end_line": 1437
+        "begin_line": 1459,
+        "end_line": 1463
       },
       "is_opaque": false,
       "can_fail": true,
@@ -887,8 +900,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1433,
-        "end_line": 1437
+        "begin_line": 1459,
+        "end_line": 1463
       },
       "is_opaque": false,
       "can_fail": true,
@@ -906,8 +919,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1426,
-        "end_line": 1443
+        "begin_line": 1452,
+        "end_line": 1469
       },
       "is_opaque": false,
       "can_fail": true,
@@ -921,7 +934,7 @@
       "lean_file": "VcTermSort/Code/Funs.lean",
       "rust_name": "maledictus_vc_term_sort_extraction::{maledictus_vc_term_sort_extraction::Term}::sort_typed",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 794, "end_line": 1322 },
+      "source": { "file": "src/lib.rs", "begin_line": 807, "end_line": 1348 },
       "is_opaque": false,
       "can_fail": true,
       "can_diverge": true,
@@ -936,8 +949,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1336,
-        "end_line": 1344
+        "begin_line": 1362,
+        "end_line": 1370
       },
       "is_opaque": false,
       "can_fail": true,
@@ -955,8 +968,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1336,
-        "end_line": 1344
+        "begin_line": 1362,
+        "end_line": 1370
       },
       "is_opaque": false,
       "can_fail": true,
@@ -974,8 +987,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1334,
-        "end_line": 1346
+        "begin_line": 1360,
+        "end_line": 1372
       },
       "is_opaque": false,
       "can_fail": true,
@@ -991,8 +1004,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1352,
-        "end_line": 1368
+        "begin_line": 1378,
+        "end_line": 1394
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1010,8 +1023,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1352,
-        "end_line": 1368
+        "begin_line": 1378,
+        "end_line": 1394
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1029,8 +1042,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1348,
-        "end_line": 1370
+        "begin_line": 1374,
+        "end_line": 1396
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1046,8 +1059,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1378,
-        "end_line": 1382
+        "begin_line": 1404,
+        "end_line": 1408
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1065,8 +1078,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1378,
-        "end_line": 1382
+        "begin_line": 1404,
+        "end_line": 1408
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1084,8 +1097,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1372,
-        "end_line": 1384
+        "begin_line": 1398,
+        "end_line": 1410
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1101,8 +1114,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1389,
-        "end_line": 1398
+        "begin_line": 1415,
+        "end_line": 1424
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1120,8 +1133,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1389,
-        "end_line": 1398
+        "begin_line": 1415,
+        "end_line": 1424
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1139,8 +1152,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1386,
-        "end_line": 1403
+        "begin_line": 1412,
+        "end_line": 1429
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1156,8 +1169,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1411,
-        "end_line": 1422
+        "begin_line": 1437,
+        "end_line": 1448
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1175,8 +1188,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1411,
-        "end_line": 1422
+        "begin_line": 1437,
+        "end_line": 1448
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1194,8 +1207,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1405,
-        "end_line": 1424
+        "begin_line": 1431,
+        "end_line": 1450
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1211,8 +1224,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1516,
-        "end_line": 1527
+        "begin_line": 1543,
+        "end_line": 1554
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1230,8 +1243,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1516,
-        "end_line": 1527
+        "begin_line": 1543,
+        "end_line": 1554
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1249,8 +1262,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1514,
-        "end_line": 1529
+        "begin_line": 1541,
+        "end_line": 1556
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1266,8 +1279,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1531,
-        "end_line": 1558
+        "begin_line": 1558,
+        "end_line": 1585
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1283,8 +1296,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1560,
-        "end_line": 1569
+        "begin_line": 1587,
+        "end_line": 1596
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1300,8 +1313,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1837,
-        "end_line": 1848
+        "begin_line": 1877,
+        "end_line": 1888
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1317,8 +1330,8 @@
       "is_local": true,
       "source": {
         "file": "src/lib.rs",
-        "begin_line": 1330,
-        "end_line": 1332
+        "begin_line": 1356,
+        "end_line": 1358
       },
       "is_opaque": false,
       "can_fail": true,
@@ -1378,7 +1391,7 @@
       "lean_file": "VcTermSort/Code/Types.lean",
       "rust_name": "maledictus_vc_term_sort_extraction::SortContext",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 65, "end_line": 102 }
+      "source": { "file": "src/lib.rs", "begin_line": 65, "end_line": 105 }
     },
     {
       "def_id": 3,
@@ -1386,7 +1399,7 @@
       "lean_file": "VcTermSort/Code/Types.lean",
       "rust_name": "maledictus_vc_term_sort_extraction::SortError",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 151, "end_line": 274 }
+      "source": { "file": "src/lib.rs", "begin_line": 157, "end_line": 280 }
     },
     {
       "def_id": 4,
@@ -1394,7 +1407,7 @@
       "lean_file": "VcTermSort/Code/Types.lean",
       "rust_name": "maledictus_vc_term_sort_extraction::IntEnumDescriptor",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 475, "end_line": 478 }
+      "source": { "file": "src/lib.rs", "begin_line": 481, "end_line": 484 }
     },
     {
       "def_id": 8,
@@ -1402,7 +1415,7 @@
       "lean_file": "VcTermSort/Code/Types.lean",
       "rust_name": "maledictus_vc_term_sort_extraction::PermissionTransferAmount",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 481, "end_line": 485 }
+      "source": { "file": "src/lib.rs", "begin_line": 487, "end_line": 491 }
     },
     {
       "def_id": 0,
@@ -1410,7 +1423,7 @@
       "lean_file": "VcTermSort/Code/Types.lean",
       "rust_name": "maledictus_vc_term_sort_extraction::Term",
       "is_local": true,
-      "source": { "file": "src/lib.rs", "begin_line": 489, "end_line": 785 }
+      "source": { "file": "src/lib.rs", "begin_line": 495, "end_line": 798 }
     }
   ],
   "globals": [],

@@ -5,16 +5,19 @@
   "counts_as_implementation_refinement": true,
   "source": {
     "path": "src/vc.rs",
-    "sha256": "e83827046146ab661f119cda7b05f7dd3bac7d708574311391b3e0d71c2d6390",
+    "sha256": "cc2f807e7dc0d81b4e86c1f3f33c52d15ba607ca31d289e5dfc94e91a115c70c",
     "entrypoint": "term_sort_extraction_entrypoint",
     "production_method": "Term::sort_typed",
-    "method_line_start": 794,
-    "method_line_end": 1323,
-    "wrapper_line_start": 1330,
-    "wrapper_line_end": 1332,
+    "method_line_start": 807,
+    "method_line_end": 1348,
+    "wrapper_line_start": 1356,
+    "wrapper_line_end": 1358,
     "mounted_as_hard_link": true,
     "sort_variants": 16,
-    "term_variants": 68
+    "term_variants": 69,
+    "extracted_paths": [
+      "src/lib.rs"
+    ]
   },
   "manifest": {
     "path": "formal/extraction/vc-term-sort/Cargo.toml",
@@ -31,37 +34,42 @@
     "rustc_version": "1.100.0-nightly (8fa1c96cf 2026-08-17)",
     "lean_toolchain": "v4.31.0",
     "container_used": true,
-    "container_image": "registry.gitlab.com/mopsa/mopsa-analyzer:1.2"
+    "container_image": "registry.gitlab.com/mopsa/mopsa-analyzer@sha256:64290feb025b34907c03898d2ee87ed08ea83ea35283bb69f441842eb00ea085"
   },
   "llbc": {
     "checked_in": false,
-    "sha256": "d9cd6847aa766365f8cc2ab400c3c3d43767477d366318bc28e5ef331a28cb74",
-    "size_bytes": 8386514,
-    "full_sysroot": true,
-    "warnings": 0
+    "sha256": "ab4e302984064dcf2e5022fc5f41d924c24b93cadecf6d0c8a02113becc54cb3",
+    "size_bytes": 8966124,
+    "full_sysroot": false,
+    "translation_has_errors": false,
+    "sysroot": "Pinned rustc default sysroot; cargo-miri is unavailable in the recorded cached toolchain.",
+    "wrapper_warnings": [
+      "cargo miri setup failed because cargo-miri is not installed; Charon fell back to the pinned rustc default sysroot."
+    ]
   },
   "helper_extraction": {
     "root": "crate::ObligationResult::satisfied",
     "production_method": "ObligationResult::satisfied",
-    "method_line_start": 1890,
-    "method_line_end": 1896,
-    "method_sha256": "61bca9f7f6b7de50efbfde8bb5f73c4b8c851744f5574cf9eab61c2a32501ced",
+    "method_line_start": 1930,
+    "method_line_end": 1936,
+    "method_sha256": "dfc9b066f0f20be9b8e68580e79a516a854a9d4d0972e08a16fd900d3f5e84fd",
     "raw_llbc": {
       "checked_in": false,
-      "sha256": "30d47695de874231fbda61e23046761f244ea9ba8329f38ffc10412d6a718d9f",
-      "size_bytes": 133933,
+      "sha256": "a36193f74ddb6314267d1251ee60ad5cf5437967a0a1d83f5554cab27fc6e89b",
+      "size_bytes": 135450,
       "transparent_local_functions": 1,
       "ordered_declarations_emitted": 0
     },
     "ordered_llbc": {
       "checked_in": false,
-      "sha256": "c82b0aa0aca75b110a6a27255367068d20e9262ae313e538d5c34e1e7178909d",
-      "size_bytes": 134200,
+      "sha256": "6deec02bb7cd289fb9da44164bcb3a5a9d1081499c13c654c0ffaf3d39867750",
+      "size_bytes": 135717,
       "declarations_and_bodies_unchanged": true,
       "ordered_declarations_added": 6
     },
     "entrypoint_transparent": true,
-    "all_input_exact_result_proved": true
+    "all_input_exact_result_proved": true,
+    "method_hash_encoding": "UTF-8 LF, inclusive source line range with a final LF"
   },
   "translation": {
     "transparent_local_definitions": 59,
@@ -69,7 +77,12 @@
     "term_sort_transparent": true,
     "normalization_constructive": true,
     "normalization_correspondence_proved": true,
-    "normalized_finite_slice_loops": 15
+    "normalized_finite_slice_loops": 15,
+    "opaque_local_definitions": [
+      "Sort.Insts.CoreCloneClone.clone",
+      "Sort.Insts.CoreCmpPartialEqSort.eq",
+      "Term.Insts.CoreCloneClone.clone"
+    ]
   },
   "proof_progress": {
     "top_level_obligations_closed": 8,
@@ -82,8 +95,8 @@
     "compiler_derived_trait_correspondence_proved": true,
     "recursive_storage_measure_proved": true,
     "nonrecursive_constructor_termination_proved": 10,
-    "recursive_constructor_termination_proved": 58,
-    "recursive_constructor_termination_total": 58,
+    "recursive_constructor_termination_proved": 59,
+    "recursive_constructor_termination_total": 59,
     "model_vec_observation_lemmas_proved": 4,
     "model_vec_push_refinement_proved": true,
     "recursive_vec_list_refinement_proved": true,
@@ -93,17 +106,29 @@
     "concrete_loop_trace_bounds_total": 15,
     "concrete_loop_bounds_composed": true,
     "finite_loop_runner_refinement_proved": true,
-    "checked_theorem_declarations": 520,
-    "raw_recursive_constructor_termination_proved": 58,
-    "raw_recursive_constructor_termination_total": 58,
-    "raw_normalization_constructor_correspondence_proved": 68,
-    "raw_normalization_constructor_correspondence_total": 68,
+    "checked_theorem_declarations": 534,
+    "raw_recursive_constructor_termination_proved": 59,
+    "raw_recursive_constructor_termination_total": 59,
+    "raw_normalization_constructor_correspondence_proved": 69,
+    "raw_normalization_constructor_correspondence_total": 69,
     "raw_entrypoint_correspondence_proved": true,
     "structured_success_error_field_correspondence_proved": true,
     "axiom_dependency_audited": true,
     "checked_theorems": [
+      "VcTermSort.Proofs.compiler_derived_term_clone_identity",
+      "VcTermSort.Proofs.compiler_derived_transfer_clone_identity",
+      "VcTermSort.Proofs.term_clone_model_refines_compiler_derive",
+      "VcTermSort.Proofs.term_sort_terminates",
+      "VcTermSort.Proofs.term_sort_extraction_entrypoint_terminates",
+      "VcTermSort.Proofs.term_sort_extraction_entrypoint_structured_refinement",
+      "VcTermSort.RawProofs.term_sort_terminates",
+      "VcTermSort.RawProofs.term_sort_extraction_entrypoint_terminates",
+      "VcTermSort.Proofs.raw_term_sort_typed_eq_normalized",
+      "VcTermSort.Proofs.raw_term_sort_extraction_entrypoint_eq_normalized",
+      "VcTermSort.Proofs.raw_term_sort_extraction_entrypoint_structured_refinement",
       "VcTermSort.Proofs.obligation_result_satisfied_exact"
-    ]
+    ],
+    "term_clone_model_exact": true
   },
   "generated": [
     {
@@ -112,31 +137,31 @@
     },
     {
       "path": "formal/extraction/vc-term-sort/generated/translation.json",
-      "sha256": "2bbc12f788f9f92b9339f1886e958b3eb26bc16f84667a6ff429b88a30c41a5f"
+      "sha256": "e3eb854c7c67c83070037d267da1a677a435a3b461b09a78ee5c735ef0e54a60"
     },
     {
       "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Code/Types.lean",
-      "sha256": "7de50e0d7c0e7f24c3ee0a1bd1098bf52bb1e3526ff2f3b769fdcfb4ca6a377c"
+      "sha256": "b8b47731d449a8ad4a61749ccbfa5e5fc972f34e49bb2928f63bf51ec2e24af6"
     },
     {
       "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Code/Funs.lean",
-      "sha256": "886937cf6d5c7808bf210d8dfe049d95917e63ab591fb893477205f03f292966"
+      "sha256": "064746e5a661150da2793a04287fe4b5b20911bf558f59852d7a90422d893c83"
     },
     {
       "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Code/RawFuns.lean",
-      "sha256": "82132f7f4408496805a58f0fe20cc64c4c972ea6773f8059e10ee94147891df4"
+      "sha256": "ef1b4078c72dc5e783aef1a7724c2b66fb9c03d8e2d5dcfb40f76efa7ca68893"
     },
     {
       "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Helpers/Types.lean",
-      "sha256": "feb65ea66e520041af2f78c848b29e9f4caa9ee907bb3d5a2dd81ecc433316f0"
+      "sha256": "b793eda562b4359ca06087664f4bdd281730557a1c5da9edcd450471d7f5bdf3"
     },
     {
       "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Helpers/Funs.lean",
-      "sha256": "153ad8ccc3ff5993a2ba184ae0148afa6479dd99d3aca487ad81330b1e712703"
+      "sha256": "f048bc5a60abbf5ffab58220da011fc01ecb78cbfa98e0fac53f4c06e61308b4"
     },
     {
       "path": "formal/extraction/vc-term-sort/generated/helpers-translation.json",
-      "sha256": "20f57a9a35dd400b61c5cea86f8726ce85d42257ce6907e6255d81b866b4776f"
+      "sha256": "55e127a3e8bc9a80511c894b9c8d943d272e47b086acbcee1a47d0ba9b622542"
     }
   ],
   "external_models": [
@@ -148,7 +173,7 @@
     },
     {
       "path": "formal/extraction/vc-term-sort/generated/VcTermSort/Code/FunsExternal.lean",
-      "sha256": "b1acb03606bb8d9e9f4ad41e41d8ffbce1b5998804ec73fefa50a947a502e52b",
+      "sha256": "a0cd6aea5313747c1c3f6a8bf27b1e40b00d0a8a0e35b2d99081f3d6b7293a6a",
       "constructive": true,
       "trusted": false
     }
@@ -196,11 +221,11 @@
     },
     {
       "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs.lean",
-      "sha256": "1b8d66c1d015c22b815b6e2ab43cad05d80e34c56d648be84327664c8113c1e7"
+      "sha256": "76d4f0249ada7777132b2db6f64b44a00acc09258fe7ccae638af2e54869f315"
     },
     {
       "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/AxiomAudit.lean",
-      "sha256": "6e5f56e80802de129c963f33e16ee84e2db3b4854e3b17ec0dce279661ade5cf"
+      "sha256": "116b9276f34c885271e99dea75287032597f50d7180ee060279a3ebb116e9eca"
     },
     {
       "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/Helpers.lean",
@@ -216,7 +241,7 @@
     },
     {
       "path": "formal/extraction/test-axiom-audits.ps1",
-      "sha256": "9a69fd859dd6285f85a549eb5d8aa84b8aa7605978061ce46f13812d049aebba"
+      "sha256": "cd0530d92ccc9f7c035e0b15acad44ee16a1e056ff4a75d88835ad9e72751156"
     },
     {
       "path": "formal/test-lake-cache-hygiene.ps1",
@@ -248,7 +273,7 @@
     },
     {
       "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/NormalizationCorrespondence.lean",
-      "sha256": "c56164c0b00d6723c7fe09c8696b39dc9cb10ed24debec1d99724d222b2ae900"
+      "sha256": "02708d496acd992a078eeb8cf1cbd9b49c04861cbdb1d5e8964989f7e41a3f89"
     },
     {
       "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/RawDecreaseProofs.lean",
@@ -256,11 +281,11 @@
     },
     {
       "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/RawRecursiveTermination.lean",
-      "sha256": "898988e93230aaa76e6d36fa0b030784822cd64c8a29ccea375b819402fe05e0"
+      "sha256": "7057a7389ce1849e7237086d103dfd115938bb1bdcb46b6a66426c5e544c64ee"
     },
     {
       "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/RecursiveTermination.lean",
-      "sha256": "9ef939a3dcb00ffb848e5a66b826d99caa4ccd1ab37cbe3aa1b1f03da4d2f005"
+      "sha256": "1d79da76efec74ab21bf1b3fe1e331408c7a7e52f39c26266fb726140b2f277a"
     },
     {
       "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/StdlibRefinement.lean",
@@ -272,17 +297,125 @@
     },
     {
       "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/TerminationMeasure.lean",
-      "sha256": "131539c9c0db750b09d7f521dd78b27a07d09aec9d87d22838ef62e9dbf705d4"
+      "sha256": "f0e5c1dc9f677ebd6f17d58af9b225b47db3b796e55e5c79320ede8df23ee1c8"
     },
     {
       "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/VecRefinement.lean",
       "sha256": "3b2fc54558e9c3dda0a29e608de80311c1030d5fd18e4d51f3cee3761e5ff51f"
+    },
+    {
+      "path": "formal/extraction/vc-term-sort/proofs/VcTermSortProofs/TermDerivedClone.lean",
+      "sha256": "b338b3a583bb6443094a36a9f32f765d4f6142c192e319c92ee31974cba36f79"
     }
   ],
   "axiom_audits": [
     {
+      "theorem": "VcTermSort.Proofs.compiler_derived_term_clone_identity",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "VcTermSort.Proofs.compiler_derived_transfer_clone_identity",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "VcTermSort.Proofs.term_clone_model_refines_compiler_derive",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "VcTermSort.Proofs.term_sort_terminates",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "VcTermSort.Proofs.term_sort_extraction_entrypoint_terminates",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "VcTermSort.Proofs.term_sort_extraction_entrypoint_structured_refinement",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "VcTermSort.RawProofs.term_sort_terminates",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "VcTermSort.RawProofs.term_sort_extraction_entrypoint_terminates",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "VcTermSort.Proofs.raw_term_sort_typed_eq_normalized",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "VcTermSort.Proofs.raw_term_sort_extraction_entrypoint_eq_normalized",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
+      "theorem": "VcTermSort.Proofs.raw_term_sort_extraction_entrypoint_structured_refinement",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "contains_sorry_ax": false
+    },
+    {
       "theorem": "VcTermSort.Proofs.obligation_result_satisfied_exact",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath lake build VcTermSortProofs.AxiomAudit",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs.AxiomAudit",
       "axioms": [
         "propext"
       ],
@@ -291,9 +424,30 @@
   ],
   "lean_build": {
     "result": "passed",
-    "jobs": 1719,
+    "jobs": 1722,
     "generated_entrypoint": "VcTermSortRaw.term_sort_extraction_entrypoint",
     "public_theorem": "VcTermSort.Proofs.raw_term_sort_extraction_entrypoint_structured_refinement"
   },
-  "open_obligations": []
+  "open_obligations": [],
+  "regeneration": {
+    "source_revision_with_semantic_changes": "630e5f6",
+    "source_binding": "The setup script verified that src/lib.rs is a hard link to the exact src/vc.rs file; the full source hash above is authoritative.",
+    "charon_command": "charon cargo --preset=aeneas --start-from crate::term_sort_extraction_entrypoint --opaque='{impl core::clone::Clone for crate::Sort}' --opaque='{impl core::fmt::Debug for crate::Sort}' --opaque='{impl core::cmp::PartialEq<crate::Sort> for crate::Sort}' --opaque='{impl core::clone::Clone for crate::Term}' --error-on-warnings --dest-file=vc_term_sort.llbc",
+    "aeneas_command": "aeneas -backend lean -namespace VcTermSort -subdir VcTermSort/Code -split-files -emit-json -abort-on-error -loops-no-rec vc_term_sort.llbc",
+    "term_clone_boundary": "Pinned Aeneas cannot order the compiler-derived mutual Term/PermissionTransferAmount clone SCC. Only Term.clone is opaque at extraction; TermDerivedClone.lean independently rebuilds all 69 Term constructors and nested storage and proves the immutable-value external model exact without new axioms.",
+    "scope": "All-input exact structured results and no-divergence for the extracted Term::sort_typed closure, plus ObligationResult::satisfied. This is not a timing, allocation-cost, or complete source-language semantic-soundness theorem.",
+    "positive_command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File formal/run-lake.ps1 -Project vc-term-sort -LakePath C:/Users/Nagol/.elan/bin/lake.exe build VcTermSortProofs",
+    "negative_controls": [
+      {
+        "path": "formal/extraction/vc-term-sort/tests/AxiomAuditRejectsSorry.lean",
+        "observed_exit_code": 1,
+        "rejected_axiom": "sorryAx"
+      },
+      {
+        "path": "formal/extraction/vc-term-sort/tests/AxiomAuditRejectsProjectAxiom.lean",
+        "observed_exit_code": 1,
+        "rejected_axiom": "VcTermSort.AxiomAudit.Regression.untrustedAssumption"
+      }
+    ]
+  }
 }

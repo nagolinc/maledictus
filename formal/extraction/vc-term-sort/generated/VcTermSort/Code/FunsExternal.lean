@@ -314,6 +314,13 @@ def SharedAVec.Insts.CoreIterTraitsCollectIntoIteratorSharedATIter.into_iter
 def Sort.Insts.CoreCloneClone.clone (sort : «Sort») : Result «Sort» :=
   .ok sort
 
+/-- Immutable-value model of the compiler-derived recursive `Term` clone.
+    `TermDerivedClone` independently rebuilds every recursive constructor and
+    proves that its result is exactly this value, including permission-transfer
+    records and list, pair, and optional storage. -/
+def VcTermSort.Term.Insts.CoreCloneClone.clone (term : Term) : Result Term :=
+  .ok term
+
 /-- `Debug` affects only diagnostic text in this extracted closure. Aeneas
     erases the formatter state, so the constructive model preserves it and
     records exact formatted-error correspondence as an open obligation. -/

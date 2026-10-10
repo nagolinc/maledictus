@@ -4,6 +4,7 @@ import VcTermSortProofs.Composition
 import VcTermSortProofs.VecRefinement
 import VcTermSortProofs.StdlibRefinement
 import VcTermSortProofs.DerivedTraits
+import VcTermSortProofs.TermDerivedClone
 import VcTermSortProofs.TerminationMeasure
 import VcTermSortProofs.RecursiveTermination
 import VcTermSortProofs.RawDecreaseProofs

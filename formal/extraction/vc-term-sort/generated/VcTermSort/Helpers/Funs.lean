@@ -16,7 +16,7 @@ set_option maxRecDepth 2048
 namespace VcTermSort
 
 /-- [maledictus_vc_term_sort_extraction::{maledictus_vc_term_sort_extraction::ObligationResult}::satisfied]:
-    Source: 'src/lib.rs', lines 1890:4-1896:5
+    Source: 'src/lib.rs', lines 1930:4-1936:5
     Visibility: public -/
 def ObligationResult.satisfied (self : ObligationResult) : Result Bool := do
   match self.expectation with

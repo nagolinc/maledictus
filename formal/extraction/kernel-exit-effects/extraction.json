@@ -5,6 +5,7 @@
   "counts_as_implementation_refinement": true,
   "source": {
     "path": "src/kernel.rs",
+    "extracted_paths": ["../../../src/kernel.rs"],
     "sha256": "919d9cf64cd57d795128a9be6b8d054ce914033dfd19f46158b8f6489d9c9f45",
     "extracted_functions": [
       {

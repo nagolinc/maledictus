@@ -81,7 +81,7 @@ impl_def Sort.Insts.CoreCmpPartialEqSort : core.cmp.PartialEq «Sort» «Sort»
 mutual
 
 /-- [maledictus_vc_term_sort_extraction::is_finite_dict_key_sort]:
-    Source: 'src/lib.rs', lines 1797:0-1801:1 -/
+    Source: 'src/lib.rs', lines 1837:0-1841:1 -/
 def is_finite_dict_key_sort (sort : «Sort») : Result _root_.Bool := do
   let b ←
     match sort with
@@ -155,7 +155,7 @@ def is_finite_dict_key_sort (sort : «Sort») : Result _root_.Bool := do
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::all_finite_dict_key_sorts]: loop 0:
-    Source: 'src/lib.rs', lines 1805:4-1809:5 -/
+    Source: 'src/lib.rs', lines 1845:4-1849:5 -/
 @[rust_loop]
 def all_finite_dict_key_sorts_loop
   (iter : core.slice.iter.Iter «Sort») (result : _root_.Bool) : Result _root_.Bool := do
@@ -165,7 +165,7 @@ def all_finite_dict_key_sorts_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::all_finite_dict_key_sorts]: loop body 0:
-    Source: 'src/lib.rs', lines 1805:4-1809:5 -/
+    Source: 'src/lib.rs', lines 1845:4-1849:5 -/
 @[rust_loop_body]
 def all_finite_dict_key_sorts_loop.body
   (iter : core.slice.iter.Iter «Sort») (result : _root_.Bool) :
@@ -183,7 +183,7 @@ def all_finite_dict_key_sorts_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::all_finite_dict_key_sorts]:
-    Source: 'src/lib.rs', lines 1803:0-1811:1 -/
+    Source: 'src/lib.rs', lines 1843:0-1851:1 -/
 def all_finite_dict_key_sorts (elements : Slice «Sort») : Result _root_.Bool := do
   let iter ←
     SharedSlice.Insts.CoreIterTraitsCollectIntoIteratorSharedIter.into_iter
@@ -196,7 +196,7 @@ end
 mutual
 
 /-- [maledictus_vc_term_sort_extraction::is_finite_dict_value_sort]:
-    Source: 'src/lib.rs', lines 1813:0-1825:1 -/
+    Source: 'src/lib.rs', lines 1853:0-1865:1 -/
 def is_finite_dict_value_sort (sort : «Sort») : Result _root_.Bool := do
   let b ←
     match sort with
@@ -385,7 +385,7 @@ def is_finite_dict_value_sort (sort : «Sort») : Result _root_.Bool := do
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::all_finite_dict_value_sorts]: loop 0:
-    Source: 'src/lib.rs', lines 1829:4-1833:5 -/
+    Source: 'src/lib.rs', lines 1869:4-1873:5 -/
 @[rust_loop]
 def all_finite_dict_value_sorts_loop
   (iter : core.slice.iter.Iter «Sort») (result : _root_.Bool) : Result _root_.Bool := do
@@ -396,7 +396,7 @@ def all_finite_dict_value_sorts_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::all_finite_dict_value_sorts]: loop body 0:
-    Source: 'src/lib.rs', lines 1829:4-1833:5 -/
+    Source: 'src/lib.rs', lines 1869:4-1873:5 -/
 @[rust_loop_body]
 def all_finite_dict_value_sorts_loop.body
   (iter : core.slice.iter.Iter «Sort») (result : _root_.Bool) :
@@ -414,7 +414,7 @@ def all_finite_dict_value_sorts_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::all_finite_dict_value_sorts]:
-    Source: 'src/lib.rs', lines 1827:0-1835:1 -/
+    Source: 'src/lib.rs', lines 1867:0-1875:1 -/
 def all_finite_dict_value_sorts (elements : Slice «Sort») : Result _root_.Bool := do
   let iter ←
     SharedSlice.Insts.CoreIterTraitsCollectIntoIteratorSharedIter.into_iter
@@ -427,7 +427,7 @@ end
 mutual
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences]:
-    Source: 'src/lib.rs', lines 1571:0-1795:1 -/
+    Source: 'src/lib.rs', lines 1598:0-1835:1 -/
 def validate_bound_occurrences
   (term : Term) (binder : String) (binder_sort : «Sort») :
   Result (core.result.Result _root_.Unit SortError)
@@ -541,6 +541,15 @@ def validate_bound_occurrences
     validate_bound_occurrences.all s binder binder_sort
   | Term.StringLength value =>
     validate_bound_occurrences.one value binder binder_sort
+  | Term.StringSlice source start length =>
+    let t ← Box.Insts.CoreConvertAsRef.as_ref Global source
+    let t1 ← Term.Insts.CoreCloneClone.clone t
+    let t2 ← Box.Insts.CoreConvertAsRef.as_ref Global start
+    let t3 ← Term.Insts.CoreCloneClone.clone t2
+    let t4 ← Box.Insts.CoreConvertAsRef.as_ref Global length
+    let t5 ← Term.Insts.CoreCloneClone.clone t4
+    let s ← lift (Array.to_slice (Array.make 3#usize [ t1, t3, t5 ]))
+    validate_bound_occurrences.all s binder binder_sort
   | Term.BytesConcat arguments =>
     let s := VcTermSort.ModelVec.deref arguments
     validate_bound_occurrences.all s binder binder_sort
@@ -704,7 +713,7 @@ def validate_bound_occurrences
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::one]:
-    Source: 'src/lib.rs', lines 1576:4-1578:5 -/
+    Source: 'src/lib.rs', lines 1603:4-1605:5 -/
 def validate_bound_occurrences.one
   (term : Term) (binder : String) (binder_sort : «Sort») :
   Result (core.result.Result _root_.Unit SortError)
@@ -713,7 +722,7 @@ def validate_bound_occurrences.one
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::two]:
-    Source: 'src/lib.rs', lines 1579:4-1587:5 -/
+    Source: 'src/lib.rs', lines 1606:4-1614:5 -/
 def validate_bound_occurrences.two
   (left : Term) (right : Term) (binder : String) (binder_sort : «Sort») :
   Result (core.result.Result _root_.Unit SortError)
@@ -729,7 +738,7 @@ def validate_bound_occurrences.two
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::all]: loop 0:
-    Source: 'src/lib.rs', lines 1590:8-1594:9 -/
+    Source: 'src/lib.rs', lines 1617:8-1621:9 -/
 @[rust_loop]
 def validate_bound_occurrences.all_loop
   (iter : core.slice.iter.Iter Term) (binder : String) (binder_sort : «Sort»)
@@ -743,7 +752,7 @@ def validate_bound_occurrences.all_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::all]: loop body 0:
-    Source: 'src/lib.rs', lines 1590:8-1594:9 -/
+    Source: 'src/lib.rs', lines 1617:8-1621:9 -/
 @[rust_loop_body]
 def validate_bound_occurrences.all_loop.body
   (binder : String) (binder_sort : «Sort») (iter : core.slice.iter.Iter Term)
@@ -764,7 +773,7 @@ def validate_bound_occurrences.all_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::all]:
-    Source: 'src/lib.rs', lines 1588:4-1596:5 -/
+    Source: 'src/lib.rs', lines 1615:4-1623:5 -/
 def validate_bound_occurrences.all
   (terms : Slice Term) (binder : String) (binder_sort : «Sort») :
   Result (core.result.Result _root_.Unit SortError)
@@ -777,7 +786,7 @@ def validate_bound_occurrences.all
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::all_transfers]: loop 0:
-    Source: 'src/lib.rs', lines 1603:8-1607:9 -/
+    Source: 'src/lib.rs', lines 1630:8-1634:9 -/
 @[rust_loop]
 def validate_bound_occurrences.all_transfers_loop
   (iter : core.slice.iter.Iter PermissionTransferAmount) (binder : String)
@@ -791,7 +800,7 @@ def validate_bound_occurrences.all_transfers_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::all_transfers]: loop body 0:
-    Source: 'src/lib.rs', lines 1603:8-1607:9 -/
+    Source: 'src/lib.rs', lines 1630:8-1634:9 -/
 @[rust_loop_body]
 def validate_bound_occurrences.all_transfers_loop.body
   (binder : String) (binder_sort : «Sort»)
@@ -814,7 +823,7 @@ def validate_bound_occurrences.all_transfers_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::all_transfers]:
-    Source: 'src/lib.rs', lines 1597:4-1609:5 -/
+    Source: 'src/lib.rs', lines 1624:4-1636:5 -/
 def validate_bound_occurrences.all_transfers
   (amounts : Slice PermissionTransferAmount) (binder : String)
   (binder_sort : «Sort») :
@@ -828,7 +837,7 @@ def validate_bound_occurrences.all_transfers
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::all_entries]: loop 0:
-    Source: 'src/lib.rs', lines 1616:8-1620:9 -/
+    Source: 'src/lib.rs', lines 1643:8-1647:9 -/
 @[rust_loop]
 def validate_bound_occurrences.all_entries_loop
   (iter : core.slice.iter.Iter (Term × Term)) (binder : String)
@@ -842,7 +851,7 @@ def validate_bound_occurrences.all_entries_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::all_entries]: loop body 0:
-    Source: 'src/lib.rs', lines 1616:8-1620:9 -/
+    Source: 'src/lib.rs', lines 1643:8-1647:9 -/
 @[rust_loop_body]
 def validate_bound_occurrences.all_entries_loop.body
   (binder : String) (binder_sort : «Sort»)
@@ -866,7 +875,7 @@ def validate_bound_occurrences.all_entries_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::validate_bound_occurrences::all_entries]:
-    Source: 'src/lib.rs', lines 1610:4-1622:5 -/
+    Source: 'src/lib.rs', lines 1637:4-1649:5 -/
 def validate_bound_occurrences.all_entries
   (entries : Slice (Term × Term)) (binder : String) (binder_sort : «Sort») :
   Result (core.result.Result _root_.Unit SortError)
@@ -883,7 +892,7 @@ end
 mutual
 
 /-- [maledictus_vc_term_sort_extraction::is_list_element_sort]:
-    Source: 'src/lib.rs', lines 1485:0-1497:1 -/
+    Source: 'src/lib.rs', lines 1511:0-1523:1 -/
 def is_list_element_sort (sort : «Sort») : Result _root_.Bool := do
   let b ←
     match sort with
@@ -1072,7 +1081,7 @@ def is_list_element_sort (sort : «Sort») : Result _root_.Bool := do
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::all_list_element_sorts]: loop 0:
-    Source: 'src/lib.rs', lines 1501:4-1505:5 -/
+    Source: 'src/lib.rs', lines 1527:4-1531:5 -/
 @[rust_loop]
 def all_list_element_sorts_loop
   (iter : core.slice.iter.Iter «Sort») (result : _root_.Bool) : Result _root_.Bool := do
@@ -1082,7 +1091,7 @@ def all_list_element_sorts_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::all_list_element_sorts]: loop body 0:
-    Source: 'src/lib.rs', lines 1501:4-1505:5 -/
+    Source: 'src/lib.rs', lines 1527:4-1531:5 -/
 @[rust_loop_body]
 def all_list_element_sorts_loop.body
   (iter : core.slice.iter.Iter «Sort») (result : _root_.Bool) :
@@ -1100,7 +1109,7 @@ def all_list_element_sorts_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::all_list_element_sorts]:
-    Source: 'src/lib.rs', lines 1499:0-1507:1 -/
+    Source: 'src/lib.rs', lines 1525:0-1533:1 -/
 def all_list_element_sorts (elements : Slice «Sort») : Result _root_.Bool := do
   let iter ←
     SharedSlice.Insts.CoreIterTraitsCollectIntoIteratorSharedIter.into_iter
@@ -1111,16 +1120,13 @@ partial_fixpoint
 end
 
 /-- [maledictus_vc_term_sort_extraction::is_variadic_tuple_element_sort]:
-    Source: 'src/lib.rs', lines 1509:0-1512:1 -/
+    Source: 'src/lib.rs', lines 1535:0-1539:1 -/
 def is_variadic_tuple_element_sort (sort : «Sort») : Result _root_.Bool := do
-  let b ← is_list_element_sort sort
-  if b
-  then ok true
-  else
+  let b ←
     match sort with
     | Sort.Bool => ok false
     | Sort.Int => ok false
-    | Sort.Float => ok false
+    | Sort.Float => ok true
     | Sort.String => ok false
     | Sort.Unit => ok false
     | Sort.Reference => ok false
@@ -1128,20 +1134,44 @@ def is_variadic_tuple_element_sort (sort : «Sort») : Result _root_.Bool := do
     | Sort.Bytes => ok false
     | Sort.Range => ok false
     | Sort.Tuple _ => ok false
-    | Sort.VariadicTuple element =>
-      let b1 ← is_variadic_tuple_element_sort element
-      if b1
-      then ok true
-      else ok false
+    | Sort.VariadicTuple _ => ok false
     | Sort.List _ => ok false
     | Sort.Set _ => ok false
     | Sort.Dict _ _ => ok false
     | Sort.FiniteDict _ _ => ok false
     | Sort.DictKeys _ => ok false
+  if b
+  then ok true
+  else
+    let b1 ← is_list_element_sort sort
+    if b1
+    then ok true
+    else
+      match sort with
+      | Sort.Bool => ok false
+      | Sort.Int => ok false
+      | Sort.Float => ok false
+      | Sort.String => ok false
+      | Sort.Unit => ok false
+      | Sort.Reference => ok false
+      | Sort.Class => ok false
+      | Sort.Bytes => ok false
+      | Sort.Range => ok false
+      | Sort.Tuple _ => ok false
+      | Sort.VariadicTuple element =>
+        let b2 ← is_variadic_tuple_element_sort element
+        if b2
+        then ok true
+        else ok false
+      | Sort.List _ => ok false
+      | Sort.Set _ => ok false
+      | Sort.Dict _ _ => ok false
+      | Sort.FiniteDict _ _ => ok false
+      | Sort.DictKeys _ => ok false
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::all_nominal_reference_keys]: loop body 0:
-    Source: 'src/lib.rs', lines 1477:4-1481:5 -/
+    Source: 'src/lib.rs', lines 1503:4-1507:5 -/
 @[rust_loop_body]
 def all_nominal_reference_keys_loop.body
   (iter : core.slice.iter.Iter (Term × Term)) (result : _root_.Bool) :
@@ -1195,6 +1225,7 @@ def all_nominal_reference_keys_loop.body
       | Term.Negate _ => ok (cont (iter1, false))
       | Term.StringConcat _ => ok (cont (iter1, false))
       | Term.StringLength _ => ok (cont (iter1, false))
+      | Term.StringSlice _ _ _ => ok (cont (iter1, false))
       | Term.BytesConcat _ => ok (cont (iter1, false))
       | Term.BytesLength _ => ok (cont (iter1, false))
       | Term.BytesGet _ _ => ok (cont (iter1, false))
@@ -1226,7 +1257,7 @@ def all_nominal_reference_keys_loop.body
     else ok (cont (iter1, false))
 
 /-- [maledictus_vc_term_sort_extraction::all_nominal_reference_keys]: loop 0:
-    Source: 'src/lib.rs', lines 1477:4-1481:5 -/
+    Source: 'src/lib.rs', lines 1503:4-1507:5 -/
 @[rust_loop]
 def all_nominal_reference_keys_loop
   (iter : core.slice.iter.Iter (Term × Term)) (result : _root_.Bool) :
@@ -1238,7 +1269,7 @@ def all_nominal_reference_keys_loop
     (iter, result)
 
 /-- [maledictus_vc_term_sort_extraction::all_nominal_reference_keys]:
-    Source: 'src/lib.rs', lines 1475:0-1483:1 -/
+    Source: 'src/lib.rs', lines 1501:0-1509:1 -/
 def all_nominal_reference_keys
   (entries : Slice (Term × Term)) : Result _root_.Bool := do
   let iter ←
@@ -1247,7 +1278,7 @@ def all_nominal_reference_keys
   all_nominal_reference_keys_loop iter true
 
 /-- [maledictus_vc_term_sort_extraction::is_reference_binder_projection]:
-    Source: 'src/lib.rs', lines 1465:0-1473:1 -/
+    Source: 'src/lib.rs', lines 1491:0-1499:1 -/
 def is_reference_binder_projection
   (mapped : Term) (binder : String) : Result _root_.Bool := do
   match mapped with
@@ -1309,6 +1340,7 @@ def is_reference_binder_projection
   | Term.Negate _ => ok false
   | Term.StringConcat _ => ok false
   | Term.StringLength _ => ok false
+  | Term.StringSlice _ _ _ => ok false
   | Term.BytesConcat _ => ok false
   | Term.BytesLength _ => ok false
   | Term.BytesGet _ _ => ok false
@@ -1339,7 +1371,7 @@ def is_reference_binder_projection
   | Term.DictKeys _ _ => ok false
 
 /-- [maledictus_vc_term_sort_extraction::all_nominal_references]: loop body 0:
-    Source: 'src/lib.rs', lines 1447:4-1451:5 -/
+    Source: 'src/lib.rs', lines 1473:4-1477:5 -/
 @[rust_loop_body]
 def all_nominal_references_loop.body
   (iter : core.slice.iter.Iter Term) (result : _root_.Bool) :
@@ -1392,6 +1424,7 @@ def all_nominal_references_loop.body
       | Term.Negate _ => ok (cont (iter1, false))
       | Term.StringConcat _ => ok (cont (iter1, false))
       | Term.StringLength _ => ok (cont (iter1, false))
+      | Term.StringSlice _ _ _ => ok (cont (iter1, false))
       | Term.BytesConcat _ => ok (cont (iter1, false))
       | Term.BytesLength _ => ok (cont (iter1, false))
       | Term.BytesGet _ _ => ok (cont (iter1, false))
@@ -1423,7 +1456,7 @@ def all_nominal_references_loop.body
     else ok (cont (iter1, false))
 
 /-- [maledictus_vc_term_sort_extraction::all_nominal_references]: loop 0:
-    Source: 'src/lib.rs', lines 1447:4-1451:5 -/
+    Source: 'src/lib.rs', lines 1473:4-1477:5 -/
 @[rust_loop]
 def all_nominal_references_loop
   (iter : core.slice.iter.Iter Term) (result : _root_.Bool) : Result _root_.Bool := do
@@ -1432,7 +1465,7 @@ def all_nominal_references_loop
     (iter, result)
 
 /-- [maledictus_vc_term_sort_extraction::all_nominal_references]:
-    Source: 'src/lib.rs', lines 1445:0-1453:1 -/
+    Source: 'src/lib.rs', lines 1471:0-1479:1 -/
 def all_nominal_references (values : Slice Term) : Result _root_.Bool := do
   let iter ←
     SharedSlice.Insts.CoreIterTraitsCollectIntoIteratorSharedIter.into_iter
@@ -1440,7 +1473,7 @@ def all_nominal_references (values : Slice Term) : Result _root_.Bool := do
   all_nominal_references_loop iter true
 
 /-- [maledictus_vc_term_sort_extraction::is_exact_nominal_reference_list]:
-    Source: 'src/lib.rs', lines 1455:0-1463:1 -/
+    Source: 'src/lib.rs', lines 1481:0-1489:1 -/
 def is_exact_nominal_reference_list (source : Term) : Result _root_.Bool := do
   match source with
   | Term.Bool _ => ok false
@@ -1483,6 +1516,7 @@ def is_exact_nominal_reference_list (source : Term) : Result _root_.Bool := do
   | Term.Negate _ => ok false
   | Term.StringConcat _ => ok false
   | Term.StringLength _ => ok false
+  | Term.StringSlice _ _ _ => ok false
   | Term.BytesConcat _ => ok false
   | Term.BytesLength _ => ok false
   | Term.BytesGet _ _ => ok false
@@ -1532,7 +1566,7 @@ def is_exact_nominal_reference_list (source : Term) : Result _root_.Bool := do
   | Term.DictKeys _ _ => ok false
 
 /-- [maledictus_vc_term_sort_extraction::validate_int_enum_descriptor]: loop body 0:
-    Source: 'src/lib.rs', lines 1433:4-1437:5 -/
+    Source: 'src/lib.rs', lines 1459:4-1463:5 -/
 @[rust_loop_body]
 def validate_int_enum_descriptor_loop.body
   (iter : core.slice.iter.Iter (String × Std.I64))
@@ -1569,7 +1603,7 @@ def validate_int_enum_descriptor_loop.body
     else ok (cont (iter1, names, values, false))
 
 /-- [maledictus_vc_term_sort_extraction::validate_int_enum_descriptor]: loop 0:
-    Source: 'src/lib.rs', lines 1433:4-1437:5 -/
+    Source: 'src/lib.rs', lines 1459:4-1463:5 -/
 @[rust_loop]
 def validate_int_enum_descriptor_loop
   (iter : core.slice.iter.Iter (String × Std.I64))
@@ -1584,7 +1618,7 @@ def validate_int_enum_descriptor_loop
     (iter, names, values, valid)
 
 /-- [maledictus_vc_term_sort_extraction::validate_int_enum_descriptor]:
-    Source: 'src/lib.rs', lines 1426:0-1443:1 -/
+    Source: 'src/lib.rs', lines 1452:0-1469:1 -/
 def validate_int_enum_descriptor
   (descriptor : IntEnumDescriptor) :
   Result (core.result.Result _root_.Unit SortError)
@@ -1614,7 +1648,7 @@ def validate_int_enum_descriptor
 mutual
 
 /-- [maledictus_vc_term_sort_extraction::{maledictus_vc_term_sort_extraction::Term}::sort_typed]:
-    Source: 'src/lib.rs', lines 794:4-1322:5
+    Source: 'src/lib.rs', lines 807:4-1348:5
     Visibility: public -/
 def Term.sort_typed
   (self : Term) : Result (core.result.Result «Sort» SortError) := do
@@ -1681,6 +1715,7 @@ def Term.sort_typed
       | Term.Negate _ => ok false
       | Term.StringConcat _ => ok false
       | Term.StringLength _ => ok false
+      | Term.StringSlice _ _ _ => ok false
       | Term.BytesConcat _ => ok false
       | Term.BytesLength _ => ok false
       | Term.BytesGet _ _ => ok false
@@ -1764,6 +1799,7 @@ def Term.sort_typed
       | Term.Negate _ => ok false
       | Term.StringConcat _ => ok false
       | Term.StringLength _ => ok false
+      | Term.StringSlice _ _ _ => ok false
       | Term.BytesConcat _ => ok false
       | Term.BytesLength _ => ok false
       | Term.BytesGet _ _ => ok false
@@ -1847,6 +1883,7 @@ def Term.sort_typed
       | Term.Negate _ => ok false
       | Term.StringConcat _ => ok false
       | Term.StringLength _ => ok false
+      | Term.StringSlice _ _ _ => ok false
       | Term.BytesConcat _ => ok false
       | Term.BytesLength _ => ok false
       | Term.BytesGet _ _ => ok false
@@ -1920,6 +1957,7 @@ def Term.sort_typed
         | Term.Negate _ => ok false
         | Term.StringConcat _ => ok false
         | Term.StringLength _ => ok false
+        | Term.StringSlice _ _ _ => ok false
         | Term.BytesConcat _ => ok false
         | Term.BytesLength _ => ok false
         | Term.BytesGet _ _ => ok false
@@ -2107,10 +2145,10 @@ def Term.sort_typed
         | Sort.Unit => ok true
         | Sort.Reference => ok false
         | Sort.Class => ok true
-        | Sort.Bytes => ok true
+        | Sort.Bytes => ok false
         | Sort.Range => ok true
-        | Sort.Tuple _ => ok true
-        | Sort.VariadicTuple _ => ok true
+        | Sort.Tuple _ => ok false
+        | Sort.VariadicTuple _ => ok false
         | Sort.List _ => ok false
         | Sort.Set _ => ok false
         | Sort.Dict _ _ => ok false
@@ -2150,9 +2188,17 @@ def Term.sort_typed
         | Sort.Tuple _ =>
           let s ← Sort.Insts.CoreCloneClone.clone sort
           ok (core.result.Result.Ok s)
-        | Sort.VariadicTuple _ =>
-          let s ← Sort.Insts.CoreCloneClone.clone sort
-          ok (core.result.Result.Ok s)
+        | Sort.VariadicTuple element =>
+          let b1 ← is_variadic_tuple_element_sort element
+          if b1
+          then
+            let s ← Sort.Insts.CoreCloneClone.clone sort
+            ok (core.result.Result.Ok s)
+          else
+            let s ← Box.Insts.CoreConvertAsRef.as_ref Global element
+            let s1 ← Sort.Insts.CoreCloneClone.clone s
+            ok (core.result.Result.Err
+              (SortError.VariadicTupleElementSortUnsupported s1))
         | Sort.List element =>
           let b1 ← is_list_element_sort element
           if b1
@@ -2517,6 +2563,29 @@ def Term.sort_typed
     match cf with
     | core.ops.control_flow.ControlFlow.Continue _ =>
       ok (core.result.Result.Ok Sort.Int)
+    | core.ops.control_flow.ControlFlow.Break residual =>
+      core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+        «Sort» (core.convert.FromSame SortError) residual
+  | Term.StringSlice source start length =>
+    let r ← require_sort source Sort.String SortContext.StringSliceReceiver
+    let cf ← core.result.Result.Insts.CoreOpsTry.branch r
+    match cf with
+    | core.ops.control_flow.ControlFlow.Continue _ =>
+      let r1 ← require_sort start Sort.Int SortContext.StringSliceStart
+      let cf1 ← core.result.Result.Insts.CoreOpsTry.branch r1
+      match cf1 with
+      | core.ops.control_flow.ControlFlow.Continue _ =>
+        let r2 ← require_sort length Sort.Int SortContext.StringSliceLength
+        let cf2 ← core.result.Result.Insts.CoreOpsTry.branch r2
+        match cf2 with
+        | core.ops.control_flow.ControlFlow.Continue _ =>
+          ok (core.result.Result.Ok Sort.String)
+        | core.ops.control_flow.ControlFlow.Break residual =>
+          core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+            «Sort» (core.convert.FromSame SortError) residual
+      | core.ops.control_flow.ControlFlow.Break residual =>
+        core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+          «Sort» (core.convert.FromSame SortError) residual
     | core.ops.control_flow.ControlFlow.Break residual =>
       core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
         «Sort» (core.convert.FromSame SortError) residual
@@ -3765,7 +3834,7 @@ def Term.sort_typed
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_predicate_argument_sorts]: loop 0:
-    Source: 'src/lib.rs', lines 1336:4-1344:5 -/
+    Source: 'src/lib.rs', lines 1362:4-1370:5 -/
 @[rust_loop]
 def require_predicate_argument_sorts_loop
   (iter : core.slice.iter.Iter Term)
@@ -3779,7 +3848,7 @@ def require_predicate_argument_sorts_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_predicate_argument_sorts]: loop body 0:
-    Source: 'src/lib.rs', lines 1336:4-1344:5 -/
+    Source: 'src/lib.rs', lines 1362:4-1370:5 -/
 @[rust_loop_body]
 def require_predicate_argument_sorts_loop.body
   (iter : core.slice.iter.Iter Term)
@@ -3842,7 +3911,7 @@ def require_predicate_argument_sorts_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_predicate_argument_sorts]:
-    Source: 'src/lib.rs', lines 1334:0-1346:1 -/
+    Source: 'src/lib.rs', lines 1360:0-1372:1 -/
 def require_predicate_argument_sorts
   (arguments : Slice Term) : Result (core.result.Result _root_.Unit SortError) := do
   let iter ←
@@ -3852,7 +3921,7 @@ def require_predicate_argument_sorts
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_permission_transfer_amounts]: loop 0:
-    Source: 'src/lib.rs', lines 1352:4-1368:5 -/
+    Source: 'src/lib.rs', lines 1378:4-1394:5 -/
 @[rust_loop]
 def require_permission_transfer_amounts_loop
   (iter : core.slice.iter.Iter PermissionTransferAmount)
@@ -3866,7 +3935,7 @@ def require_permission_transfer_amounts_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_permission_transfer_amounts]: loop body 0:
-    Source: 'src/lib.rs', lines 1352:4-1368:5 -/
+    Source: 'src/lib.rs', lines 1378:4-1394:5 -/
 @[rust_loop_body]
 def require_permission_transfer_amounts_loop.body
   (iter : core.slice.iter.Iter PermissionTransferAmount)
@@ -3903,7 +3972,7 @@ def require_permission_transfer_amounts_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_permission_transfer_amounts]:
-    Source: 'src/lib.rs', lines 1348:0-1370:1 -/
+    Source: 'src/lib.rs', lines 1374:0-1396:1 -/
 def require_permission_transfer_amounts
   (amounts : Slice PermissionTransferAmount) :
   Result (core.result.Result _root_.Unit SortError)
@@ -3915,7 +3984,7 @@ def require_permission_transfer_amounts
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_all_sorts]: loop 0:
-    Source: 'src/lib.rs', lines 1378:4-1382:5 -/
+    Source: 'src/lib.rs', lines 1404:4-1408:5 -/
 @[rust_loop]
 def require_all_sorts_loop
   (iter : core.slice.iter.Iter Term) (expected : «Sort»)
@@ -3929,7 +3998,7 @@ def require_all_sorts_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_all_sorts]: loop body 0:
-    Source: 'src/lib.rs', lines 1378:4-1382:5 -/
+    Source: 'src/lib.rs', lines 1404:4-1408:5 -/
 @[rust_loop_body]
 def require_all_sorts_loop.body
   (expected : «Sort») (context : SortContext)
@@ -3952,7 +4021,7 @@ def require_all_sorts_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_all_sorts]:
-    Source: 'src/lib.rs', lines 1372:0-1384:1 -/
+    Source: 'src/lib.rs', lines 1398:0-1410:1 -/
 def require_all_sorts
   (values : Slice Term) (expected : «Sort») (context : SortContext) :
   Result (core.result.Result _root_.Unit SortError)
@@ -3964,7 +4033,7 @@ def require_all_sorts
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::collect_sorts]: loop 0:
-    Source: 'src/lib.rs', lines 1389:4-1398:5 -/
+    Source: 'src/lib.rs', lines 1415:4-1424:5 -/
 @[rust_loop]
 def collect_sorts_loop
   (iter : core.slice.iter.Iter Term) (sorts : VcTermSort.ModelVec «Sort»)
@@ -3978,7 +4047,7 @@ def collect_sorts_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::collect_sorts]: loop body 0:
-    Source: 'src/lib.rs', lines 1389:4-1398:5 -/
+    Source: 'src/lib.rs', lines 1415:4-1424:5 -/
 @[rust_loop_body]
 def collect_sorts_loop.body
   (iter : core.slice.iter.Iter Term) (sorts : VcTermSort.ModelVec «Sort»)
@@ -4004,7 +4073,7 @@ def collect_sorts_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::collect_sorts]:
-    Source: 'src/lib.rs', lines 1386:0-1403:1 -/
+    Source: 'src/lib.rs', lines 1412:0-1429:1 -/
 def collect_sorts
   (values : Slice Term) :
   Result (core.result.Result (VcTermSort.ModelVec «Sort») SortError)
@@ -4021,7 +4090,7 @@ def collect_sorts
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_finite_dict_entry_sorts]: loop 0:
-    Source: 'src/lib.rs', lines 1411:4-1422:5 -/
+    Source: 'src/lib.rs', lines 1437:4-1448:5 -/
 @[rust_loop]
 def require_finite_dict_entry_sorts_loop
   (iter : core.slice.iter.Iter (Term × Term)) (key_sort : «Sort»)
@@ -4035,7 +4104,7 @@ def require_finite_dict_entry_sorts_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_finite_dict_entry_sorts]: loop body 0:
-    Source: 'src/lib.rs', lines 1411:4-1422:5 -/
+    Source: 'src/lib.rs', lines 1437:4-1448:5 -/
 @[rust_loop_body]
 def require_finite_dict_entry_sorts_loop.body
   (key_sort : «Sort») (value_sort : «Sort»)
@@ -4064,7 +4133,7 @@ def require_finite_dict_entry_sorts_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_finite_dict_entry_sorts]:
-    Source: 'src/lib.rs', lines 1405:0-1424:1 -/
+    Source: 'src/lib.rs', lines 1431:0-1450:1 -/
 def require_finite_dict_entry_sorts
   (entries : Slice (Term × Term)) (key_sort : «Sort»)
   (value_sort : «Sort») :
@@ -4078,7 +4147,7 @@ def require_finite_dict_entry_sorts
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_variadic_tuple_element_sorts]: loop 0:
-    Source: 'src/lib.rs', lines 1516:4-1527:5 -/
+    Source: 'src/lib.rs', lines 1543:4-1554:5 -/
 @[rust_loop]
 def require_variadic_tuple_element_sorts_loop
   (iter : core.slice.iter.Iter Term) (expected : «Sort»)
@@ -4092,7 +4161,7 @@ def require_variadic_tuple_element_sorts_loop
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_variadic_tuple_element_sorts]: loop body 0:
-    Source: 'src/lib.rs', lines 1516:4-1527:5 -/
+    Source: 'src/lib.rs', lines 1543:4-1554:5 -/
 @[rust_loop_body]
 def require_variadic_tuple_element_sorts_loop.body
   (expected : «Sort») (iter : core.slice.iter.Iter Term)
@@ -4123,7 +4192,7 @@ def require_variadic_tuple_element_sorts_loop.body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_variadic_tuple_element_sorts]:
-    Source: 'src/lib.rs', lines 1514:0-1529:1 -/
+    Source: 'src/lib.rs', lines 1541:0-1556:1 -/
 def require_variadic_tuple_element_sorts
   (values : Slice Term) (expected : «Sort») :
   Result (core.result.Result _root_.Unit SortError)
@@ -4136,7 +4205,7 @@ def require_variadic_tuple_element_sorts
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_comprehension_body]:
-    Source: 'src/lib.rs', lines 1531:0-1558:1 -/
+    Source: 'src/lib.rs', lines 1558:0-1585:1 -/
 def require_comprehension_body
   (binder : String) (binder_sort : «Sort») (mapped : Term)
   (mapped_sort : «Sort») (filter : Option Term) :
@@ -4171,7 +4240,7 @@ def require_comprehension_body
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_bound_term_sort]:
-    Source: 'src/lib.rs', lines 1560:0-1569:1 -/
+    Source: 'src/lib.rs', lines 1587:0-1596:1 -/
 def require_bound_term_sort
   (binder : String) (binder_sort : «Sort») (term : Term)
   (expected : «Sort») (context : SortContext) :
@@ -4189,7 +4258,7 @@ def require_bound_term_sort
 partial_fixpoint
 
 /-- [maledictus_vc_term_sort_extraction::require_sort]:
-    Source: 'src/lib.rs', lines 1837:0-1848:1 -/
+    Source: 'src/lib.rs', lines 1877:0-1888:1 -/
 def require_sort
   (term : Term) (expected : «Sort») (context : SortContext) :
   Result (core.result.Result _root_.Unit SortError)
@@ -4212,7 +4281,7 @@ partial_fixpoint
 end
 
 /-- [maledictus_vc_term_sort_extraction::term_sort_extraction_entrypoint]:
-    Source: 'src/lib.rs', lines 1330:0-1332:1
+    Source: 'src/lib.rs', lines 1356:0-1358:1
     Visibility: public -/
 def term_sort_extraction_entrypoint
   (term : Term) : Result (core.result.Result «Sort» SortError) := do

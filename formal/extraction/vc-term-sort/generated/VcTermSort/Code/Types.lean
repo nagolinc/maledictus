@@ -38,7 +38,7 @@ inductive «Sort» where
 | DictKeys : «Sort» → «Sort»
 
 /-- [maledictus_vc_term_sort_extraction::SortContext]
-    Source: 'src/lib.rs', lines 65:0-102:1
+    Source: 'src/lib.rs', lines 65:0-105:1
     Visibility: public -/
 @[discriminant isize]
 inductive SortContext where
@@ -59,6 +59,9 @@ inductive SortContext where
 | NegationOperand : SortContext
 | StringConcatenationOperand : SortContext
 | StringLengthOperand : SortContext
+| StringSliceReceiver : SortContext
+| StringSliceStart : SortContext
+| StringSliceLength : SortContext
 | BytesConcatenationOperand : SortContext
 | BytesLengthOperand : SortContext
 | BytesIndexReceiver : SortContext
@@ -80,7 +83,7 @@ inductive SortContext where
 | QuantifierBody : SortContext
 
 /-- [maledictus_vc_term_sort_extraction::SortError]
-    Source: 'src/lib.rs', lines 151:0-274:1
+    Source: 'src/lib.rs', lines 157:0-280:1
     Visibility: public -/
 @[discriminant isize]
 inductive SortError where
@@ -140,7 +143,7 @@ inductive SortError where
 | UnexpectedSort : SortContext → «Sort» → «Sort» → SortError
 
 /-- [maledictus_vc_term_sort_extraction::IntEnumDescriptor]
-    Source: 'src/lib.rs', lines 475:0-478:1
+    Source: 'src/lib.rs', lines 481:0-484:1
     Visibility: public -/
 structure IntEnumDescriptor where
   «class» : String
@@ -149,13 +152,13 @@ structure IntEnumDescriptor where
 mutual
 
 /-- [maledictus_vc_term_sort_extraction::PermissionTransferAmount]
-    Source: 'src/lib.rs', lines 481:0-485:1
+    Source: 'src/lib.rs', lines 487:0-491:1
     Visibility: public -/
 inductive PermissionTransferAmount where
 | mk : Term → Std.U32 → Std.U32 → PermissionTransferAmount
 
 /-- [maledictus_vc_term_sort_extraction::Term]
-    Source: 'src/lib.rs', lines 489:0-785:1
+    Source: 'src/lib.rs', lines 495:0-798:1
     Visibility: public -/
 @[discriminant isize]
 inductive Term where
@@ -217,6 +220,7 @@ inductive Term where
 | Negate : Term → Term
 | StringConcat : _root_.List Term → Term
 | StringLength : Term → Term
+| StringSlice : Term → Term → Term → Term
 | BytesConcat : _root_.List Term → Term
 | BytesLength : Term → Term
 | BytesGet : Term → Term → Term

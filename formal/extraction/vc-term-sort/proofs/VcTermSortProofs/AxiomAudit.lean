@@ -28,6 +28,9 @@ open VcTermSort.AxiomAudit
 
 namespace VcTermSort.Proofs
 
+run_cmd assertExactAxioms ``VcTermSort.Proofs.compiler_derived_term_clone_identity #[``propext]
+run_cmd assertExactAxioms ``VcTermSort.Proofs.compiler_derived_transfer_clone_identity #[``propext]
+run_cmd assertExactAxioms ``VcTermSort.Proofs.term_clone_model_refines_compiler_derive #[``propext]
 run_cmd assertExactAxioms ``VcTermSort.Proofs.term_sort_terminates standardAxioms
 run_cmd assertExactAxioms ``VcTermSort.Proofs.term_sort_extraction_entrypoint_terminates standardAxioms
 run_cmd assertExactAxioms ``VcTermSort.Proofs.term_sort_extraction_entrypoint_structured_refinement standardAxioms

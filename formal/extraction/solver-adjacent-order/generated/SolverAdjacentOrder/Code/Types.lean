@@ -16,7 +16,7 @@ set_option maxRecDepth 2048
 namespace SolverAdjacentOrder
 
 /-- [maledictus::vc::IntEnumDescriptor]
-    Source: 'src/vc.rs', lines 475:0-478:1
+    Source: 'src/vc.rs', lines 481:0-484:1
     Visibility: public -/
 structure vc.IntEnumDescriptor where
   «class» : String
@@ -49,13 +49,13 @@ deriving BEq
 mutual
 
 /-- [maledictus::vc::PermissionTransferAmount]
-    Source: 'src/vc.rs', lines 481:0-485:1
+    Source: 'src/vc.rs', lines 487:0-491:1
     Visibility: public -/
 inductive vc.PermissionTransferAmount where
 | mk : vc.Term → Std.U32 → Std.U32 → vc.PermissionTransferAmount
 
 /-- [maledictus::vc::Term]
-    Source: 'src/vc.rs', lines 489:0-785:1
+    Source: 'src/vc.rs', lines 495:0-798:1
     Visibility: public -/
 @[discriminant isize]
 inductive vc.Term where
@@ -117,6 +117,7 @@ inductive vc.Term where
 | Negate : vc.Term → vc.Term
 | StringConcat : _root_.List vc.Term → vc.Term
 | StringLength : vc.Term → vc.Term
+| StringSlice : vc.Term → vc.Term → vc.Term → vc.Term
 | BytesConcat : _root_.List vc.Term → vc.Term
 | BytesLength : vc.Term → vc.Term
 | BytesGet : vc.Term → vc.Term → vc.Term

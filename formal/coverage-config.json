@@ -80,7 +80,7 @@
         "is_z3_collection_key_sort"
       ],
       "manifest": "formal/extraction/solver-sort-predicates/extraction.json",
-      "theorem": "SolverSortPredicates.Proofs.collection_key_sort_all_inputs_exact"
+      "theorem": "SolverSortPredicates.RawProofs.collection_key_sort_all_inputs_exact"
     },
     {
       "id": "solver-z3-collection-value-sort",
@@ -90,7 +90,7 @@
         "is_z3_collection_value_sort"
       ],
       "manifest": "formal/extraction/solver-sort-predicates/extraction.json",
-      "theorem": "SolverSortPredicates.Proofs.collection_value_sort_all_inputs_exact"
+      "theorem": "SolverSortPredicates.RawProofs.collection_value_sort_all_inputs_exact"
     },
     {
       "id": "solver-z3-nested-equality-sort",
@@ -100,7 +100,7 @@
         "is_z3_nested_equality_sort"
       ],
       "manifest": "formal/extraction/solver-sort-predicates/extraction.json",
-      "theorem": "SolverSortPredicates.Proofs.nested_equality_sort_all_inputs_exact"
+      "theorem": "SolverSortPredicates.RawProofs.nested_equality_sort_all_inputs_exact"
     },
     {
       "id": "solver-adjacent-order-root",
@@ -110,7 +110,7 @@
         "is_exact_sorted_adjacent_order_theorem"
       ],
       "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
-      "theorem": "SolverAdjacentOrder.Proofs.is_exact_sorted_adjacent_order_theorem_all_inputs_exact"
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_exact_sorted_adjacent_order_all_inputs_exact"
     },
     {
       "id": "solver-adjacent-order-unwrap-singleton-and",
@@ -120,7 +120,7 @@
         "unwrap_singleton_and"
       ],
       "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
-      "theorem": "SolverAdjacentOrder.Proofs.unwrap_singleton_and_all_inputs_exact"
+      "theorem": "SolverAdjacentOrder.Proofs.raw_unwrap_singleton_and_all_inputs_exact"
     },
     {
       "id": "solver-adjacent-order-bound-variable",
@@ -130,7 +130,7 @@
         "is_bound_variable"
       ],
       "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
-      "theorem": "SolverAdjacentOrder.Proofs.is_bound_variable_all_inputs_exact"
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_bound_variable_all_inputs_exact"
     },
     {
       "id": "solver-adjacent-order-integer-literal",
@@ -140,7 +140,7 @@
         "is_integer_literal"
       ],
       "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
-      "theorem": "SolverAdjacentOrder.Proofs.is_integer_literal_all_inputs_exact"
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_integer_literal_all_inputs_exact"
     },
     {
       "id": "solver-adjacent-order-bound-successor",
@@ -150,7 +150,7 @@
         "is_bound_successor"
       ],
       "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
-      "theorem": "SolverAdjacentOrder.Proofs.is_bound_successor_all_inputs_exact"
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_bound_successor_all_inputs_exact"
     },
     {
       "id": "solver-adjacent-order-python-index",
@@ -160,7 +160,7 @@
         "is_python_index_of"
       ],
       "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
-      "theorem": "SolverAdjacentOrder.Proofs.is_python_index_of_all_inputs_exact"
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_python_index_of_all_inputs_exact"
     },
     {
       "id": "solver-adjacent-order-nonnegative-bound",
@@ -170,7 +170,7 @@
         "is_nonnegative_bound"
       ],
       "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
-      "theorem": "SolverAdjacentOrder.Proofs.is_nonnegative_bound_all_inputs_exact"
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_nonnegative_bound_all_inputs_exact"
     },
     {
       "id": "solver-adjacent-order-upper-bound",
@@ -180,7 +180,7 @@
         "is_adjacent_upper_bound"
       ],
       "manifest": "formal/extraction/solver-adjacent-order/extraction.json",
-      "theorem": "SolverAdjacentOrder.Proofs.is_adjacent_upper_bound_all_inputs_exact"
+      "theorem": "SolverAdjacentOrder.Proofs.raw_is_adjacent_upper_bound_all_inputs_exact"
     },
     {
       "id": "call-binding-full",

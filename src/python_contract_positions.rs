@@ -150,6 +150,9 @@ struct Bindings {
     /// order, so this catalog is deliberately updated as each module statement executes.
     nonextendable_builtin_types: BTreeMap<String, String>,
     allow_abstract_predicate_operations: bool,
+    /// The protocol's runtime frontend composes float conversion outcomes. The
+    /// pinned Nagini conformance validator keeps its original syntax surface.
+    allow_runtime_float_conversion: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -232,6 +235,7 @@ pub fn validate_contract_positions_with_profile(
         path,
         &[],
         information_flow,
+        false,
     )
 }
 
@@ -245,6 +249,7 @@ pub(crate) fn validate_contract_positions_with_source_predicates(
         path,
         imported_predicates,
         InformationFlowVerificationProfile::Ordinary,
+        true,
     )
 }
 
@@ -253,6 +258,7 @@ fn validate_contract_positions_with_source_predicates_and_profile(
     path: &str,
     imported_predicates: &[SourcePredicateModule],
     information_flow: InformationFlowVerificationProfile,
+    allow_runtime_float_conversion: bool,
 ) -> Result<(), ContractPositionFailure> {
     let suite = ast::Suite::parse(source, path).map_err(|error| ContractPositionFailure {
         code: "frontend.python.parse-error",
@@ -304,6 +310,7 @@ fn validate_contract_positions_with_source_predicates_and_profile(
         imported_predicates,
     );
     let mut bindings = Bindings::default();
+    bindings.allow_runtime_float_conversion = allow_runtime_float_conversion;
     for builtin in nonextendable_builtin_types() {
         bindings
             .nonextendable_builtin_types
@@ -3371,6 +3378,13 @@ impl Visitor for ExpressionValidator<'_> {
                     value: ast::Constant::Str(_),
                     ..
                 }) => {}
+                _ if self.context == ExpressionContext::Runtime
+                    && self.bindings.allow_runtime_float_conversion =>
+                {
+                    // This only defers the syntax rejection. The semantic
+                    // frontend must type the argument and retain every normal
+                    // and exceptional conversion path; no result is assumed here.
+                }
                 _ => {
                     self.failure = Some(failure_at_code(
                         &node,

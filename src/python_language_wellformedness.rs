@@ -76,6 +76,7 @@ struct LanguageRestrictionCollector<'a> {
     local_nominal_scopes: Vec<BTreeMap<String, String>>,
     previous_loop_targets: Vec<String>,
     function_scopes: Vec<BTreeSet<String>>,
+    annotated_local_scopes: Vec<BTreeSet<String>>,
     explicit_type_comment_lines: BTreeSet<u32>,
     source: &'a str,
 }
@@ -115,6 +116,7 @@ impl<'a> LanguageRestrictionCollector<'a> {
             local_nominal_scopes: Vec::new(),
             previous_loop_targets: Vec::new(),
             function_scopes: Vec::new(),
+            annotated_local_scopes: Vec::new(),
             explicit_type_comment_lines: collect_explicit_type_comment_lines(source),
             source,
         }
@@ -145,15 +147,18 @@ impl<'a> LanguageRestrictionCollector<'a> {
         &mut self,
         local_bindings: BTreeSet<String>,
         nominal_bindings: BTreeMap<String, String>,
+        annotated_bindings: BTreeSet<String>,
         visit: impl FnOnce(&mut Self),
     ) {
         let enclosing_depth = self.finally_depth;
         self.finally_depth = 0;
         self.function_scopes.push(local_bindings);
+        self.annotated_local_scopes.push(annotated_bindings);
         self.local_nominal_scopes.push(nominal_bindings);
         visit(self);
         self.local_nominal_scopes.pop();
         self.function_scopes.pop();
+        self.annotated_local_scopes.pop();
         self.finally_depth = enclosing_depth;
     }
 
@@ -333,6 +338,7 @@ impl Visitor for LanguageRestrictionCollector<'_> {
 
     fn visit_stmt_function_def(&mut self, node: ast::StmtFunctionDef) {
         let local_bindings = collect_function_scope_bindings(&node.args, &node.body);
+        let annotated_bindings = collect_annotated_local_bindings(&node.args, &node.body);
         let mut nominal_bindings = collect_nominal_argument_bindings(&node.args);
         let enclosing_receiver = self.current_method_receiver.take();
         let direct_method = self.current_class.is_some() && self.class_function_depth == 0;
@@ -346,15 +352,21 @@ impl Visitor for LanguageRestrictionCollector<'_> {
         {
             nominal_bindings.insert(receiver.clone(), class.clone());
         }
-        self.visit_function_with_fresh_context(local_bindings, nominal_bindings, |collector| {
-            collector.generic_visit_stmt_function_def(node);
-        });
+        self.visit_function_with_fresh_context(
+            local_bindings,
+            nominal_bindings,
+            annotated_bindings,
+            |collector| {
+                collector.generic_visit_stmt_function_def(node);
+            },
+        );
         self.class_function_depth = self.class_function_depth.saturating_sub(1);
         self.current_method_receiver = enclosing_receiver;
     }
 
     fn visit_stmt_async_function_def(&mut self, node: ast::StmtAsyncFunctionDef) {
         let local_bindings = collect_function_scope_bindings(&node.args, &node.body);
+        let annotated_bindings = collect_annotated_local_bindings(&node.args, &node.body);
         let mut nominal_bindings = collect_nominal_argument_bindings(&node.args);
         let enclosing_receiver = self.current_method_receiver.take();
         let direct_method = self.current_class.is_some() && self.class_function_depth == 0;
@@ -368,9 +380,14 @@ impl Visitor for LanguageRestrictionCollector<'_> {
         {
             nominal_bindings.insert(receiver.clone(), class.clone());
         }
-        self.visit_function_with_fresh_context(local_bindings, nominal_bindings, |collector| {
-            collector.generic_visit_stmt_async_function_def(node);
-        });
+        self.visit_function_with_fresh_context(
+            local_bindings,
+            nominal_bindings,
+            annotated_bindings,
+            |collector| {
+                collector.generic_visit_stmt_async_function_def(node);
+            },
+        );
         self.class_function_depth = self.class_function_depth.saturating_sub(1);
         self.current_method_receiver = enclosing_receiver;
     }
@@ -427,7 +444,11 @@ impl Visitor for LanguageRestrictionCollector<'_> {
         if node.type_comment.is_none()
             && !self.explicit_type_comment_lines.contains(&line)
             && node.targets.iter().any(|target| {
-                assignment_has_unresolved_empty_container(target, node.value.as_ref())
+                assignment_has_unresolved_empty_container(
+                    target,
+                    node.value.as_ref(),
+                    self.annotated_local_scopes.last(),
+                )
             })
         {
             self.record(
@@ -1191,19 +1212,30 @@ fn is_canonical_predicate_decorator(
     }
 }
 
-fn assignment_has_unresolved_empty_container(target: &ast::Expr, value: &ast::Expr) -> bool {
+fn assignment_has_unresolved_empty_container(
+    target: &ast::Expr,
+    value: &ast::Expr,
+    annotated: Option<&BTreeSet<String>>,
+) -> bool {
     match (target, value) {
-        (ast::Expr::Name(_), value) => is_empty_container_literal(value),
+        (ast::Expr::Name(name), value) => {
+            is_empty_container_literal(value)
+                && !annotated.is_some_and(|names| names.contains(name.id.as_str()))
+        }
         (ast::Expr::Tuple(targets), ast::Expr::Tuple(values)) => targets
             .elts
             .iter()
             .zip(&values.elts)
-            .any(|(target, value)| assignment_has_unresolved_empty_container(target, value)),
+            .any(|(target, value)| {
+                assignment_has_unresolved_empty_container(target, value, annotated)
+            }),
         (ast::Expr::List(targets), ast::Expr::List(values)) => targets
             .elts
             .iter()
             .zip(&values.elts)
-            .any(|(target, value)| assignment_has_unresolved_empty_container(target, value)),
+            .any(|(target, value)| {
+                assignment_has_unresolved_empty_container(target, value, annotated)
+            }),
         _ => false,
     }
 }
@@ -1335,6 +1367,75 @@ fn valid_let_call_shape(call: &ast::ExprCall) -> bool {
         && lambda.args.vararg.is_none()
         && lambda.args.kwonlyargs.is_empty()
         && lambda.args.kwarg.is_none()
+}
+
+// This is only a syntax gate. Strict typing and the semantic frontends still
+// check the annotation, assignment compatibility, initialization and effects.
+// A list reset must not lose its function-local declaration; declarations in a
+// nested function/class or an enclosing scope must not supply a local type.
+#[derive(Default)]
+struct AnnotatedLocalCollector {
+    names: BTreeSet<String>,
+    nonlocals: BTreeSet<String>,
+}
+
+impl Visitor for AnnotatedLocalCollector {
+    fn visit_stmt_ann_assign(&mut self, node: ast::StmtAnnAssign) {
+        if let ast::Expr::Name(name) = node.target.as_ref() {
+            self.names.insert(name.id.to_string());
+        }
+    }
+
+    fn visit_stmt_function_def(&mut self, _node: ast::StmtFunctionDef) {}
+    fn visit_stmt_async_function_def(&mut self, _node: ast::StmtAsyncFunctionDef) {}
+    fn visit_stmt_class_def(&mut self, _node: ast::StmtClassDef) {}
+    fn visit_expr_lambda(&mut self, _node: ast::ExprLambda) {}
+
+    fn visit_stmt_global(&mut self, node: ast::StmtGlobal) {
+        self.nonlocals
+            .extend(node.names.into_iter().map(|name| name.to_string()));
+    }
+
+    fn visit_stmt_nonlocal(&mut self, node: ast::StmtNonlocal) {
+        self.nonlocals
+            .extend(node.names.into_iter().map(|name| name.to_string()));
+    }
+
+    fn visit_match_case(&mut self, node: ast::MatchCase) {
+        // rustpython-ast's generated visitor does not descend into match cases.
+        for statement in node.body {
+            self.visit_stmt(statement);
+        }
+    }
+}
+
+fn collect_annotated_local_bindings(
+    arguments: &ast::Arguments,
+    body: &[ast::Stmt],
+) -> BTreeSet<String> {
+    let mut collector = AnnotatedLocalCollector::default();
+    for argument in arguments
+        .posonlyargs
+        .iter()
+        .chain(&arguments.args)
+        .chain(&arguments.kwonlyargs)
+    {
+        if argument.def.annotation.is_some() {
+            collector.names.insert(argument.def.arg.to_string());
+        }
+    }
+    for argument in [&arguments.vararg, &arguments.kwarg].into_iter().flatten() {
+        if argument.annotation.is_some() {
+            collector.names.insert(argument.arg.to_string());
+        }
+    }
+    for statement in body {
+        collector.visit_stmt(statement.clone());
+    }
+    for name in collector.nonlocals {
+        collector.names.remove(&name);
+    }
+    collector.names
 }
 
 fn collect_function_scope_bindings(

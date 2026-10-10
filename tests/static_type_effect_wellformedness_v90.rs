@@ -45,6 +45,77 @@ fn unresolved_empty_container_types_are_structural_and_context_sensitive() {
 }
 
 #[test]
+fn empty_container_resets_retain_local_annotations_without_leaking_scopes() {
+    for source in [
+        "def run() -> None:\n    values: list[int] = [1]\n    values = []\n",
+        "def run(values: list[int]) -> None:\n    values = []\n",
+        "def run() -> None:\n    values: list[int]\n    counts: dict[str, int]\n    values, counts = [], {}\n",
+        "async def run(values: list[int]) -> None:\n    values = []\n",
+        "def run(flag: bool) -> None:\n    if flag:\n        values: list[int] = [1]\n    values = []\n",
+    ] {
+        assert_valid(source);
+    }
+    for source in [
+        "values: list[int] = [1]\ndef run() -> None:\n    values = []\n",
+        "def first() -> None:\n    values: list[int] = [1]\ndef second() -> None:\n    values = []\n",
+        "def outer() -> None:\n    values: list[int] = [1]\n    def inner() -> None:\n        values = []\n",
+        "def outer() -> None:\n    def inner() -> None:\n        values: list[int] = [1]\n    values = []\n",
+        "class Box:\n    values: list[int] = [1]\n    def run(self) -> None:\n        values = []\n",
+        "def run() -> None:\n    values: list[int] = [1]\n    values, missing = [], {}\n",
+        "def run() -> None:\n    class Box:\n        values: list[int] = [1]\n    values = []\n",
+    ] {
+        assert_eq!(failure(source).code, PARTIAL_TYPE, "{source}");
+    }
+}
+
+#[test]
+fn annotated_resets_still_reach_heap_assertion_and_index_obligations() {
+    use maledictus::python_heap_contracts::verify_heap_module;
+    use maledictus::vc::ObligationStatus;
+    let source = "from typing import List\ndef run() -> int:\n    values: List[int] = [1]\n    values = []\n    assert len(values) == 0\n    return 0\n";
+    let valid = verify_heap_module(source, "reset.py", &[]).unwrap();
+    assert!(valid.passed, "{valid:#?}");
+    for bad in [
+        source.replace("len(values) == 0", "len(values) == 1"),
+        source.replace("return 0", "return values[0]"),
+    ] {
+        let result = verify_heap_module(&bad, "reset.py", &[]).unwrap();
+        assert!(!result.passed, "{result:#?}");
+        assert!(
+            result
+                .obligations
+                .iter()
+                .any(|o| o.status == ObligationStatus::Refuted),
+            "{result:#?}"
+        );
+    }
+    let alias = "from typing import List\ndef run() -> int:\n    values: List[int] = [1]\n    original = values\n    values = []\n    assert len(values) == 0\n    assert len(original) == 1\n    return 0\n";
+    let result = verify_heap_module(alias, "alias.py", &[]).unwrap();
+    assert!(result.passed, "{result:#?}");
+    let result = verify_heap_module(
+        &alias.replace("len(original) == 1", "len(original) == 0"),
+        "alias.py",
+        &[],
+    )
+    .unwrap();
+    assert!(
+        !result.passed,
+        "reset must not clear the alias: {result:#?}"
+    );
+}
+
+#[test]
+fn dictionary_resets_remain_an_explicitly_unsupported_semantic_context() {
+    use maledictus::python_heap_contracts::verify_heap_module;
+    let source = "from typing import Dict\ndef run() -> int:\n    values: Dict[str, int] = {'a': 1}\n    values = {}\n    assert len(values) == 0\n    return 0\n";
+    let error = verify_heap_module(source, "dictionary.py", &[]).unwrap_err();
+    assert_eq!(error.code, "frontend.python.heap.empty-dict-needs-context");
+    let missing = source.replace("return 0", "return values['a']");
+    let error = verify_heap_module(&missing, "dictionary.py", &[]).unwrap_err();
+    assert_eq!(error.code, "frontend.python.heap.empty-dict-needs-context");
+}
+
+#[test]
 fn generic_construction_uses_resolved_typing_bindings_and_function_scope() {
     let direct = failure(
         "from typing import Generic, TypeVar\nT = TypeVar('T')\nclass Box(Generic[T]):\n    pass\ndef run() -> None:\n    Box(1)\n",

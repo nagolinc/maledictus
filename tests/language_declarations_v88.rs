@@ -65,11 +65,6 @@ fn declaration_and_expression_restrictions_are_structural_and_located() {
             WILDCARD_VARIABLE_READ,
             3,
         ),
-        (
-            "def run(value: int) -> float:\n    return float(value)\n",
-            FLOAT_CONVERSION_UNSUPPORTED,
-            2,
-        ),
     ];
 
     for (source, code, line) in cases {
@@ -85,6 +80,18 @@ fn declaration_and_expression_restrictions_are_structural_and_located() {
             "{source}"
         );
     }
+}
+
+#[test]
+fn protocol_float_conversion_is_rejected_for_its_unhandled_overflow() {
+    let analysis = analyze("def run(value: int) -> float:\n    return float(value)\n");
+    assert!(
+        analysis.obligations.iter().any(|obligation| obligation
+            .id
+            .contains("exception-undeclared:OverflowError")
+            && obligation.status == maledictus::vc::ObligationStatus::Refuted),
+        "{analysis:#?}"
+    );
 }
 
 #[test]

@@ -661,7 +661,15 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                         && !external_contracts
                             .scalar_by_adapter
                             .contains_key(&source.path)
-                        && dagcert_operations::is_operation_module_candidate(text, &source.path)
+                        && (dagcert_operations::has_operation_entry_point(text, &source.path)
+                            || operation_source_imports.by_path.contains_key(&source.path)
+                            // A record-only dependency may import only native types,
+                            // leaving no owned import entry. Route it here only if
+                            // the operation resolver checked its complete module;
+                            // ordinary dataclass programs retain the heap verifier.
+                            || python_module_name(&source.path).is_ok_and(|module| {
+                                operation_source_imports.by_module.contains_key(&module)
+                            }))
                     {
                         let imports = match operation_source_imports.by_path.get(&source.path) {
                             Some(Ok(imports)) => imports.as_slice(),
@@ -784,11 +792,15 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                                 .map(|_| ())
                             }),
                             Some(Err(error)) => Some(Err(error.clone())),
-                            None if source.symbols.is_empty()
-                                && dagcert_operations::is_operation_module_candidate(
-                                    text,
-                                    &source.path,
-                                ) =>
+                            // A package initializer may add a source-import proof entry
+                            // even when this operation imports no application helper.
+                            // Bound operation roots need the same operation checker as
+                            // proof-only record modules; their requested symbols must
+                            // not send them to the unrelated heap-only fallback.
+                            None if dagcert_operations::has_operation_entry_point(
+                                text,
+                                &source.path,
+                            ) =>
                             {
                                 Some(
                                     dagcert_operations::verify_operation_module(
@@ -3058,6 +3070,20 @@ fn resolve_external_contracts(
         let mut resolved_any = false;
         for provider_module in unresolved_provider_modules.clone() {
             let (stub_path, text) = &provider_stub_sources[&provider_module];
+            // A supplied dependency must be complete before its consumer is
+            // cached. Otherwise an early partial generic template can omit a
+            // method whose signature needs that dependency (e.g. __exit__ and
+            // TracebackType), even after the dependency becomes available.
+            if python_heap_contracts::source_heap_imports(text, stub_path).is_ok_and(
+                |dependencies| {
+                    dependencies.iter().any(|dependency| {
+                        provider_stub_sources.contains_key(dependency)
+                            && !provider_heap_catalog.contains_key(dependency)
+                    })
+                },
+            ) {
+                continue;
+            }
             let imported = provider_heap_catalog
                 .values()
                 .filter(|candidate| candidate.module() != provider_module)
@@ -3323,21 +3349,23 @@ fn resolve_external_contracts(
             }
         }
     }
-    if let Some(adapter) = scalar_modules
-        .keys()
-        .chain(reference_modules.keys())
-        .find(|adapter| {
-            let count = usize::from(scalar_modules.contains_key(*adapter))
-                + usize::from(reference_modules.contains_key(*adapter))
-                + usize::from(heap_modules.contains_key(*adapter));
-            count > 1
-        })
-    {
+    if let Some(adapter) = reference_modules.keys().find(|adapter| {
+        scalar_modules.contains_key(*adapter) || heap_modules.contains_key(*adapter)
+    }) {
         return Err(Diagnostic::file_error(
             "external-contract.mixed-fragments-unsupported",
-            "one adapter cannot yet combine scalar, nominal-reference, and heap external contracts",
+            "nominal-reference external contracts cannot yet be combined with scalar or heap contracts in one adapter",
             adapter,
         ));
+    }
+    // Stateful adapters can use scalar providers through the existing checked
+    // bridge, which retains Requires, Ensures, and every Exsures outcome. Route
+    // direct verification through the complete provider set too: passing only
+    // heap_modules here would drop the scalar contracts from this adapter.
+    for (adapter, modules) in &mut heap_modules {
+        if scalar_modules.contains_key(adapter) {
+            *modules = heap_bridge_modules[adapter].clone();
+        }
     }
     Ok(ResolvedExternalContracts {
         scalar_by_adapter: scalar_modules,

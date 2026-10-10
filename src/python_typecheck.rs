@@ -1,6 +1,6 @@
 //! Fail-closed Python static type checking through the exact mypy release used by Nagini 1.3.1.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Output, Stdio};
@@ -55,6 +55,7 @@ struct DistributionFileProbe {
 struct Toolchain {
     runtime: PathBuf,
     configuration: PathBuf,
+    stdlib_interfaces: PathBuf,
     contract_support: Vec<PathBuf>,
     identity: PythonTypecheckerIdentity,
 }
@@ -213,6 +214,7 @@ fn resolve_toolchain() -> Result<Toolchain, PythonTypecheckFailure> {
     Ok(Toolchain {
         runtime,
         configuration,
+        stdlib_interfaces: Path::new(&probe.distributions[0].root).join("mypy/typeshed/stdlib"),
         contract_support,
         identity,
     })
@@ -476,21 +478,38 @@ fn materialize_overlay_stubs(
     let mut diagnostic_paths = BTreeMap::new();
     let mut files = Vec::new();
     let mut modules = BTreeMap::<String, Vec<u8>>::new();
-    for overlay in overlays {
-        // mypy reserves the top-level `builtins` module and refuses any explicit builtins.pyi as
-        // a user shadow. Application calls still receive strict static typing from the pinned
-        // mypy/typeshed builtins surface; Maledictus separately parses, hash-binds, and composes
-        // the declared ContractOnly builtins overlay for formal call/effect semantics.
-        if overlay.module == "builtins" {
-            continue;
-        }
+    let declared_modules = overlays
+        .iter()
+        .map(|overlay| overlay.module.clone())
+        .chain(
+            generated_interfaces
+                .iter()
+                .map(|interface| interface.module.clone()),
+        )
+        .collect::<BTreeSet<_>>();
+    for (overlay_index, overlay) in overlays.iter().enumerate() {
         let segments = checked_module_segments(&overlay.module)?;
         reject_source_owned_overlay_module(root, &segments, &overlay.module)?;
+        // These foundational interfaces must keep their complete pinned
+        // typeshed surfaces. A partial native effect contract must not replace
+        // collections.abc and erase the interfaces used by the rest of the
+        // standard library. Application calls still receive strict typing;
+        // Maledictus separately parses, hash-binds and composes the supplied
+        // ContractOnly methods and refuses missing formal effect coverage.
+        if matches!(
+            overlay.module.as_str(),
+            "builtins" | "collections.abc" | "contextlib" | "types"
+        ) {
+            continue;
+        }
         let stub_path = confined_source_path(root, &overlay.stub_path)?;
         let bytes = generate_external_interface(
             &toolchain.runtime,
             &stub_path,
-            &overlay_root.join(format!("stubgen-{}", modules.len())),
+            // A provider may appear on several adapters. modules.len() does
+            // not advance for a repeated provider, so it can reuse a previous
+            // stubgen directory and mix that provider's file with the next one.
+            &overlay_root.join(format!("stubgen-{overlay_index}")),
         )?;
         if let Some(existing) = modules.get(&overlay.module) {
             if existing != &bytes {
@@ -505,15 +524,13 @@ fn materialize_overlay_stubs(
             continue;
         }
         modules.insert(overlay.module.clone(), bytes.clone());
-        let mut generated = overlay_root.clone();
-        for segment in &segments[..segments.len() - 1] {
-            generated.push(segment);
-        }
-        fs::create_dir_all(&generated).map_err(|error| PythonTypecheckFailure {
-            code: "frontend.python.typecheck.overlay-workspace",
-            message: format!("cannot create isolated external module package: {error}"),
+        let generated = overlay_interface_path(&overlay_root, &segments, &declared_modules);
+        fs::create_dir_all(generated.parent().expect("overlay has a parent")).map_err(|error| {
+            PythonTypecheckFailure {
+                code: "frontend.python.typecheck.overlay-workspace",
+                message: format!("cannot create isolated external module package: {error}"),
+            }
         })?;
-        generated.push(format!("{}.pyi", segments[segments.len() - 1]));
         fs::write(&generated, bytes).map_err(|error| PythonTypecheckFailure {
             code: "frontend.python.typecheck.overlay-workspace",
             message: format!("cannot write isolated external module contract: {error}"),
@@ -540,15 +557,13 @@ fn materialize_overlay_stubs(
                 ),
             });
         }
-        let mut generated = overlay_root.clone();
-        for segment in &segments[..segments.len() - 1] {
-            generated.push(segment);
-        }
-        fs::create_dir_all(&generated).map_err(|error| PythonTypecheckFailure {
-            code: "frontend.python.typecheck.overlay-workspace",
-            message: format!("cannot create generated interface package: {error}"),
-        })?;
-        generated.push(format!("{}.pyi", segments[segments.len() - 1]));
+        let generated = overlay_interface_path(&overlay_root, &segments, &declared_modules);
+        fs::create_dir_all(generated.parent().expect("interface has a parent")).map_err(
+            |error| PythonTypecheckFailure {
+                code: "frontend.python.typecheck.overlay-workspace",
+                message: format!("cannot create generated interface package: {error}"),
+            },
+        )?;
         fs::write(&generated, &interface.contents).map_err(|error| PythonTypecheckFailure {
             code: "frontend.python.typecheck.overlay-workspace",
             message: format!("cannot write generated cross-language interface: {error}"),
@@ -559,6 +574,57 @@ fn materialize_overlay_stubs(
         })?;
         files.push(canonical.clone());
         diagnostic_paths.insert(canonical, interface.diagnostic_path.clone());
+    }
+    // With follow_imports=error, mypy must receive the parent package of an
+    // explicit native submodule as an input too. Admit only empty namespaces;
+    // never replace source-owned initializers or pinned provider/stdlib APIs.
+    for module in modules.keys() {
+        let segments = checked_module_segments(module)?;
+        for length in 1..segments.len() {
+            let prefix = &segments[..length];
+            let parent_module = prefix.join(".");
+            reject_source_owned_overlay_module(root, prefix, &parent_module)?;
+            if modules.contains_key(&parent_module)
+                || has_module_interface(&toolchain.stdlib_interfaces, prefix)
+                || toolchain
+                    .contract_support
+                    .iter()
+                    .any(|support| has_module_interface(support, prefix))
+            {
+                continue;
+            }
+            let mut generated = overlay_root.clone();
+            for segment in prefix {
+                generated.push(segment);
+            }
+            generated.push("__init__.pyi");
+            if generated.exists() {
+                continue;
+            }
+            fs::create_dir_all(generated.parent().expect("package has a parent"))
+                .and_then(|()| {
+                    fs::write(
+                        &generated,
+                        b"# Empty namespace for explicitly supplied external submodules.\n",
+                    )
+                })
+                .map_err(|error| PythonTypecheckFailure {
+                    code: "frontend.python.typecheck.overlay-workspace",
+                    message: format!("cannot write external package namespace: {error}"),
+                })?;
+            let canonical =
+                fs::canonicalize(&generated).map_err(|error| PythonTypecheckFailure {
+                    code: "frontend.python.typecheck.overlay-workspace",
+                    message: format!("cannot resolve external package namespace: {error}"),
+                })?;
+            let child = overlay_interface_path(&overlay_root, &segments, &declared_modules);
+            let child = fs::canonicalize(child).map_err(|error| PythonTypecheckFailure {
+                code: "frontend.python.typecheck.overlay-workspace",
+                message: format!("cannot resolve supplied external child interface: {error}"),
+            })?;
+            files.push(canonical.clone());
+            diagnostic_paths.insert(canonical, diagnostic_paths[&child].clone());
+        }
     }
     fs::write(&configuration, configuration_bytes).map_err(|error| PythonTypecheckFailure {
         code: "frontend.python.typecheck.configuration",
@@ -571,6 +637,35 @@ fn materialize_overlay_stubs(
         configuration,
         diagnostic_paths,
     })
+}
+
+fn overlay_interface_path(root: &Path, segments: &[&str], modules: &BTreeSet<String>) -> PathBuf {
+    let mut path = root.to_path_buf();
+    for segment in segments {
+        path.push(segment);
+    }
+    let prefix = format!("{}.", segments.join("."));
+    if modules.iter().any(|module| module.starts_with(&prefix)) {
+        path.push("__init__.pyi");
+        path
+    } else {
+        path.with_extension("pyi")
+    }
+}
+
+fn has_module_interface(root: &Path, segments: &[&str]) -> bool {
+    let mut path = root.to_path_buf();
+    for segment in segments {
+        path.push(segment);
+    }
+    [
+        path.with_extension("py"),
+        path.with_extension("pyi"),
+        path.join("__init__.py"),
+        path.join("__init__.pyi"),
+    ]
+    .iter()
+    .any(|candidate| candidate.is_file())
 }
 
 fn generate_external_interface(
@@ -621,8 +716,9 @@ fn generate_external_interface(
         return Err(PythonTypecheckFailure {
             code: "frontend.python.typecheck.overlay-interface",
             message: format!(
-                "pinned stubgen produced {} interfaces for one external contract",
-                generated.len()
+                "pinned stubgen produced {} interfaces for external contract {}",
+                generated.len(),
+                contract_source.display()
             ),
         });
     }
@@ -640,21 +736,21 @@ fn reject_source_owned_overlay_module(
     let mut candidate = root.to_path_buf();
     for segment in segments {
         candidate.push(segment);
-    }
-    let module_file = candidate.with_extension("py");
-    let module_stub = candidate.with_extension("pyi");
-    let package_file = candidate.join("__init__.py");
-    let package_stub = candidate.join("__init__.pyi");
-    if [module_file, module_stub, package_file, package_stub]
-        .iter()
-        .any(|path| path.exists())
-    {
-        return Err(PythonTypecheckFailure {
-            code: "frontend.python.typecheck.overlay-source-conflict",
-            message: format!(
-                "declared external module {module:?} resolves to source below source_root and cannot receive an error-suppressed external contract"
-            ),
-        });
+        let module_file = candidate.with_extension("py");
+        let module_stub = candidate.with_extension("pyi");
+        let package_file = candidate.join("__init__.py");
+        let package_stub = candidate.join("__init__.pyi");
+        if [module_file, module_stub, package_file, package_stub]
+            .iter()
+            .any(|path| path.exists())
+        {
+            return Err(PythonTypecheckFailure {
+                code: "frontend.python.typecheck.overlay-source-conflict",
+                message: format!(
+                    "declared external module {module:?} or its ancestor resolves to source below source_root and cannot receive an external contract"
+                ),
+            });
+        }
     }
     Ok(())
 }

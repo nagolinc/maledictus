@@ -35,6 +35,26 @@ def run() -> None:
 }
 
 #[test]
+fn infeasible_continuations_keep_prior_failed_assertions() {
+    for continuation in [
+        "    if value == 7:\n        return\n",
+        "    assert value == 0 or value == 7\n",
+        "    selected = value == 0 or value == 7\n",
+        "    while value == 7:\n        break\n",
+    ] {
+        let source = format!(
+            "from nagini_contracts.contracts import *\n\nclass Failure(Exception):\n    pass\n\ndef run() -> None:\n    value = 7\n    #:: ExpectedOutput(assert.failed:assertion.false)\n    assert value == 9\n{continuation}"
+        );
+        let result = check_heap_source(&source, "pruned_assertion.py").unwrap();
+        assert_eq!(
+            result.actual,
+            vec![diagnostic("assert.failed:assertion.false", 9)],
+            "continuation: {continuation}\n{result:#?}"
+        );
+    }
+}
+
+#[test]
 fn an_undeclared_heap_exception_is_an_exhale_failure_at_the_function_boundary() {
     let source = r#"from nagini_contracts.contracts import *
 

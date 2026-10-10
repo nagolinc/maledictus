@@ -447,11 +447,10 @@ impl ExceptionHierarchy {
 pub(crate) fn builtin_exception_parent(exception_type: &str) -> Option<&'static str> {
     match exception_type {
         "Exception" => Some("BaseException"),
-        "ValueError" | "TypeError" | "RuntimeError" | "LookupError" | "ArithmeticError" => {
-            Some("Exception")
-        }
+        "ValueError" | "TypeError" | "RuntimeError" | "LookupError" | "ArithmeticError"
+        | "StopIteration" => Some("Exception"),
         "IndexError" | "KeyError" => Some("LookupError"),
-        "ZeroDivisionError" => Some("ArithmeticError"),
+        "ZeroDivisionError" | "OverflowError" => Some("ArithmeticError"),
         _ => None,
     }
 }

@@ -217,6 +217,14 @@ pub fn verify_operation_module_with_bindings(
 }
 
 pub(crate) fn is_operation_module_candidate(source: &str, path: &str) -> bool {
+    operation_module_candidate(source, path, true)
+}
+
+pub(crate) fn has_operation_entry_point(source: &str, path: &str) -> bool {
+    operation_module_candidate(source, path, false)
+}
+
+fn operation_module_candidate(source: &str, path: &str, include_records: bool) -> bool {
     let Ok(suite) = ast::Suite::parse(source, path) else {
         return false;
     };
@@ -227,7 +235,7 @@ pub(crate) fn is_operation_module_candidate(source: &str, path: &str) -> bool {
         ast::Stmt::FunctionDef(function) => function.decorator_list.iter().any(|decorator| {
             matches!(decorator, ast::Expr::Name(name) if markers.operations.contains(name.id.as_str()))
         }),
-        ast::Stmt::ClassDef(class) => class.decorator_list.iter().any(|decorator| {
+        ast::Stmt::ClassDef(class) if include_records => class.decorator_list.iter().any(|decorator| {
             let decorator = match decorator {
                 ast::Expr::Call(call) => call.func.as_ref(),
                 value => value,
@@ -2042,6 +2050,24 @@ fn verify_statements(
                 // The heap proof discharges this assertion on every reachable path.  It is not
                 // treated as an assumed truth or as an unconditional AssertionError outcome.
             }
+            ast::Stmt::Expr(expression)
+                if matches!(expression.value.as_ref(), ast::Expr::Call(call)
+                    if matches!(call.func.as_ref(), ast::Expr::Name(name) if name.id.as_str() == "float")) =>
+            {
+                let (_, exceptions) = infer_operation_expression(
+                    &expression.value,
+                    context.input_name,
+                    context.input_record,
+                    context.records,
+                    context.operations,
+                    context.external_boundaries,
+                    context.external_result_types,
+                    context.operation_name,
+                    context.callable_bindings,
+                    locals,
+                )?;
+                raised_exceptions.extend(exceptions);
+            }
             ast::Stmt::Try(try_statement) => {
                 if !try_statement.orelse.is_empty() {
                     return failure(
@@ -2054,6 +2080,7 @@ fn verify_statements(
                 let mut body_locals = entry_locals.clone();
                 let body = verify_statements(&try_statement.body, context, &mut body_locals)?;
                 let mut uncaught = body.raised_exceptions;
+                let mut handler_exceptions = BTreeSet::new();
                 let mut handlers_cover_all_normal_paths = true;
                 let mut continuing_handler_locals = Vec::new();
                 for handler in &try_statement.handlers {
@@ -2075,9 +2102,13 @@ fn verify_statements(
                     if !handler_effects.normal_path_returns {
                         continuing_handler_locals.push(handler_locals);
                     }
-                    uncaught.extend(handler_effects.raised_exceptions);
+                    // Later sibling handlers cannot catch an exception raised
+                    // inside an earlier handler. Only exceptions from the try
+                    // suite participate in handler matching.
+                    handler_exceptions.extend(handler_effects.raised_exceptions);
                 }
                 raised_exceptions.extend(uncaught);
+                raised_exceptions.extend(handler_exceptions);
                 returned = body.normal_path_returns && handlers_cover_all_normal_paths;
                 if !returned {
                     let mut continuing = Vec::new();
@@ -2515,6 +2546,7 @@ fn is_modeled_builtin_exception_name(name: &str) -> bool {
             | "KeyError"
             | "ArithmeticError"
             | "ZeroDivisionError"
+            | "OverflowError"
             | "RuntimeError"
             | "SystemExit"
             | "KeyboardInterrupt"
@@ -2662,6 +2694,51 @@ fn infer_operation_expression(
     ) {
         return infer_expression(expression, input_name, input_record, records, locals)
             .map(|value_type| (value_type, BTreeSet::new()));
+    }
+    if matches!(call.func.as_ref(), ast::Expr::Name(name) if name.id.as_str() == "float")
+        && input_name != "float"
+        && !locals.contains_key("float")
+        && !operations.contains_key("float")
+        && !external_boundaries.contains_key("float")
+        && !external_result_types.contains_key("float")
+        && !records.contains_key("float")
+    {
+        if call.args.len() != 1 || !call.keywords.is_empty() {
+            return located_failure(
+                "frontend.python.dagcert.float-conversion-shape-unsupported",
+                "float conversion requires exactly one positional value",
+                expression,
+            );
+        }
+        let (argument, mut exceptions) = infer_operation_expression(
+            &call.args[0],
+            input_name,
+            input_record,
+            records,
+            operations,
+            external_boundaries,
+            external_result_types,
+            operation_name,
+            callable_bindings,
+            locals,
+        )?;
+        match argument {
+            ValueType::Str => {
+                exceptions.insert("ValueError".to_owned());
+            }
+            ValueType::Int => {
+                exceptions.insert("OverflowError".to_owned());
+            }
+            ValueType::Float | ValueType::Bool => {}
+            _ => {
+                return located_failure(
+                    "frontend.python.dagcert.float-conversion-argument-unsupported",
+                    "float conversion requires a modeled str/int/float/bool value",
+                    &call.args[0],
+                );
+            }
+        }
+        return Ok((ValueType::Float, exceptions));
     }
     if matches!(call.func.as_ref(), ast::Expr::Name(name) if name.id.as_str() == "isinstance") {
         if !call.keywords.is_empty() || call.args.len() != 2 {
@@ -3104,7 +3181,11 @@ fn exception_is_subtype_of(exception: &str, handler: &str) -> bool {
             true
         }
         "IndexError" | "KeyError" if matches!(handler, "LookupError" | "Exception") => true,
-        "ZeroDivisionError" if matches!(handler, "ArithmeticError" | "Exception") => true,
+        "ZeroDivisionError" | "OverflowError"
+            if matches!(handler, "ArithmeticError" | "Exception") =>
+        {
+            true
+        }
         _ => false,
     }
 }

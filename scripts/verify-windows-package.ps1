@@ -7,6 +7,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "package-input-snapshot.ps1")
+. (Join-Path $PSScriptRoot "resolve-node-runtime.ps1")
 
 function Get-ManifestBundleHash {
     param(
@@ -418,14 +419,7 @@ foreach ($requestFile in $requests) {
             $response.typescript_toolchain.runtime -cne "node") {
             throw "packaged verifier omitted the exact TypeScript toolchain identity for $($requestFile.Name)"
         }
-        $nodePath = if (-not [string]::IsNullOrWhiteSpace($env:MALEDICTUS_NODE)) {
-            (Resolve-Path -LiteralPath $env:MALEDICTUS_NODE -ErrorAction Stop).Path
-        } else {
-            (Get-Command node -CommandType Application -ErrorAction Stop).Source
-        }
-        if (-not (Test-Path -LiteralPath $nodePath -PathType Leaf)) {
-            throw "packaged TypeScript verification selected a missing Node executable"
-        }
+        $nodePath = Resolve-MaledictusNodeRuntime
         $nodeHash = (Get-FileHash -LiteralPath $nodePath -Algorithm SHA256).Hash.ToLowerInvariant()
         $nodeVersion = (& $nodePath --version | Out-String).Trim()
         if ($LASTEXITCODE -ne 0 -or

@@ -79,6 +79,8 @@ jobs:
       - shell: pwsh
         run: ./tests/windows_package_ci_logging.Tests.ps1
       - shell: pwsh
+        run: ./tests/node_runtime_resolution.Tests.ps1
+      - shell: pwsh
         run: ./formal/extraction/vc-term-sort/tests/setup-extraction-workspace.Tests.ps1
       - shell: pwsh
         run: ./scripts/package-windows.ps1 -Profile release

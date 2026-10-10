@@ -66,6 +66,80 @@ function Assert-ExactFile {
     }
 }
 
+function Test-SameWindowsFile {
+    param(
+        [Parameter(Mandatory = $true)][string]$First,
+        [Parameter(Mandatory = $true)][string]$Second
+    )
+
+    # PowerShell 7 does not populate FileInfo.Target for hard links. Compare
+    # the open files' volume and file identifiers instead of path display
+    # metadata or content hashes, which cannot distinguish an identical copy.
+    if ($null -eq ("Maledictus.Extraction.WindowsFileIdentity" -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+
+namespace Maledictus.Extraction
+{
+    public static class WindowsFileIdentity
+    {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct FileInformation
+        {
+            public uint FileAttributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME CreationTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME LastAccessTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME LastWriteTime;
+            public uint VolumeSerialNumber;
+            public uint FileSizeHigh;
+            public uint FileSizeLow;
+            public uint NumberOfLinks;
+            public uint FileIndexHigh;
+            public uint FileIndexLow;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetFileInformationByHandle(
+            SafeFileHandle handle, out FileInformation information);
+
+        private static FileInformation ReadInformation(FileStream stream)
+        {
+            FileInformation information;
+            if (!GetFileInformationByHandle(stream.SafeFileHandle, out information))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+            return information;
+        }
+
+        public static bool SameFile(string first, string second)
+        {
+            // Keep both handles open so neither identity can be reused while
+            // comparing them. These checks never modify either file.
+            using (var firstStream = File.Open(first, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete))
+            using (var secondStream = File.Open(second, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete))
+            {
+                var firstInfo = ReadInformation(firstStream);
+                var secondInfo = ReadInformation(secondStream);
+                return firstInfo.VolumeSerialNumber == secondInfo.VolumeSerialNumber
+                    && firstInfo.FileIndexHigh == secondInfo.FileIndexHigh
+                    && firstInfo.FileIndexLow == secondInfo.FileIndexLow;
+            }
+        }
+    }
+}
+'@
+    }
+    return [Maledictus.Extraction.WindowsFileIdentity]::SameFile($First, $Second)
+}
+
 $scriptRoot = Get-NormalizedPath $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($RepositoryRoot)) {
     $RepositoryRoot = Join-Path $scriptRoot "..\..\.."
@@ -136,14 +210,8 @@ if ($link.LinkType -ne "HardLink") {
     throw "Extraction source must be a hard link, not a copied or symbolic file: $workspaceSource"
 }
 
-$expectedTarget = Get-NormalizedPath $source
-$actualTargets = @($link.Target | ForEach-Object { Get-NormalizedPath ([string]$_) })
-$hasExpectedTarget = $actualTargets | Where-Object {
-    $_.Equals($expectedTarget, [StringComparison]::OrdinalIgnoreCase)
-}
-if (-not $hasExpectedTarget) {
-    $renderedTargets = $actualTargets -join ", "
-    throw "Extraction source hard link targets [$renderedTargets], not production source $expectedTarget."
+if (-not (Test-SameWindowsFile -First $workspaceSource -Second $source)) {
+    throw "Extraction source hard link is not production source $source`: $workspaceSource"
 }
 
 Assert-ExactFile -Actual $workspaceSource -Expected $source `

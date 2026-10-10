@@ -51,19 +51,17 @@ try {
     $linkedSource = Join-Path $workspace "src\lib.rs"
     $linkedItem = Get-Item -LiteralPath $linkedSource -Force
     Assert-True ($linkedItem.LinkType -eq "HardLink") "fresh setup creates a hard link"
-    Assert-True (
-        @($linkedItem.Target).Count -eq 1 -and
-        [IO.Path]::GetFullPath([string]$linkedItem.Target[0]).Equals(
-            [IO.Path]::GetFullPath($source),
-            [StringComparison]::OrdinalIgnoreCase
-        )
-    ) "fresh setup links the production source exactly"
 
     Set-Content -LiteralPath $source -Value "pub fn updated_source_bound() {}" -NoNewline
     Assert-True (
         (Get-Content -LiteralPath $linkedSource -Raw) -eq "pub fn updated_source_bound() {}"
     ) "the extraction view follows subsequent production-source updates"
 
+    # File identity is independent of how many paths name the production file.
+    # In particular, do not rely on PowerShell 5's hard-link Target property:
+    # PowerShell 7 reports no hard-link targets there.
+    $additionalLink = Join-Path $sourceDirectory "another-production-link.rs"
+    New-Item -ItemType HardLink -Path $additionalLink -Target $source | Out-Null
     & $setupScript -RepositoryRoot $repository -WorkspacePath $workspace -ValidateOnly | Out-Null
     & $setupScript -RepositoryRoot $repository -WorkspacePath $workspace | Out-Null
 

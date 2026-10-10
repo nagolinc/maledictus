@@ -38,6 +38,9 @@ mod python_int_enum;
 #[path = "python_adt_contracts.rs"]
 mod python_adt_contracts;
 
+#[path = "python_type_only.rs"]
+mod python_type_only;
+
 #[path = "python_persistent_collections.rs"]
 mod python_persistent_collections;
 
@@ -1103,6 +1106,8 @@ pub(crate) fn source_heap_imports(
         code: "frontend.python.parse-error",
         message: error.to_string(),
     })?;
+    let suite = python_type_only::normalize_type_checking(suite, source, path)?;
+    python_type_only::reject_recursive_aliases(&suite, source, path)?;
     let mut modules = BTreeSet::new();
     for statement in suite {
         match statement {
@@ -1146,6 +1151,8 @@ pub(crate) fn source_heap_import_bindings(
         code: "frontend.python.parse-error",
         message: error.to_string(),
     })?;
+    let suite = python_type_only::normalize_type_checking(suite, source, path)?;
+    python_type_only::reject_recursive_aliases(&suite, source, path)?;
     let mut bindings = Vec::new();
     for statement in suite {
         let ast::Stmt::ImportFrom(import) = statement else {
@@ -1684,6 +1691,7 @@ fn grant_closed_frozen_record_reads(
     classes: &BTreeMap<String, ClassShape>,
     assumptions: &mut Vec<Term>,
     visiting: &mut BTreeSet<String>,
+    allow_local_records: bool,
 ) {
     let Some(class) = classes.get(class_name).or_else(|| {
         classes
@@ -1693,7 +1701,7 @@ fn grant_closed_frozen_record_reads(
         return;
     };
     if !class_is_frozen_dataclass(class)
-        || class.completed_provider.is_none()
+        || (class.completed_provider.is_none() && !allow_local_records)
         || !visiting.insert(class.identity.clone())
     {
         return;
@@ -1728,12 +1736,20 @@ fn grant_closed_frozen_record_reads(
                 .find(|candidate| candidate.identity == nested_name)
         }) {
             if nested.externally_assumed {
-                assumptions.extend(
-                    nested
-                        .externally_assumed_fields
-                        .iter()
-                        .map(|field| full_permission(0, field_value.clone(), field)),
-                );
+                // Preserve the legacy checked-provider boundary mode, but never
+                // acquire mutable ownership in closed-operation read mode. The
+                // latter restriction must survive recursion through imported frozen
+                // records: a checked Holder is not an ownership contract for its
+                // external mutable handle. Actual provider calls transfer permissions
+                // separately through their declared constructor/method effects.
+                if class.completed_provider.is_some() && !allow_local_records {
+                    assumptions.extend(
+                        nested
+                            .externally_assumed_fields
+                            .iter()
+                            .map(|field| full_permission(0, field_value.clone(), field)),
+                    );
+                }
             } else {
                 grant_closed_frozen_record_reads(
                     field_value,
@@ -1741,6 +1757,7 @@ fn grant_closed_frozen_record_reads(
                     classes,
                     assumptions,
                     visiting,
+                    allow_local_records,
                 );
             }
         }
@@ -2021,6 +2038,13 @@ struct HeapRead {
 #[derive(Clone, Debug)]
 enum HeapReadOrigin {
     Direct,
+    /// A specification BoolOp evaluates this operand only when its preceding
+    /// operands have the recorded truth values. This wraps a required VC; it
+    /// never adds a permission or a guard to the verifier's assumptions.
+    ShortCircuit {
+        evaluated_when: Term,
+        origin: Box<HeapReadOrigin>,
+    },
     PropertyApplication {
         property: String,
     },
@@ -2055,6 +2079,7 @@ pub fn verify_heap_module(
         false,
         Some("__main__"),
         InformationFlowVerificationProfile::Ordinary,
+        false,
     )
 }
 
@@ -2078,6 +2103,7 @@ pub fn verify_heap_module_with_information_flow_profile(
         false,
         Some("__main__"),
         information_flow,
+        false,
     )
 }
 
@@ -3084,6 +3110,91 @@ struct ScalarOldFieldRewriter<'a> {
     reads: Vec<HeapRead>,
 }
 
+impl ScalarOldFieldRewriter<'_> {
+    fn snapshot(&self, expression: &ast::Expr) -> Result<Lowered, ContractFailure> {
+        let mut fields = Vec::new();
+        let mut root = expression;
+        while let ast::Expr::Attribute(attribute) = root {
+            fields.push(attribute.attr.as_str());
+            root = &attribute.value;
+        }
+        let ast::Expr::Name(root) = root else {
+            return fail(
+                "frontend.python.heap.old-expression-unsupported",
+                "Old(...) scalar fields require a path rooted in an entry-state typed local",
+            );
+        };
+        let mut class_name = self.object_classes.get(root.id.as_str()).ok_or_else(|| {
+            ContractFailure {
+                code: "frontend.python.heap.old-expression-unsupported",
+                message: "Old(...) field receiver has no entry-state source nominal type".to_owned(),
+            }
+        })?;
+        if fields.is_empty() {
+            return fail(
+                "frontend.python.heap.old-expression-unsupported",
+                "Old(...) requires a typed scalar field, not a whole-object snapshot",
+            );
+        }
+        let nested = fields.len() > 1;
+        for (index, field_name) in fields.iter().rev().enumerate() {
+            let class = self.classes.get(class_name).ok_or_else(|| ContractFailure {
+                code: "frontend.python.heap.old-expression-unsupported",
+                message: format!("Old(...) receiver class {class_name:?} is unavailable"),
+            })?;
+            if class.properties.contains_key(*field_name)
+                || (nested && (!class_is_frozen_dataclass(class)
+                    || !source_field_storage_mro_is_plain(class_name, self.classes)))
+            {
+                return fail(
+                    "frontend.python.heap.old-expression-unsupported",
+                    "nested Old(...) scalar paths require plain source-owned frozen record fields; descriptors and mutable receiver paths are not snapshots",
+                );
+            }
+            let field = class.fields.get(*field_name).ok_or_else(|| ContractFailure {
+                code: "frontend.python.heap.field-unknown",
+                message: format!("unknown field {class_name:?}.{field_name}"),
+            })?;
+            if index + 1 == fields.len() {
+                if !matches!(field.sort, Sort::Int | Sort::Bool | Sort::String) {
+                    return fail(
+                        "frontend.python.heap.old-expression-unsupported",
+                        "Old(...) heap-function arithmetic supports scalar fields",
+                    );
+                }
+            } else {
+                if field.optional {
+                    return fail(
+                        "frontend.python.heap.old-expression-unsupported",
+                        "nested Old(...) cannot assume an optional receiver was present at entry",
+                    );
+                }
+                class_name = field.nominal_class.as_ref().ok_or_else(|| ContractFailure {
+                    code: "frontend.python.heap.old-expression-unsupported",
+                    message: "nested Old(...) must follow source nominal record fields".to_owned(),
+                })?;
+            }
+        }
+        let value = lower_contextual_field_value(
+            expression,
+            self.environment,
+            self.object_classes,
+            self.classes,
+            self.entry_heap,
+        )?.ok_or_else(|| ContractFailure {
+            code: "frontend.python.heap.old-expression-unsupported",
+            message: "Old(...) field path has no source-resolved entry value".to_owned(),
+        })?;
+        let mut lowered = value.lowered;
+        for read in &mut lowered.reads {
+            // Every receiver is itself projected from the entry heap. Retain the
+            // permission obligation for every hop; this does not grant ownership.
+            read.origin = HeapReadOrigin::OldEntry { mask: self.entry_mask };
+        }
+        Ok(lowered)
+    }
+}
+
 impl Fold<rustpython_ast::text_size::TextRange> for ScalarOldFieldRewriter<'_> {
     type TargetU = rustpython_ast::text_size::TextRange;
     type Error = ContractFailure;
@@ -3109,39 +3220,13 @@ impl Fold<rustpython_ast::text_size::TextRange> for ScalarOldFieldRewriter<'_> {
                     "Old(...) does not accept keyword arguments",
                 );
             }
-            let [ast::Expr::Attribute(attribute)] = call.args.as_slice() else {
+            let [argument @ ast::Expr::Attribute(_)] = call.args.as_slice() else {
                 return fail(
                     "frontend.python.heap.old-expression-unsupported",
-                    "Old(...) in a heap function requires one direct typed-local scalar field",
+                    "Old(...) in a heap function requires one typed-local scalar field path",
                 );
             };
-            let ast::Expr::Name(receiver_name) = attribute.value.as_ref() else {
-                return fail(
-                    "frontend.python.heap.old-expression-unsupported",
-                    "Old(...) field receiver must be a direct typed local",
-                );
-            };
-            let class_name = self
-                .object_classes
-                .get(receiver_name.id.as_str())
-                .ok_or_else(|| ContractFailure {
-                    code: "frontend.python.heap.old-expression-unsupported",
-                    message: "Old(...) field receiver has no source nominal type".to_owned(),
-                })?;
-            let field_type = self.classes[class_name]
-                .fields
-                .get(attribute.attr.as_str())
-                .ok_or_else(|| ContractFailure {
-                    code: "frontend.python.heap.field-unknown",
-                    message: format!("unknown field {class_name:?}.{}", attribute.attr),
-                })?;
-            if !matches!(field_type.sort, Sort::Int | Sort::Bool | Sort::String) {
-                return fail(
-                    "frontend.python.heap.old-expression-unsupported",
-                    "Old(...) heap-function arithmetic supports scalar fields",
-                );
-            }
-            let receiver = self.environment[receiver_name.id.as_str()].clone();
+            let snapshot = self.snapshot(argument)?;
             let mut replacement_index = self.replacements.len();
             let replacement = loop {
                 let candidate = format!("__maledictus_old_field_{replacement_index}");
@@ -3154,22 +3239,8 @@ impl Fold<rustpython_ast::text_size::TextRange> for ScalarOldFieldRewriter<'_> {
                 }
                 replacement_index += 1;
             };
-            self.replacements.insert(
-                replacement.clone(),
-                Term::FieldRead {
-                    heap: self.entry_heap,
-                    receiver: Box::new(receiver.clone()),
-                    field: attribute.attr.to_string(),
-                    sort: field_type.sort.clone(),
-                },
-            );
-            self.reads.push(HeapRead {
-                receiver,
-                field: attribute.attr.to_string(),
-                origin: HeapReadOrigin::OldEntry {
-                    mask: self.entry_mask,
-                },
-            });
+            self.replacements.insert(replacement.clone(), snapshot.term);
+            self.reads.extend(snapshot.reads);
             return Ok(ast::ExprName {
                 range: node.range(),
                 id: replacement.into(),
@@ -5226,6 +5297,7 @@ pub fn verify_heap_module_selection_for_conformance(
         false,
         Some("__main__"),
         InformationFlowVerificationProfile::Ordinary,
+        false,
     )
 }
 
@@ -5245,6 +5317,7 @@ pub fn verify_heap_module_selection_with_imports_for_conformance(
         false,
         Some("__main__"),
         InformationFlowVerificationProfile::Ordinary,
+        false,
     )
 }
 
@@ -5265,6 +5338,7 @@ pub(crate) fn verify_heap_module_for_conformance_with_profile(
         false,
         Some("__main__"),
         information_flow,
+        false,
     )
 }
 
@@ -5361,6 +5435,32 @@ pub fn verify_heap_module_with_imports(
         false,
         Some("__main__"),
         InformationFlowVerificationProfile::Ordinary,
+        false,
+    )
+}
+
+/// Discharge assertions/postconditions after the closed Dagcert operation frontend
+/// has validated the same source and record closure. Frozen operation records have
+/// read-only value semantics at entry, including when declared in this module.
+/// This mode does not add value preconditions, mutable-state ownership, or field
+/// write permission. Ordinary heap callers must continue to provide their own Acc.
+pub(crate) fn verify_closed_operation_assertions(
+    source: &str,
+    path: &str,
+    requested_symbols: &[String],
+    imported_modules: &[ImportedHeapContractModule],
+) -> Result<HeapContractVerification, ContractFailure> {
+    verify_heap_module_internal(
+        source,
+        path,
+        requested_symbols,
+        imported_modules,
+        None,
+        false,
+        false,
+        Some("__main__"),
+        InformationFlowVerificationProfile::Ordinary,
+        true,
     )
 }
 
@@ -5381,6 +5481,7 @@ pub fn verify_heap_package_initializer_with_imports(
         false,
         None,
         InformationFlowVerificationProfile::Ordinary,
+        false,
     )
 }
 
@@ -5395,11 +5496,14 @@ fn verify_heap_module_internal(
     allow_provider_generic_templates: bool,
     module_name: Option<&str>,
     information_flow: InformationFlowVerificationProfile,
+    closed_record_reads: bool,
 ) -> Result<HeapContractVerification, ContractFailure> {
     let preflight_suite = ast::Suite::parse(source, path).map_err(|error| ContractFailure {
         code: "frontend.python.parse-error",
         message: error.to_string(),
     })?;
+    let preflight_suite = python_type_only::normalize_type_checking(preflight_suite, source, path)?;
+    python_type_only::reject_recursive_aliases(&preflight_suite, source, path)?;
     let preflight_suite = normalize_dagcert_markers(preflight_suite)?;
     validate_canonical_optional_bindings(&preflight_suite)?;
     validate_canonical_union_bindings(&preflight_suite)?;
@@ -5818,6 +5922,21 @@ fn verify_heap_module_internal(
                     }
                     defined_non_scalar_names.insert(local_module);
                 }
+            }
+            ast::Stmt::ImportFrom(import)
+                if import.level.is_none_or(|level| level == 0_u32)
+                    && import.module.as_ref().is_some_and(|module| module.as_str() == "__future__") =>
+            {
+                if !import.names.iter().all(|alias| {
+                    alias.name.as_str() == "annotations" && alias.asname.is_none()
+                }) {
+                    return fail(
+                        "frontend.python.heap.future-import-unsupported",
+                        "heap source accepts canonical `from __future__ import annotations`; other future features and renamed bindings are not modeled",
+                    );
+                }
+                // Postponed annotations do not execute provider code or introduce a runtime
+                // module dependency. The annotation resolver still checks the actual types.
             }
             ast::Stmt::ImportFrom(import)
                 if import.level.is_none_or(|level| level == 0_u32)
@@ -6828,6 +6947,7 @@ fn verify_heap_module_internal(
                                 &effect_free_procedures,
                                 builtin_isinstance_is_canonical,
                                 &methods,
+                                closed_record_reads,
                             )?);
                         }
                     }
@@ -6873,6 +6993,7 @@ fn verify_heap_module_internal(
                         &effect_free_procedures,
                         builtin_isinstance_is_canonical,
                         &methods,
+                        closed_record_reads,
                     )?);
                 }
                 methods.push(function.name.to_string());
@@ -12046,6 +12167,8 @@ pub fn verify_and_export_source_heap_module(
         code: "frontend.python.parse-error",
         message: error.to_string(),
     })?;
+    let suite = python_type_only::normalize_type_checking(suite, source, path)?;
+    python_type_only::reject_recursive_aliases(&suite, source, path)?;
     let external_boundary_markers = suite
         .iter()
         .filter_map(|statement| match statement {
@@ -12091,6 +12214,7 @@ pub fn verify_and_export_source_heap_module(
         true,
         Some(module),
         InformationFlowVerificationProfile::Ordinary,
+        false,
     )?;
     if !verification.passed && !refutations_are_unexported_declaration_stubs(&verification, &suite)
     {
@@ -19607,6 +19731,8 @@ fn lower_method(
     };
     let mut constructor_if_exits = None;
     let mut method_if_exits = None;
+    let entry_environment = environment.clone();
+    let entry_object_classes = object_classes.clone();
     for (statement_index, statement) in executable.iter().copied().enumerate() {
         if returned.is_some() {
             return fail(
@@ -21465,6 +21591,8 @@ fn lower_method(
                             postcondition,
                             &state.environment,
                             &state.object_classes,
+                            &entry_environment,
+                            &entry_object_classes,
                             classes,
                             class,
                             0,
@@ -21831,6 +21959,8 @@ fn lower_method(
                     postcondition,
                     &environment,
                     &object_classes,
+                    &entry_environment,
+                    &entry_object_classes,
                     classes,
                     class,
                     0,
@@ -23859,7 +23989,7 @@ fn lower_heap_statement_condition(
             when_true: None,
         });
     }
-    let lowered = lower_heap_function_expression_with_scalar_calls(
+    let mut lowered = lower_heap_function_expression_with_scalar_calls(
         expression,
         &state.environment,
         &state.object_classes,
@@ -23870,6 +24000,15 @@ fn lower_heap_statement_condition(
         false,
         context.scalar_calls,
     )?;
+    // Python's if accepts builtin values, not only bool. Preserve the existing read
+    // obligations and use the same zero/length semantics as value-returning boolean
+    // expressions. Do not infer object truthiness from a nominal type annotation.
+    if !matches!(lowered.term.sort().map_err(type_error)?, Sort::Reference | Sort::Class)
+        || matches!(lowered.term, Term::NullReference)
+    {
+        let value = heap_python_value_from_term(expression, lowered.term.clone(), state, context)?;
+        lowered.term = heap_python_truth_condition(&value, context.classes)?;
+    }
     Ok(HeapStatementCondition {
         lowered,
         when_true: None,
@@ -25201,7 +25340,11 @@ fn canonical_type_qualname_read(
 }
 
 fn heap_term_contains(candidate: &Term, needle: &Term) -> bool {
-    if candidate == needle {
+    heap_term_any(candidate, &|term| term == needle)
+}
+
+fn heap_term_any(candidate: &Term, predicate: &impl Fn(&Term) -> bool) -> bool {
+    if predicate(candidate) {
         return true;
     }
     match candidate {
@@ -25223,15 +25366,15 @@ fn heap_term_contains(candidate: &Term, needle: &Term) -> bool {
         | Term::ListLength { value }
         | Term::SetLength { value }
         | Term::DictLength { value }
-        | Term::ForAll { body: value, .. } => heap_term_contains(value, needle),
+        | Term::ForAll { body: value, .. } => heap_term_any(value, predicate),
         Term::StringSlice {
             source,
             start,
             length,
         } => {
-            heap_term_contains(source, needle)
-                || heap_term_contains(start, needle)
-                || heap_term_contains(length, needle)
+            heap_term_any(source, predicate)
+                || heap_term_any(start, predicate)
+                || heap_term_any(length, predicate)
         }
         Term::ClassSubtype {
             actual: left,
@@ -25275,15 +25418,15 @@ fn heap_term_contains(candidate: &Term, needle: &Term) -> bool {
         | Term::DictGet {
             dict: left,
             key: right,
-        } => heap_term_contains(left, needle) || heap_term_contains(right, needle),
+        } => heap_term_any(left, predicate) || heap_term_any(right, predicate),
         Term::IfThenElse {
             condition,
             then_value,
             else_value,
         } => {
-            heap_term_contains(condition, needle)
-                || heap_term_contains(then_value, needle)
-                || heap_term_contains(else_value, needle)
+            heap_term_any(condition, predicate)
+                || heap_term_any(then_value, predicate)
+                || heap_term_any(else_value, predicate)
         }
         Term::And { values }
         | Term::Or { values }
@@ -25295,9 +25438,9 @@ fn heap_term_contains(candidate: &Term, needle: &Term) -> bool {
         | Term::DictKeys { values, .. }
         | Term::PredicateInstance {
             arguments: values, ..
-        } => values.iter().any(|value| heap_term_contains(value, needle)),
+        } => values.iter().any(|value| heap_term_any(value, predicate)),
         Term::FiniteDict { entries, .. } => entries.iter().any(|(key, value)| {
-            heap_term_contains(key, needle) || heap_term_contains(value, needle)
+            heap_term_any(key, predicate) || heap_term_any(value, predicate)
         }),
         Term::ListComprehension {
             source,
@@ -25311,11 +25454,11 @@ fn heap_term_contains(candidate: &Term, needle: &Term) -> bool {
             filter,
             ..
         } => {
-            heap_term_contains(source, needle)
-                || heap_term_contains(mapped, needle)
+            heap_term_any(source, predicate)
+                || heap_term_any(mapped, predicate)
                 || filter
                     .as_deref()
-                    .is_some_and(|filter| heap_term_contains(filter, needle))
+                    .is_some_and(|filter| heap_term_any(filter, predicate))
         }
         Term::DictComprehension {
             source,
@@ -25324,23 +25467,23 @@ fn heap_term_contains(candidate: &Term, needle: &Term) -> bool {
             filter,
             ..
         } => {
-            heap_term_contains(source, needle)
-                || heap_term_contains(key, needle)
-                || heap_term_contains(value, needle)
+            heap_term_any(source, predicate)
+                || heap_term_any(key, predicate)
+                || heap_term_any(value, predicate)
                 || filter
                     .as_deref()
-                    .is_some_and(|filter| heap_term_contains(filter, needle))
+                    .is_some_and(|filter| heap_term_any(filter, predicate))
         }
         Term::FieldRead { receiver, .. }
         | Term::PermissionAtLeast { receiver, .. }
         | Term::PermissionAtMost { receiver, .. }
-        | Term::PermissionPositive { receiver, .. } => heap_term_contains(receiver, needle),
+        | Term::PermissionPositive { receiver, .. } => heap_term_any(receiver, predicate),
         Term::PermissionMaskTransition {
             consumed, produced, ..
         } => consumed
             .iter()
             .chain(produced)
-            .any(|amount| heap_term_contains(&amount.receiver, needle)),
+            .any(|amount| heap_term_any(&amount.receiver, predicate)),
         Term::Bool { .. }
         | Term::Int { .. }
         | Term::String { .. }
@@ -25352,6 +25495,20 @@ fn heap_term_contains(candidate: &Term, needle: &Term) -> bool {
         | Term::ClassLiteral { .. }
         | Term::Variable { .. }
         | Term::PermissionMaskValid { .. } => false,
+    }
+}
+
+fn heap_sort_contains_list(sort: &Sort) -> bool {
+    match sort {
+        Sort::List(_) => true,
+        Sort::Tuple(elements) => elements.iter().any(heap_sort_contains_list),
+        Sort::VariadicTuple(element) | Sort::Set(element) | Sort::DictKeys(element) => {
+            heap_sort_contains_list(element)
+        }
+        Sort::Dict(key, value) | Sort::FiniteDict(key, value) => {
+            heap_sort_contains_list(key) || heap_sort_contains_list(value)
+        }
+        _ => false,
     }
 }
 
@@ -25395,6 +25552,25 @@ fn concrete_local_list_for_mutation(
         return fail(
             "frontend.python.heap.list-mutation-alias-unsupported",
             "verified concrete-list mutation requires an unaliased local list value",
+        );
+    }
+    // A record field stores a Python reference to the list, not a snapshot of its contents.
+    // Constructor and field-write summaries keep that value in heap assumptions rather than
+    // in the local environment. Until this fragment models shared list allocations in the
+    // heap, changing just the local term would leave those assumptions stale and could prove
+    // false postconditions, including after a pending return's finally block.
+    let captured_in_heap = state.assumptions.iter().any(|assumption| {
+        heap_term_contains(assumption, value)
+            && heap_term_any(assumption, &|term| {
+                matches!(term, Term::FieldRead { sort, .. } if heap_sort_contains_list(sort))
+            })
+    });
+    if captured_in_heap {
+        return fail(
+            "frontend.python.heap.list-mutation-heap-alias-unsupported",
+            format!(
+                "local list {name:?} may be retained by a heap record field; shared list mutation requires allocation-aware heap updates and cannot be verified as a local contents replacement"
+            ),
         );
     }
     let Term::List {
@@ -31435,19 +31611,13 @@ fn heap_python_truth_condition(
         Term::String { value } => Ok(Term::Bool {
             value: !value.is_empty(),
         }),
-        Term::Variable {
-            sort: Sort::String, ..
-        }
-        | Term::StringConcat { .. } => Ok(nonzero(Term::StringLength {
+        term if term.sort().map_err(type_error)? == Sort::String => Ok(nonzero(Term::StringLength {
             value: Box::new(value.term.clone()),
         })),
         Term::Bytes { values } => Ok(Term::Bool {
             value: !values.is_empty(),
         }),
-        Term::Variable {
-            sort: Sort::Bytes, ..
-        }
-        | Term::BytesConcat { .. } => Ok(nonzero(Term::BytesLength {
+        term if term.sort().map_err(type_error)? == Sort::Bytes => Ok(nonzero(Term::BytesLength {
             value: Box::new(value.term.clone()),
         })),
         Term::Range { values } => Ok(Term::Bool {
@@ -31459,11 +31629,7 @@ fn heap_python_truth_condition(
         Term::VariadicTuple { values, .. } => Ok(Term::Bool {
             value: !values.is_empty(),
         }),
-        Term::Variable {
-            sort: Sort::VariadicTuple(_),
-            ..
-        }
-        | Term::VariadicTupleSlice { .. } => Ok(nonzero(Term::VariadicTupleLength {
+        term if matches!(term.sort().map_err(type_error)?, Sort::VariadicTuple(_)) => Ok(nonzero(Term::VariadicTupleLength {
             value: Box::new(value.term.clone()),
         })),
         Term::List { values, .. } => Ok(Term::Bool {
@@ -34190,6 +34356,54 @@ fn evaluate_heap_effect_value(
             ),
         );
     }
+    if let ast::Expr::Call(call) = expression
+        && matches!(call.func.as_ref(), ast::Expr::Name(function)
+            if function.id.as_str() == "len")
+    {
+        if context.lexical_names.contains("len") || state.environment.contains_key("len") {
+            return fail(
+                "frontend.python.heap.len-shadowed",
+                "len is shadowed by a lexical value and is not the canonical builtin",
+            );
+        }
+        let [argument] = call.args.as_slice() else {
+            return fail(
+                "frontend.python.heap.len-arguments",
+                "builtin len requires exactly one positional argument",
+            );
+        };
+        if !call.keywords.is_empty() {
+            return fail(
+                "frontend.python.heap.len-arguments",
+                "builtin len does not accept keyword arguments",
+            );
+        }
+        // Argument evaluation still performs its real effects and field-permission
+        // checks. Only the builtin length projection itself is effect-free.
+        let (next_state, value) = evaluate_heap_effect_value(argument, state, context)?;
+        state = next_state;
+        let Some(value) = value else {
+            return Ok((state, None));
+        };
+        let length = match value.sort().map_err(type_error)? {
+            Sort::String => Term::StringLength { value: Box::new(value) },
+            Sort::Bytes => Term::BytesLength { value: Box::new(value) },
+            Sort::VariadicTuple(_) => Term::VariadicTupleLength { value: Box::new(value) },
+            Sort::Tuple(elements) => Term::Int {
+                value: i64::try_from(elements.len()).map_err(|_| ContractFailure {
+                    code: "frontend.python.heap.collection-length-overflow",
+                    message: "fixed Tuple length exceeds i64".to_owned(),
+                })?,
+            },
+            _ => {
+                return fail(
+                    "frontend.python.heap.len-value-unsupported",
+                    "effectful expression len requires a modeled immutable builtin value; object __len__ hooks are not assumed total",
+                );
+            }
+        };
+        return Ok((state, Some(length)));
+    }
     if heap_conditional_contains_call(expression) {
         return fail(
             "frontend.python.heap.conditional-expression-call-unsupported",
@@ -34709,6 +34923,8 @@ fn lower_finite_nominal_union_function(
                         postcondition,
                         &environment,
                         &arm_object_classes,
+                        &environment,
+                        &arm_object_classes,
                         classes,
                         0,
                         0,
@@ -34777,6 +34993,7 @@ fn lower_heap_function(
     effect_free_procedures: &BTreeMap<String, HeapEffectFreeProcedureSummary>,
     builtin_isinstance_is_canonical: bool,
     verified_methods: &[String],
+    closed_record_reads: bool,
 ) -> Result<Vec<Obligation>, ContractFailure> {
     if let Some(obligations) = lower_finite_nominal_union_function(
         source,
@@ -34812,13 +35029,24 @@ fn lower_heap_function(
             ),
         );
     }
+    let closed_return_union = if closed_record_reads {
+        closed_record_return_union(function.returns.as_deref(), classes)
+    } else {
+        None
+    };
     let (
         return_sort,
         return_nominal_class,
         return_list_element_nominal_class,
         return_optional,
         _return_callable,
-    ) = heap_function_annotation(function.returns.as_deref(), classes)?;
+    ) = if closed_return_union.is_some() {
+        // The union describes one actual return reference, not one reference per
+        // alternative. Membership is checked on every final exit below.
+        (Sort::Reference, None, None, false, None)
+    } else {
+        heap_function_annotation(function.returns.as_deref(), classes)?
+    };
     if return_list_element_nominal_class.is_some() {
         return fail(
             "frontend.python.heap.function-return-unsupported",
@@ -34906,6 +35134,28 @@ fn lower_heap_function(
     let mut exact_object_names = BTreeSet::new();
     let mut source_constructed_names = BTreeSet::new();
     let mut assumptions = Vec::new();
+    if let Some(alternatives) = &closed_return_union {
+        for actual in alternatives {
+            for expected in alternatives {
+                // These are facts about two checked source class literals, not
+                // assumptions that an arbitrary returned object has either type.
+                // RuntimeClass(returned) remains the actual final return class.
+                assumptions.push(Term::Equal {
+                    left: Box::new(Term::ClassSubtype {
+                        actual: Box::new(Term::ClassLiteral {
+                            name: classes[actual].identity.clone(),
+                        }),
+                        expected: Box::new(Term::ClassLiteral {
+                            name: classes[expected].identity.clone(),
+                        }),
+                    }),
+                    right: Box::new(Term::Bool {
+                        value: nominal_name_is_subtype(actual, expected, classes, None),
+                    }),
+                });
+            }
+        }
+    }
     for (binding_name, binding) in typed_state_bindings {
         if binding.value_type.optional || local_names.contains(binding_name) {
             continue;
@@ -34958,7 +35208,7 @@ fn lower_heap_function(
             }
             if let Some(record) = classes.get(&class_name)
                 && class_is_frozen_dataclass(record)
-                && record.completed_provider.is_some()
+                && (record.completed_provider.is_some() || closed_record_reads && !optional)
             {
                 grant_closed_frozen_record_reads(
                     term.clone(),
@@ -34966,6 +35216,7 @@ fn lower_heap_function(
                     classes,
                     &mut assumptions,
                     &mut BTreeSet::new(),
+                    closed_record_reads,
                 );
             }
             object_classes.insert(argument.def.arg.to_string(), class_name);
@@ -35176,6 +35427,10 @@ fn lower_heap_function(
         path,
         source,
     };
+    // Old paths start at the original parameter/local bindings, even when the
+    // executable body rebinds a receiver before a final return or cleanup.
+    let entry_environment = environment.clone();
+    let entry_object_classes = object_classes.clone();
     for (statement_index, statement) in executable.iter().enumerate() {
         add_heap_local_definedness_obligations(
             statement,
@@ -36537,11 +36792,23 @@ fn lower_heap_function(
                 }
             };
             let qualified = format!("{caller}:path:{exit_index}");
+            if let Some(arms) = &closed_return_union {
+                path_obligations.push(obligation(
+                    format!("{caller}:return-union-membership:path:{exit_index}"),
+                    state.assumptions.clone(),
+                    closed_record_return_membership(&returned, arms, classes),
+                    path,
+                    source,
+                    function.range.start().into(),
+                ));
+            }
             for (index, (postcondition, offset)) in postconditions.iter().enumerate() {
                 let lowered = lower_heap_function_postcondition(
                     postcondition,
                     &state.environment,
                     &state.object_classes,
+                    &entry_environment,
+                    &entry_object_classes,
                     classes,
                     0,
                     0,
@@ -36620,11 +36887,23 @@ fn lower_heap_function(
             return Ok(obligations);
         }
     };
+    if let Some(arms) = &closed_return_union {
+        obligations.push(obligation(
+            format!("{caller}:return-union-membership"),
+            assumptions.clone(),
+            closed_record_return_membership(&returned, arms, classes),
+            path,
+            source,
+            function.range.start().into(),
+        ));
+    }
     for (index, (postcondition, offset)) in postconditions.into_iter().enumerate() {
         let lowered = lower_heap_function_postcondition(
             postcondition,
             &environment,
             &object_classes,
+            &entry_environment,
+            &entry_object_classes,
             classes,
             0,
             0,
@@ -38011,6 +38290,73 @@ type HeapFunctionAnnotation = (
     Option<CallableType>,
 );
 
+fn closed_record_return_union(
+    annotation: Option<&ast::Expr>,
+    classes: &BTreeMap<String, ClassShape>,
+) -> Option<Vec<String>> {
+    let annotation = annotation?;
+    let mut alternatives = Vec::new();
+    match annotation {
+        ast::Expr::BinOp(union) if union.op == ast::Operator::BitOr => {
+            collect_pep604_arms(annotation, &mut alternatives);
+        }
+        ast::Expr::Subscript(union)
+            if matches!(union.value.as_ref(), ast::Expr::Name(name)
+                if name.id.as_str() == "Union") =>
+        {
+            match union.slice.as_ref() {
+                ast::Expr::Tuple(tuple) => alternatives.extend(tuple.elts.iter()),
+                alternative => alternatives.push(alternative),
+            }
+        }
+        _ => return None,
+    }
+    let mut names = Vec::new();
+    for alternative in alternatives {
+        let ast::Expr::Name(name) = alternative else {
+            return None;
+        };
+        if !classes.get(name.id.as_str()).is_some_and(|class| {
+            class_is_frozen_dataclass(class)
+                && !class.externally_assumed
+                && !class.defines_instancecheck_override
+        }) {
+            return None;
+        }
+        names.push(name.id.to_string());
+    }
+    names.sort();
+    names.dedup();
+    (names.len() >= 2).then_some(names)
+}
+
+fn closed_record_return_membership(
+    returned: &Term,
+    alternatives: &[String],
+    classes: &BTreeMap<String, ClassShape>,
+) -> Term {
+    Term::And {
+        values: vec![
+            Term::Not {
+                value: Box::new(Term::Equal {
+                    left: Box::new(returned.clone()),
+                    right: Box::new(Term::NullReference),
+                }),
+            },
+            Term::Or {
+                values: alternatives.iter().map(|name| Term::ClassSubtype {
+                    actual: Box::new(Term::RuntimeClass {
+                        value: Box::new(returned.clone()),
+                    }),
+                    expected: Box::new(Term::ClassLiteral {
+                        name: classes[name].identity.clone(),
+                    }),
+                }).collect(),
+            },
+        ],
+    }
+}
+
 fn heap_function_annotation(
     annotation: Option<&ast::Expr>,
     classes: &BTreeMap<String, ClassShape>,
@@ -38172,7 +38518,11 @@ fn heap_expression_class(
             let ast::Expr::Name(name) = call.func.as_ref() else {
                 return Ok(None);
             };
-            if name.id.as_str() == "Acc" {
+            if name.id.as_str() == "Acc"
+                || (name.id.as_str() == "len"
+                    && call.args.len() == 1
+                    && call.keywords.is_empty())
+            {
                 let Some(target) = call.args.first() else {
                     return Ok(None);
                 };
@@ -40991,6 +41341,8 @@ fn lower_heap_function_postcondition(
     expression: &ast::Expr,
     environment: &BTreeMap<String, Term>,
     object_classes: &BTreeMap<String, String>,
+    entry_environment: &BTreeMap<String, Term>,
+    entry_object_classes: &BTreeMap<String, String>,
     classes: &BTreeMap<String, ClassShape>,
     entry_heap: u32,
     entry_mask: u32,
@@ -41019,12 +41371,15 @@ fn lower_heap_function_postcondition(
         );
     }
     let mut rewriter = ScalarOldFieldRewriter {
-        environment,
-        object_classes,
+        environment: entry_environment,
+        object_classes: entry_object_classes,
         classes,
         entry_heap,
         entry_mask,
-        occupied_names: expression_names(expression),
+        occupied_names: expression_names(expression)
+            .into_iter()
+            .chain(environment.keys().cloned())
+            .collect(),
         replacements: BTreeMap::new(),
         reads: Vec::new(),
     };
@@ -41114,6 +41469,8 @@ fn lower_contextual_old_postcondition(
     expression: &ast::Expr,
     environment: &BTreeMap<String, Term>,
     object_classes: &BTreeMap<String, String>,
+    entry_environment: &BTreeMap<String, Term>,
+    entry_object_classes: &BTreeMap<String, String>,
     classes: &BTreeMap<String, ClassShape>,
     class: &ClassShape,
     entry_heap: u32,
@@ -41123,12 +41480,15 @@ fn lower_contextual_old_postcondition(
     result: &Term,
 ) -> Result<Lowered, ContractFailure> {
     let mut rewriter = ScalarOldFieldRewriter {
-        environment,
-        object_classes,
+        environment: entry_environment,
+        object_classes: entry_object_classes,
         classes,
         entry_heap,
         entry_mask,
-        occupied_names: expression_names(expression),
+        occupied_names: expression_names(expression)
+            .into_iter()
+            .chain(environment.keys().cloned())
+            .collect(),
         replacements: BTreeMap::new(),
         reads: Vec::new(),
     };
@@ -42087,8 +42447,27 @@ fn lower_contextual_reference_expression(
                     "every contextual conjunction operand must have type bool",
                 );
             }
+            let mut operand_reads = lowered.reads;
+            if contracts_allowed && !values.is_empty() {
+                // Python evaluates operand i of `and` iff all preceding values
+                // are true, and operand i of `or` iff all are false. Their own
+                // reads were retained before this point. Keep lowering every
+                // operand above: an inactive branch cannot hide invalid syntax.
+                let evaluated_when = match operation.op {
+                    ast::BoolOp::And => Term::And { values: values.clone() },
+                    ast::BoolOp::Or => Term::Not {
+                        value: Box::new(Term::Or { values: values.clone() }),
+                    },
+                };
+                for read in &mut operand_reads {
+                    read.origin = HeapReadOrigin::ShortCircuit {
+                        evaluated_when: evaluated_when.clone(),
+                        origin: Box::new(read.origin.clone()),
+                    };
+                }
+            }
             values.push(lowered.term);
-            reads.extend(lowered.reads);
+            reads.extend(operand_reads);
         }
         return Ok(Some(Lowered {
             term: match operation.op {
@@ -44420,6 +44799,8 @@ fn apply_constructor_call_with_scalar_calls(
         let lowered = if contains_old_expression(&postcondition) {
             lower_contextual_old_postcondition(
                 &postcondition,
+                &callee_environment,
+                &constructor_object_classes,
                 &callee_environment,
                 &constructor_object_classes,
                 classes,
@@ -46868,6 +47249,8 @@ fn apply_method_call_on_with_evaluated_arguments(
                     postcondition,
                     &callee_environment,
                     &callee_object_classes,
+                    &callee_environment,
+                    &callee_object_classes,
                     classes,
                     class,
                     pre_heap,
@@ -48977,6 +49360,39 @@ fn lower_heap_let_expression(
     })
 }
 
+fn typed_result_layout<'a>(
+    call: &ast::ExprCall,
+    environment: &BTreeMap<String, Term>,
+    fallback: &'a ClassShape,
+    scalar_calls: Option<&ScalarCallContext<'a>>,
+) -> Result<&'a ClassShape, ContractFailure> {
+    let [ast::Expr::Name(expected)] = call.args.as_slice() else {
+        return fail(
+            "frontend.python.heap.result-type-argument-unsupported",
+            "ResultT(...) requires one direct source class name",
+        );
+    };
+    let Some(Term::ClassLiteral { name: identity }) = environment.get(expected.id.as_str()) else {
+        return fail(
+            "frontend.python.heap.result-type-argument-unresolved",
+            format!("ResultT({:?}) does not name an available source class", expected.id),
+        );
+    };
+    if let Some(classes) = scalar_calls.and_then(|context| context.classes)
+        && let Some(layout) = classes.get(expected.id.as_str())
+        && layout.identity == *identity
+    {
+        return Ok(layout);
+    }
+    if fallback.identity == *identity {
+        return Ok(fallback);
+    }
+    fail(
+        "frontend.python.heap.result-type-argument-unresolved",
+        format!("ResultT({:?}) has no available source field layout", expected.id),
+    )
+}
+
 #[allow(clippy::too_many_arguments)]
 fn lower_expression_internal(
     expression: &ast::Expr,
@@ -49360,6 +49776,16 @@ fn lower_expression_internal(
             }
         }
         ast::Expr::Attribute(attribute) => {
+            let class = if contracts_allowed
+                && let ast::Expr::Call(call) = attribute.value.as_ref()
+                && matches!(call.func.as_ref(), ast::Expr::Name(name)
+                    if name.id.as_str() == "ResultT")
+                && call.keywords.is_empty()
+            {
+                typed_result_layout(call, environment, class, scalar_calls)?
+            } else {
+                class
+            };
             let lowered_receiver = lower_expression_internal(
                 &attribute.value,
                 environment,
@@ -50136,6 +50562,9 @@ fn lower_expression_internal(
                         Sort::Bytes => Term::BytesLength {
                             value: Box::new(value.term),
                         },
+                        Sort::VariadicTuple(_) => Term::VariadicTupleLength {
+                            value: Box::new(value.term),
+                        },
                         Sort::String => match value.term {
                             Term::String { value } => Term::Int {
                                 value: i64::try_from(value.chars().count()).map_err(|_| {
@@ -50391,21 +50820,9 @@ fn lower_expression_internal(
                 "ResultT"
                     if contracts_allowed && call.args.len() == 1 && call.keywords.is_empty() =>
                 {
-                    let ast::Expr::Name(expected) = &call.args[0] else {
-                        return fail(
-                            "frontend.python.heap.result-type-argument-unsupported",
-                            "ResultT(...) requires one direct source class name",
-                        );
-                    };
-                    if expected.id.as_str() != class.name {
-                        return fail(
-                            "frontend.python.heap.result-type-argument-mismatch",
-                            format!(
-                                "ResultT({:?}) does not match the current method class {:?}",
-                                expected.id, class.name
-                            ),
-                        );
-                    }
+                    // ResultT selects only the source projection layout. It is
+                    // never a cast, a class assumption, or a fresh per-arm value.
+                    typed_result_layout(call, environment, class, scalar_calls)?;
                     let term = result.cloned().ok_or_else(|| ContractFailure {
                         code: "frontend.python.heap.result-outside-postcondition",
                         message: "ResultT(...) requires an Ensures context".to_owned(),
@@ -51226,19 +51643,31 @@ fn add_read_obligations(
     offset: u32,
     mask: u32,
 ) {
-    for (index, read) in reads.into_iter().enumerate() {
-        let (prefix, requirement) = match &read.origin {
+    fn requirement(
+        origin: &HeapReadOrigin,
+        receiver: &Term,
+        field: &str,
+        mask: u32,
+    ) -> (String, Term) {
+        match origin {
             HeapReadOrigin::Direct => (
                 "field-permission".to_owned(),
-                read_permission(mask, read.receiver, &read.field),
+                read_permission(mask, receiver.clone(), field),
             ),
+            HeapReadOrigin::ShortCircuit { evaluated_when, origin } => {
+                let (prefix, required_read) = requirement(origin, receiver, field, mask);
+                (prefix, Term::Implies {
+                    left: Box::new(evaluated_when.clone()),
+                    right: Box::new(required_read),
+                })
+            }
             HeapReadOrigin::PropertyApplication { property } => (
                 format!("property-precondition:{property}"),
-                read_permission(mask, read.receiver, &read.field),
+                read_permission(mask, receiver.clone(), field),
             ),
             HeapReadOrigin::OldEntry { mask } => (
                 "old-field-permission".to_owned(),
-                read_permission(*mask, read.receiver, &read.field),
+                read_permission(*mask, receiver.clone(), field),
             ),
             HeapReadOrigin::ListPredicateApplication { requirement } => (
                 "property-precondition:list-predicate".to_owned(),
@@ -51255,7 +51684,10 @@ fn add_read_obligations(
                 function,
                 requirement,
             } => (format!("call-precondition:{function}"), requirement.clone()),
-        };
+        }
+    }
+    for (index, read) in reads.into_iter().enumerate() {
+        let (prefix, requirement) = requirement(&read.origin, &read.receiver, &read.field, mask);
         obligations.push(obligation(
             format!("{qualified}:{prefix}:{}:{index}", read.field),
             assumptions.to_vec(),
@@ -51504,6 +51936,18 @@ fn scalar_annotation(annotation: Option<&ast::Expr>) -> Result<Sort, ContractFai
                 ast::Expr::Tuple(tuple) => tuple.elts.iter().collect::<Vec<_>>(),
                 element => vec![element],
             };
+            if let [element, ast::Expr::Constant(ellipsis)] = element_annotations.as_slice()
+                && ellipsis.value == ast::Constant::Ellipsis
+            {
+                let element = scalar_annotation(Some(element))?;
+                if !heap_module_global_sort_is_immutable(&element) {
+                    return fail(
+                        "frontend.python.heap.variadic-annotation-unsupported",
+                        "variadic tuple values require immutable primitive elements; nominal identity and mutable elements are not erased",
+                    );
+                }
+                return Ok(Sort::VariadicTuple(Box::new(element)));
+            }
             let elements = element_annotations
                 .into_iter()
                 .map(|element| match element {
@@ -51784,6 +52228,11 @@ fn method_annotation(
                 ast::Expr::Tuple(tuple) => tuple.elts.iter().collect::<Vec<_>>(),
                 element => vec![element],
             };
+            if matches!(annotations.as_slice(), [_, ast::Expr::Constant(ellipsis)]
+                if ellipsis.value == ast::Constant::Ellipsis)
+            {
+                return Ok(MethodType::scalar(scalar_annotation(annotation)?));
+            }
             let elements = annotations
                 .into_iter()
                 .map(|annotation| method_annotation(Some(annotation), class_names))
@@ -51946,6 +52395,15 @@ fn field_annotation(
         }
         ast::Expr::Name(name) if class_names.contains(name.id.as_str()) => {
             Ok(HeapFieldType::reference(name.id.to_string()))
+        }
+        ast::Expr::Subscript(subscript)
+            if matches!(subscript.value.as_ref(), ast::Expr::Name(name)
+                if matches!(name.id.as_str(), "Tuple" | "tuple"))
+                && matches!(subscript.slice.as_ref(), ast::Expr::Tuple(arguments)
+                    if matches!(arguments.elts.as_slice(), [_, ast::Expr::Constant(ellipsis)]
+                        if ellipsis.value == ast::Constant::Ellipsis)) =>
+        {
+            Ok(HeapFieldType::scalar(scalar_annotation(Some(annotation))?))
         }
         ast::Expr::Constant(constant) => match &constant.value {
             ast::Constant::Str(name) if class_names.contains(name) => {
@@ -52242,6 +52700,103 @@ fn fail<T>(code: &'static str, message: impl Into<String>) -> Result<T, Contract
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn frozen_holder_with_external_handle() -> Vec<ImportedHeapContractModule> {
+        let provider = parse_external_heap_contract_module(
+            "from nagini_contracts.contracts import Acc, ContractOnly, Ensures\n\nclass Handle:\n    state: int\n\n    @ContractOnly\n    def __init__(self, value: int) -> None:\n        Ensures(Acc(self.state))\n        Ensures(self.state == value)\n        ...\n",
+            "provider_contract.py",
+            "provider",
+        )
+        .unwrap();
+        let (verification, records) = verify_and_export_source_heap_module(
+            "from dataclasses import dataclass\nfrom provider import Handle\n\n@dataclass(frozen=True)\nclass Holder:\n    handle: Handle\n    label: int\n",
+            "records.py",
+            "records",
+            std::slice::from_ref(&provider),
+        )
+        .unwrap();
+        assert!(verification.passed, "{verification:#?}");
+        vec![provider, records]
+    }
+
+    #[test]
+    fn closed_local_record_recursion_does_not_own_imported_holders_mutable_handle() {
+        // This isolates the semantic ownership API with real parsed provider
+        // contracts and a checked source export, not hand-built class summaries.
+        // Frozen Outer -> imported frozen Holder -> mutable external Handle must
+        // not become a permission transfer merely because Holder was checked.
+        let imports = frozen_holder_with_external_handle();
+        let declarations = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\nfrom provider import Handle\nfrom records import Holder\n\n@dataclass(frozen=True)\nclass Outer:\n    holder: Holder\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n";
+        for body in [
+            "    value = handle.state\n    return Completed(value)\n",
+            "    handle.state = 0\n    return Completed(0)\n",
+        ] {
+            let source = format!(
+                "{declarations}@operation\ndef work(request: Outer) -> Completed:\n    holder = request.holder\n    handle = holder.handle\n{body}"
+            );
+            let result = verify_closed_operation_assertions(
+                &source, "worker.py", &["work".to_owned()], &imports,
+            ).unwrap();
+            assert!(!result.passed, "Mutable state is not an immutable projection: {result:#?}");
+            assert!(result.obligations.iter().any(|item| {
+                item.id.contains("permission") && !item.satisfied()
+            }), "The missing mutable ownership must cause refusal: {result:#?}");
+            assert!(result.obligations.iter().filter(|item| {
+                item.id.contains("field-permission:holder:")
+                    || item.id.contains("field-permission:handle:")
+            }).all(|item| item.satisfied()), "Frozen container projections remain readable: {result:#?}");
+        }
+    }
+
+    #[test]
+    fn closed_local_record_recursion_preserves_imported_frozen_value_reads() {
+        let imports = frozen_holder_with_external_handle();
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\nfrom records import Holder\n\n@dataclass(frozen=True)\nclass Outer:\n    holder: Holder\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n@operation\ndef work(request: Outer) -> Completed:\n    holder = request.holder\n    before = holder.label\n    result = Completed(before + 1)\n    assert result.value == before + 1\n    return result\n";
+        let result = verify_closed_operation_assertions(
+            source, "worker.py", &["work".to_owned()], std::slice::from_ref(&imports[1]),
+        ).unwrap();
+        assert!(result.passed, "{result:#?}");
+        assert!(result.obligations.iter().all(|item| item.satisfied()));
+    }
+
+    #[test]
+    fn closed_record_read_mode_preserves_explicit_provider_constructor_ownership() {
+        let imports = frozen_holder_with_external_handle();
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\nfrom provider import Handle\n\n@dataclass(frozen=True)\nclass Request:\n    value: int\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n@operation\ndef work(request: Request) -> Completed:\n    before = request.value\n    handle = Handle(before)\n    observed = handle.state\n    assert observed == before\n    return Completed(observed)\n";
+        let result = verify_closed_operation_assertions(
+            source, "worker.py", &["work".to_owned()], std::slice::from_ref(&imports[0]),
+        ).unwrap();
+        assert!(result.passed, "An explicit constructor contract still transfers ownership: {result:#?}");
+        assert!(result.obligations.iter().all(|item| item.satisfied()));
+    }
+
+    #[test]
+    fn closed_result_layouts_project_one_actual_reference_at_the_semantic_api() {
+        // This isolates semantic lowering, not full protocol admissibility:
+        // strict mypy independently refuses an identity comparison between the
+        // two ResultT annotations. Its refusal has a protocol regression test.
+        let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\nfrom nagini_contracts.contracts import Ensures, ResultT\n\n@dataclass(frozen=True)\nclass Request:\n    value: int\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n@dataclass(frozen=True)\nclass Idle:\n    reason: str\n\n@operation\ndef work(request: Request) -> Completed | Idle:\n    Ensures(ResultT(Completed) is ResultT(Idle))\n    return Completed(request.value)\n";
+        let symbols = ["work".to_owned()];
+        crate::dagcert_operations::verify_operation_module(source, "worker.py", &symbols)
+            .expect("closed source admission must precede the semantic API");
+        let result = verify_closed_operation_assertions(source, "worker.py", &symbols, &[])
+            .unwrap();
+        assert!(result.passed, "{result:#?}");
+        assert!(result.obligations.iter().all(|item| item.satisfied()));
+
+        let false_source = source.replace(
+            "ResultT(Completed) is ResultT(Idle)",
+            "ResultT(Completed) is not ResultT(Idle)",
+        );
+        crate::dagcert_operations::verify_operation_module(&false_source, "worker.py", &symbols)
+            .expect("the negative control is also a closed operation");
+        let result = verify_closed_operation_assertions(&false_source, "worker.py", &symbols, &[])
+            .unwrap();
+        assert!(!result.passed, "{result:#?}");
+        assert!(result.obligations.iter().any(|item| {
+            item.id.contains(":postcondition:") && !item.satisfied()
+        }), "Distinct projection layouts must not create distinct result references: {result:#?}");
+    }
 
     #[test]
     fn guarded_object_string_conversion_is_total() {

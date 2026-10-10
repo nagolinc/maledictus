@@ -651,6 +651,77 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
         if language == "python" {
             match std::str::from_utf8(&bytes) {
                 Ok(text) => {
+                    if let Some(externals) = external_contracts.heap_by_adapter.get(&source.path)
+                        && dagcert_operations::has_operation_entry_point(text, &source.path)
+                        && !python_callable_bindings.by_consumer.contains_key(&source.path)
+                    {
+                        // The provider overlays have already been checked and sealed. Preserve
+                        // the complete original source: native heap lowering models actual call,
+                        // with-entry, cleanup, return replacement and exceptional paths together.
+                        // Closed surface admission alone is never a successful operation proof.
+                        let imported = match heap_source_imports.get(&source.path) {
+                            Some(Ok(imported)) => imported.as_slice(),
+                            Some(Err(error)) => {
+                                response.diagnostics.push(Diagnostic::file_error(
+                                    error.code, error.message.clone(), &source.path,
+                                ));
+                                continue;
+                            }
+                            None => externals.as_slice(),
+                        };
+                        let operation_imports = match operation_source_imports.by_path.get(&source.path) {
+                            Some(Ok(imported)) => imported.as_slice(),
+                            Some(Err(error)) => {
+                                response.diagnostics.push(Diagnostic::file_error(
+                                    error.code, error.message.clone(), &source.path,
+                                ));
+                                continue;
+                            }
+                            None => &[],
+                        };
+                        let ordinary_imports = operation_source_imports.ordinary_by_path
+                            .get(&source.path).map_or(&[][..], Vec::as_slice);
+                        let checked_modules = imported.iter()
+                            .map(|module| module.module().to_owned()).collect();
+                        if let Err(error) = dagcert_operations::admit_operation_module_for_heap_proof(
+                            text, &source.path,
+                            &python_module_name(&source.path).unwrap_or_else(|_| source.path.clone()),
+                            &source.symbols, operation_imports, ordinary_imports,
+                            &external_nominal_modules, &checked_modules,
+                        ) {
+                            response.diagnostics.push(Diagnostic::file_error(
+                                error.code, error.message, &source.path,
+                            ));
+                            continue;
+                        }
+                        let semantic = match dagcert_operations::operation_module_semantic_obligations(text, &source.path) {
+                            Ok(semantic) => semantic,
+                            Err(error) => {
+                                response.diagnostics.push(Diagnostic::file_error(
+                                    error.code, error.message, &source.path,
+                                ));
+                                continue;
+                            }
+                        };
+                        let fragment = if semantic.postconditions {
+                            fragments::DAGCERT_TYPED_OPERATIONS_WITH_SEMANTIC_POSTCONDITIONS
+                        } else if semantic.assertions {
+                            fragments::DAGCERT_TYPED_OPERATIONS_WITH_SEMANTIC_ASSERTIONS
+                        } else {
+                            fragments::DAGCERT_CLOSED_TYPED_OPERATIONS
+                        };
+                        match python_heap_contracts::verify_closed_operation_assertions(
+                            text, &source.path, &source.symbols, imported,
+                        ) {
+                            Ok(verification) => record_heap_verification(
+                                &mut response, &source.path, verification, fragment,
+                            ),
+                            Err(error) => response.diagnostics.push(Diagnostic::file_error(
+                                error.code, error.message, &source.path,
+                            )),
+                        }
+                        continue;
+                    }
                     if source.symbols.is_empty()
                         && !external_contracts
                             .heap_by_adapter
@@ -3495,8 +3566,9 @@ fn record_reference_verification(
 }
 
 /// A closed-operation check proves typing, finite outcomes, and exception closure.  Python
-/// `assert` additionally states a semantic theorem, so an operation containing one is complete
-/// only after the heap backend has discharged it.  Returning true means this function recorded
+/// `assert` and canonical `Ensures` additionally state semantic theorems, so an operation
+/// containing either is complete only after the heap backend has discharged them. Returning true
+/// means this function recorded
 /// the definitive result (proved, refuted, or refused) and the caller must not apply the ordinary
 /// operation-success fast path.
 fn discharge_operation_assertions(
@@ -3512,16 +3584,16 @@ fn discharge_operation_assertions(
     >,
     proved_scope: &str,
 ) -> bool {
-    match dagcert_operations::operation_module_contains_assertions(source, path) {
-        Ok(false) => return false,
+    let obligations = match dagcert_operations::operation_module_semantic_obligations(source, path) {
+        Ok(obligations) if !obligations.assertions && !obligations.postconditions => return false,
         Err(error) => {
             response
                 .diagnostics
                 .push(Diagnostic::file_error(error.code, error.message, path));
             return true;
         }
-        Ok(true) => {}
-    }
+        Ok(obligations) => obligations,
+    };
     let empty = Vec::new();
     let imported = match imported {
         Some(Ok(imported)) => imported,
@@ -3535,7 +3607,7 @@ fn discharge_operation_assertions(
         }
         None => &empty,
     };
-    match python_heap_contracts::verify_heap_module_with_imports(
+    match python_heap_contracts::verify_closed_operation_assertions(
         source,
         path,
         requested_symbols,
@@ -3546,7 +3618,11 @@ fn discharge_operation_assertions(
                 response,
                 path,
                 verification,
-                fragments::DAGCERT_TYPED_OPERATIONS_WITH_SEMANTIC_ASSERTIONS,
+                if obligations.postconditions {
+                    fragments::DAGCERT_TYPED_OPERATIONS_WITH_SEMANTIC_POSTCONDITIONS
+                } else {
+                    fragments::DAGCERT_TYPED_OPERATIONS_WITH_SEMANTIC_ASSERTIONS
+                },
             );
             if let Some(file) = response.files.last_mut() {
                 file.scope = proved_scope.to_owned();
@@ -3689,6 +3765,7 @@ fn frontend_bundle_sources() -> Vec<&'static [u8]> {
         include_bytes!("python_contract_positions.rs"),
         include_bytes!("python_adt_wellformedness.rs"),
         include_bytes!("python_adt_contracts.rs"),
+        include_bytes!("python_type_only.rs"),
         include_bytes!("python_adt_contracts/expressions.rs"),
         include_bytes!("python_io_contracts.rs"),
         include_bytes!("python_io_wellformedness.rs"),

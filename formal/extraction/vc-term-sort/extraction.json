@@ -184,11 +184,11 @@
     },
     {
       "path": "formal/extraction/vc-term-sort/setup-extraction-workspace.ps1",
-      "sha256": "7c6ea12d9ff217296dfb0ed69010031bfb0d3f191d41f146339df87817ef8b43"
+      "sha256": "ea0a46d97ab139a3ae88c79cd0e08cfcc17ed51e37b0389ec6fb089d39eabd88"
     },
     {
       "path": "formal/extraction/vc-term-sort/tests/setup-extraction-workspace.Tests.ps1",
-      "sha256": "70afce6a613576080a716f89844f1c09cd70efdf20366f77072c8f72fc4822b1"
+      "sha256": "0f3b97cc824c09ffbd4724fd18552379cefdb2feb79959dc3c4727a8625a667c"
     },
     {
       "path": "formal/extraction/vc-term-sort/README.md",

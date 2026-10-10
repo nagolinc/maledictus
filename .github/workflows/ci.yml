@@ -22,7 +22,19 @@ jobs:
           tool: nextest@0.9.145
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --all-features -- -D warnings
-      - run: cargo nextest run --all-targets --no-fail-fast
+      - run: python3 -m unittest discover -s tests -p test_nextest_ci_logging.py -v
+        env:
+          PYTHONPYCACHEPREFIX: .cache/python
+      - run: python3 scripts/run-nextest-ci.py
+        env:
+          PYTHONPYCACHEPREFIX: .cache/python
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: maledictus-rust-nextest-diagnostics
+          path: .cache/nextest-ci/
+          if-no-files-found: warn
+          include-hidden-files: true
       - run: cargo test --doc
       - run: cargo fmt --manifest-path formal/coverage-tool/Cargo.toml --check
       - run: cargo clippy --manifest-path formal/coverage-tool/Cargo.toml --all-targets -- -D warnings

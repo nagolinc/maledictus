@@ -77,12 +77,21 @@ jobs:
       - shell: pwsh
         run: ./tests/axiom_audit_driver.Tests.ps1
       - shell: pwsh
+        run: ./tests/windows_package_ci_logging.Tests.ps1
+      - shell: pwsh
         run: ./formal/extraction/vc-term-sort/tests/setup-extraction-workspace.Tests.ps1
       - shell: pwsh
         run: ./scripts/package-windows.ps1 -Profile release
       - shell: pwsh
-        run: ./scripts/verify-windows-package.ps1
+        run: ./scripts/verify-windows-package-ci.ps1
       - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: maledictus-windows-verification-log
+          path: .cache/windows-package-verification.log
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: maledictus-windows-x86_64
           path: .cache/release/windows-x86_64/

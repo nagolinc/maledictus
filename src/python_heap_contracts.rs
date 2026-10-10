@@ -3124,12 +3124,14 @@ impl ScalarOldFieldRewriter<'_> {
                 "Old(...) scalar fields require a path rooted in an entry-state typed local",
             );
         };
-        let mut class_name = self.object_classes.get(root.id.as_str()).ok_or_else(|| {
-            ContractFailure {
-                code: "frontend.python.heap.old-expression-unsupported",
-                message: "Old(...) field receiver has no entry-state source nominal type".to_owned(),
-            }
-        })?;
+        let mut class_name =
+            self.object_classes
+                .get(root.id.as_str())
+                .ok_or_else(|| ContractFailure {
+                    code: "frontend.python.heap.old-expression-unsupported",
+                    message: "Old(...) field receiver has no entry-state source nominal type"
+                        .to_owned(),
+                })?;
         if fields.is_empty() {
             return fail(
                 "frontend.python.heap.old-expression-unsupported",
@@ -3138,23 +3140,30 @@ impl ScalarOldFieldRewriter<'_> {
         }
         let nested = fields.len() > 1;
         for (index, field_name) in fields.iter().rev().enumerate() {
-            let class = self.classes.get(class_name).ok_or_else(|| ContractFailure {
-                code: "frontend.python.heap.old-expression-unsupported",
-                message: format!("Old(...) receiver class {class_name:?} is unavailable"),
-            })?;
+            let class = self
+                .classes
+                .get(class_name)
+                .ok_or_else(|| ContractFailure {
+                    code: "frontend.python.heap.old-expression-unsupported",
+                    message: format!("Old(...) receiver class {class_name:?} is unavailable"),
+                })?;
             if class.properties.contains_key(*field_name)
-                || (nested && (!class_is_frozen_dataclass(class)
-                    || !source_field_storage_mro_is_plain(class_name, self.classes)))
+                || (nested
+                    && (!class_is_frozen_dataclass(class)
+                        || !source_field_storage_mro_is_plain(class_name, self.classes)))
             {
                 return fail(
                     "frontend.python.heap.old-expression-unsupported",
                     "nested Old(...) scalar paths require plain source-owned frozen record fields; descriptors and mutable receiver paths are not snapshots",
                 );
             }
-            let field = class.fields.get(*field_name).ok_or_else(|| ContractFailure {
-                code: "frontend.python.heap.field-unknown",
-                message: format!("unknown field {class_name:?}.{field_name}"),
-            })?;
+            let field = class
+                .fields
+                .get(*field_name)
+                .ok_or_else(|| ContractFailure {
+                    code: "frontend.python.heap.field-unknown",
+                    message: format!("unknown field {class_name:?}.{field_name}"),
+                })?;
             if index + 1 == fields.len() {
                 if !matches!(field.sort, Sort::Int | Sort::Bool | Sort::String) {
                     return fail(
@@ -3169,10 +3178,14 @@ impl ScalarOldFieldRewriter<'_> {
                         "nested Old(...) cannot assume an optional receiver was present at entry",
                     );
                 }
-                class_name = field.nominal_class.as_ref().ok_or_else(|| ContractFailure {
-                    code: "frontend.python.heap.old-expression-unsupported",
-                    message: "nested Old(...) must follow source nominal record fields".to_owned(),
-                })?;
+                class_name = field
+                    .nominal_class
+                    .as_ref()
+                    .ok_or_else(|| ContractFailure {
+                        code: "frontend.python.heap.old-expression-unsupported",
+                        message: "nested Old(...) must follow source nominal record fields"
+                            .to_owned(),
+                    })?;
             }
         }
         let value = lower_contextual_field_value(
@@ -3181,7 +3194,8 @@ impl ScalarOldFieldRewriter<'_> {
             self.object_classes,
             self.classes,
             self.entry_heap,
-        )?.ok_or_else(|| ContractFailure {
+        )?
+        .ok_or_else(|| ContractFailure {
             code: "frontend.python.heap.old-expression-unsupported",
             message: "Old(...) field path has no source-resolved entry value".to_owned(),
         })?;
@@ -3189,7 +3203,9 @@ impl ScalarOldFieldRewriter<'_> {
         for read in &mut lowered.reads {
             // Every receiver is itself projected from the entry heap. Retain the
             // permission obligation for every hop; this does not grant ownership.
-            read.origin = HeapReadOrigin::OldEntry { mask: self.entry_mask };
+            read.origin = HeapReadOrigin::OldEntry {
+                mask: self.entry_mask,
+            };
         }
         Ok(lowered)
     }
@@ -4108,7 +4124,7 @@ fn materialize_imported_heap_generics_in_provider(
             && matches!(call.func.as_ref(), ast::Expr::Name(callee)
                 if callee.id.as_str() == annotation_origin.id.as_str())
         {
-            call.func = Box::new(assignment.annotation.as_ref().clone());
+            *call.func = assignment.annotation.as_ref().clone();
         }
         let mut folder = ImportedGenericExpressionFolder {
             bindings: &bindings,
@@ -5925,11 +5941,16 @@ fn verify_heap_module_internal(
             }
             ast::Stmt::ImportFrom(import)
                 if import.level.is_none_or(|level| level == 0_u32)
-                    && import.module.as_ref().is_some_and(|module| module.as_str() == "__future__") =>
+                    && import
+                        .module
+                        .as_ref()
+                        .is_some_and(|module| module.as_str() == "__future__") =>
             {
-                if !import.names.iter().all(|alias| {
-                    alias.name.as_str() == "annotations" && alias.asname.is_none()
-                }) {
+                if !import
+                    .names
+                    .iter()
+                    .all(|alias| alias.name.as_str() == "annotations" && alias.asname.is_none())
+                {
                     return fail(
                         "frontend.python.heap.future-import-unsupported",
                         "heap source accepts canonical `from __future__ import annotations`; other future features and renamed bindings are not modeled",
@@ -14351,6 +14372,7 @@ fn build_external_factory_summary(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_constructor_summary(
     constructor: &ast::StmtFunctionDef,
     class_names: &BTreeSet<String>,
@@ -24003,8 +24025,10 @@ fn lower_heap_statement_condition(
     // Python's if accepts builtin values, not only bool. Preserve the existing read
     // obligations and use the same zero/length semantics as value-returning boolean
     // expressions. Do not infer object truthiness from a nominal type annotation.
-    if !matches!(lowered.term.sort().map_err(type_error)?, Sort::Reference | Sort::Class)
-        || matches!(lowered.term, Term::NullReference)
+    if !matches!(
+        lowered.term.sort().map_err(type_error)?,
+        Sort::Reference | Sort::Class
+    ) || matches!(lowered.term, Term::NullReference)
     {
         let value = heap_python_value_from_term(expression, lowered.term.clone(), state, context)?;
         lowered.term = heap_python_truth_condition(&value, context.classes)?;
@@ -24412,7 +24436,8 @@ fn evaluate_heap_statement_condition(
     if let ast::Expr::UnaryOp(operation) = expression
         && operation.op == ast::UnaryOp::Not
         && (heap_conditional_contains_call(&operation.operand)
-            || native_property_target(&operation.operand, &state, context).is_some())
+            || native_property_target(&operation.operand, &state, context).is_some()
+            || is_external_index(&operation.operand, &state, context)?)
     {
         let mut partition = evaluate_heap_statement_condition(&operation.operand, state, context)?;
         std::mem::swap(&mut partition.truthy, &mut partition.falsy);
@@ -24454,6 +24479,7 @@ fn evaluate_heap_statement_condition(
         });
     }
     if native_property_target(expression, &state, context).is_some()
+        || is_external_index(expression, &state, context)?
         || matches!(expression, ast::Expr::Call(call)
         if matches!(call.func.as_ref(), ast::Expr::Name(function)
             if context.heap_functions.contains_key(function.id.as_str())))
@@ -25439,9 +25465,9 @@ fn heap_term_any(candidate: &Term, predicate: &impl Fn(&Term) -> bool) -> bool {
         | Term::PredicateInstance {
             arguments: values, ..
         } => values.iter().any(|value| heap_term_any(value, predicate)),
-        Term::FiniteDict { entries, .. } => entries.iter().any(|(key, value)| {
-            heap_term_any(key, predicate) || heap_term_any(value, predicate)
-        }),
+        Term::FiniteDict { entries, .. } => entries
+            .iter()
+            .any(|(key, value)| heap_term_any(key, predicate) || heap_term_any(value, predicate)),
         Term::ListComprehension {
             source,
             mapped,
@@ -30721,7 +30747,8 @@ fn execute_heap_function_path_set_at_loop_depth(
                 }
             } else if let ast::Stmt::Assign(assignment) = statement
                 && let [ast::Expr::Name(target)] = assignment.targets.as_slice()
-                && native_property_target(&assignment.value, &state, context).is_some()
+                && (native_property_target(&assignment.value, &state, context).is_some()
+                    || is_external_index(&assignment.value, &state, context)?)
             {
                 for mut path in evaluate_heap_python_value_paths(&assignment.value, state, context)?
                 {
@@ -30749,16 +30776,14 @@ fn execute_heap_function_path_set_at_loop_depth(
             } else if let ast::Stmt::AnnAssign(assignment) = statement
                 && let ast::Expr::Name(target) = assignment.target.as_ref()
                 && let Some(value) = assignment.value.as_deref()
-                && has_declared_exception_method_call(value, &state, context)
+                && (has_declared_exception_method_call(value, &state, context)
+                    || is_external_index(value, &state, context)?)
             {
                 let annotation_classes = context.classes.keys().cloned().collect::<BTreeSet<_>>();
                 let mut expected =
                     method_annotation(Some(&assignment.annotation), &annotation_classes)?;
                 resolve_method_type_identity(&mut expected, context.classes);
-                for mut path in
-                    evaluate_declared_exception_instance_method_call_paths(value, state, context)?
-                        .expect("guard established an exceptional annotated method call")
-                {
+                for mut path in evaluate_heap_python_value_paths(value, state, context)? {
                     if let Some(actual) = path.value {
                         let actual_sort = actual.term.sort().map_err(type_error)?;
                         if !expected.accepts_any && expected.sort != actual_sort {
@@ -30851,19 +30876,13 @@ fn execute_heap_function_path_set_at_loop_depth(
                     .map(|path| path.state),
                 );
             } else if let ast::Stmt::Expr(expression) = statement
-                && has_declared_exception_method_call(&expression.value, &state, context)
+                && (has_declared_exception_method_call(&expression.value, &state, context)
+                    || is_external_index(&expression.value, &state, context)?)
             {
                 next_states.extend(
-                    evaluate_declared_exception_instance_method_call_paths(
-                        &expression.value,
-                        state,
-                        context,
-                    )?
-                    .expect(
-                        "guard established an instance method with declared exceptional outcomes",
-                    )
-                    .into_iter()
-                    .map(|path| path.state),
+                    evaluate_heap_python_value_paths(&expression.value, state, context)?
+                        .into_iter()
+                        .map(|path| path.state),
                 );
             } else if let ast::Stmt::Expr(expression) = statement
                 && let Some(invariant) = heap_invariant(&expression.value)
@@ -31038,11 +31057,11 @@ fn execute_heap_function_path_set_at_loop_depth(
                 next_states.push(normal);
                 next_states.push(exceptional);
             } else if let ast::Stmt::Return(statement) = statement
-                && statement.value.as_deref().is_some_and(|expression| {
-                    matches!(expression, ast::Expr::BoolOp(_))
-                        || heap_conditional_contains_call(expression)
-                        || native_property_target(expression, &state, context).is_some()
-                })
+                && let Some(expression) = statement.value.as_deref()
+                && (matches!(expression, ast::Expr::BoolOp(_))
+                    || heap_conditional_contains_call(expression)
+                    || native_property_target(expression, &state, context).is_some()
+                    || is_external_index(expression, &state, context)?)
             {
                 let expression = statement
                     .value
@@ -31611,9 +31630,11 @@ fn heap_python_truth_condition(
         Term::String { value } => Ok(Term::Bool {
             value: !value.is_empty(),
         }),
-        term if term.sort().map_err(type_error)? == Sort::String => Ok(nonzero(Term::StringLength {
-            value: Box::new(value.term.clone()),
-        })),
+        term if term.sort().map_err(type_error)? == Sort::String => {
+            Ok(nonzero(Term::StringLength {
+                value: Box::new(value.term.clone()),
+            }))
+        }
         Term::Bytes { values } => Ok(Term::Bool {
             value: !values.is_empty(),
         }),
@@ -31629,9 +31650,11 @@ fn heap_python_truth_condition(
         Term::VariadicTuple { values, .. } => Ok(Term::Bool {
             value: !values.is_empty(),
         }),
-        term if matches!(term.sort().map_err(type_error)?, Sort::VariadicTuple(_)) => Ok(nonzero(Term::VariadicTupleLength {
-            value: Box::new(value.term.clone()),
-        })),
+        term if matches!(term.sort().map_err(type_error)?, Sort::VariadicTuple(_)) => {
+            Ok(nonzero(Term::VariadicTupleLength {
+                value: Box::new(value.term.clone()),
+            }))
+        }
         Term::List { values, .. } => Ok(Term::Bool {
             value: !values.is_empty(),
         }),
@@ -32938,14 +32961,12 @@ fn evaluate_declared_exception_instance_method_call_paths(
         let ast::Expr::Attribute(normalized_attribute) = normalized_call.func.as_mut() else {
             unreachable!("class-qualified method normalization preserves attribute syntax")
         };
-        normalized_attribute.value = Box::new(
-            ast::ExprName {
-                range: receiver_expression.range(),
-                id: temporary.into(),
-                ctx: ast::ExprContext::Load,
-            }
-            .into(),
-        );
+        *normalized_attribute.value = ast::ExprName {
+            range: receiver_expression.range(),
+            id: temporary.into(),
+            ctx: ast::ExprContext::Load,
+        }
+        .into();
         normalized = value;
         &normalized
     } else {
@@ -33157,6 +33178,330 @@ fn evaluate_declared_exception_instance_method_call_paths(
 // imported types; introduce a private method only inside this evaluation so
 // ordinary source cannot call the getter as if it were a public method. The
 // existing method rules discharge permissions and split all Exsures outcomes.
+fn external_expression_nominal_class(
+    expression: &ast::Expr,
+    object_classes: &BTreeMap<String, String>,
+    classes: &BTreeMap<String, ClassShape>,
+    identity_functions: Option<&BTreeMap<String, ReferenceIdentityFunctionSummary>>,
+) -> Result<Option<String>, ContractFailure> {
+    match expression {
+        ast::Expr::Attribute(attribute) => {
+            if let Some(receiver) = external_expression_nominal_class(
+                &attribute.value,
+                object_classes,
+                classes,
+                identity_functions,
+            )? && let Some(class) = classes.get(&receiver)
+                && let Some(property) = class.properties.get(attribute.attr.as_str())
+                && property.getter.externally_assumed
+            {
+                return Ok(property.getter.return_type.nominal_class.clone());
+            }
+        }
+        ast::Expr::Call(call) => {
+            if let ast::Expr::Attribute(attribute) = call.func.as_ref()
+                && let Some(receiver) = external_expression_nominal_class(
+                    &attribute.value,
+                    object_classes,
+                    classes,
+                    identity_functions,
+                )?
+                && let Some(class) = classes.get(&receiver)
+                && let Some(method) = class.methods.get(attribute.attr.as_str())
+                && method.externally_assumed
+            {
+                return Ok(method.return_type.nominal_class.clone());
+            }
+        }
+        _ => {}
+    }
+    evaluated_expression_nominal_class(expression, object_classes, classes, identity_functions)
+}
+
+fn external_index_target(
+    expression: &ast::Expr,
+    object_classes: &BTreeMap<String, String>,
+    classes: &BTreeMap<String, ClassShape>,
+    identity_functions: Option<&BTreeMap<String, ReferenceIdentityFunctionSummary>>,
+) -> Result<Option<(String, MethodSummary)>, ContractFailure> {
+    let ast::Expr::Subscript(subscript) = expression else {
+        return Ok(None);
+    };
+    let Some(class_name) = external_expression_nominal_class(
+        &subscript.value,
+        object_classes,
+        classes,
+        identity_functions,
+    )?
+    else {
+        return Ok(None);
+    };
+    let Some(class) = classes.get(&class_name) else {
+        return Ok(None);
+    };
+    if !class.externally_assumed {
+        return Ok(None);
+    }
+    let Some(method) = class.methods.get("__getitem__") else {
+        return Ok(None);
+    };
+    if !method.externally_assumed
+        || method.receiver_kind != MethodReceiverKind::Instance
+        || class.defines_dynamic_attribute_access
+        || class.fields.contains_key("__getitem__")
+        || class.properties.contains_key("__getitem__")
+        || class.constants.contains_key("__getitem__")
+    {
+        return fail(
+            "frontend.python.heap.external-index-dispatch-unsupported",
+            "external indexing requires one sealed type-level instance __getitem__ contract without dynamic or shadowed dispatch",
+        );
+    }
+    if subscript.ctx != ast::ExprContext::Load
+        || matches!(subscript.slice.as_ref(), ast::Expr::Slice(_))
+    {
+        return fail(
+            "frontend.python.heap.external-index-shape-unsupported",
+            "external nominal indexing supports read-only scalar indices, not slices, stores, or deletion",
+        );
+    }
+    Ok(Some((class_name, method.clone())))
+}
+
+fn is_external_index(
+    expression: &ast::Expr,
+    state: &HeapFunctionState,
+    context: &HeapBranchContext<'_>,
+) -> Result<bool, ContractFailure> {
+    Ok(external_index_target(
+        expression,
+        &state.object_classes,
+        context.classes,
+        context.reference_identity_functions,
+    )?
+    .is_some())
+}
+
+fn bind_external_index_temporary(
+    role: &str,
+    expression: &ast::Expr,
+    value: HeapPythonValue,
+    state: &mut HeapFunctionState,
+    context: &HeapBranchContext<'_>,
+) -> Result<ast::Expr, ContractFailure> {
+    let stem = format!(
+        "__maledictus_external_index_{role}_{}_{}",
+        u32::from(expression.range().start()),
+        u32::from(expression.range().end())
+    );
+    let mut generation = 0_usize;
+    let name = loop {
+        let candidate = format!("{stem}_{generation}");
+        if context.lexical_names.contains(&candidate) {
+            return fail(
+                "frontend.python.heap.external-index-temporary-collision",
+                "external indexing temporary collides with a source binding",
+            );
+        }
+        if !state.environment.contains_key(&candidate) {
+            break candidate;
+        }
+        generation = generation.checked_add(1).ok_or_else(|| ContractFailure {
+            code: "frontend.python.heap.external-index-temporary-overflow",
+            message: "external indexing temporary namespace was exhausted".to_owned(),
+        })?;
+    };
+    bind_heap_python_value(&name, value, state);
+    Ok(ast::ExprName {
+        range: expression.range(),
+        id: name.into(),
+        ctx: ast::ExprContext::Load,
+    }
+    .into())
+}
+
+// Lift an effectful native receiver chain one step at a time. Each step still
+// uses the ordinary getter/method/constructor path executor, including Exsures.
+fn evaluate_external_index_receiver_paths(
+    expression: &ast::Expr,
+    state: HeapFunctionState,
+    context: &HeapBranchContext<'_>,
+) -> Result<Vec<HeapPythonValuePath>, ContractFailure> {
+    let receiver = match expression {
+        ast::Expr::Attribute(attribute)
+            if !matches!(attribute.value.as_ref(), ast::Expr::Name(_)) =>
+        {
+            Some(attribute.value.as_ref())
+        }
+        ast::Expr::Call(call) => match call.func.as_ref() {
+            ast::Expr::Attribute(attribute)
+                if !matches!(attribute.value.as_ref(), ast::Expr::Name(_)) =>
+            {
+                Some(attribute.value.as_ref())
+            }
+            _ => None,
+        },
+        _ => None,
+    };
+    let Some(receiver) = receiver else {
+        return evaluate_heap_python_value_paths(expression, state, context);
+    };
+    let mut outcomes = Vec::new();
+    for mut path in evaluate_external_index_receiver_paths(receiver, state, context)? {
+        let Some(value) = path.value.take() else {
+            outcomes.push(path);
+            continue;
+        };
+        let temporary =
+            bind_external_index_temporary("chain", receiver, value, &mut path.state, context)?;
+        let mut normalized = expression.clone();
+        match &mut normalized {
+            ast::Expr::Attribute(attribute) => *attribute.value = temporary,
+            ast::Expr::Call(call) => {
+                let ast::Expr::Attribute(attribute) = call.func.as_mut() else {
+                    unreachable!()
+                };
+                *attribute.value = temporary;
+            }
+            _ => unreachable!(),
+        }
+        outcomes.extend(evaluate_heap_python_value_paths(
+            &normalized,
+            path.state,
+            context,
+        )?);
+    }
+    Ok(outcomes)
+}
+
+fn evaluate_external_index_paths(
+    expression: &ast::Expr,
+    state: HeapFunctionState,
+    context: &HeapBranchContext<'_>,
+) -> Result<Option<Vec<HeapPythonValuePath>>, ContractFailure> {
+    let Some((class_name, method)) = external_index_target(
+        expression,
+        &state.object_classes,
+        context.classes,
+        context.reference_identity_functions,
+    )?
+    else {
+        return Ok(None);
+    };
+    let ast::Expr::Subscript(subscript) = expression else {
+        unreachable!()
+    };
+    let mut outcomes = Vec::new();
+    for mut receiver_path in
+        evaluate_external_index_receiver_paths(&subscript.value, state, context)?
+    {
+        let Some(receiver) = receiver_path.value.take() else {
+            outcomes.push(receiver_path);
+            continue;
+        };
+        if receiver.nominal_class.as_deref() != Some(class_name.as_str()) || receiver.optional {
+            return fail(
+                "frontend.python.heap.external-index-receiver-mismatch",
+                "external indexing must preserve the statically resolved nonoptional nominal receiver",
+            );
+        }
+        // A selected-function proof may omit the bodies and behavioral-subtype
+        // obligations of source subclasses. Do not borrow the external base's
+        // contract for an open receiver that could dispatch to such a body.
+        // Native-created exact receivers and native interfaces with no source
+        // override continue through the existing provider-contract machinery.
+        if !receiver.exact
+            && context.classes.values().any(|candidate| {
+                !candidate.externally_assumed
+                    && nominal_name_is_subtype(
+                        &candidate.identity,
+                        &class_name,
+                        context.classes,
+                        None,
+                    )
+                    && candidate
+                        .methods
+                        .get("__getitem__")
+                        .is_some_and(|implementation| !implementation.externally_assumed)
+            })
+        {
+            return fail(
+                "frontend.python.heap.external-index-dispatch-unsupported",
+                "external indexing cannot use a base contract for a nonexact receiver with source-owned __getitem__ overrides",
+            );
+        }
+        let receiver_expression = bind_external_index_temporary(
+            "receiver",
+            expression,
+            receiver,
+            &mut receiver_path.state,
+            context,
+        )?;
+        for mut index_path in
+            evaluate_heap_python_value_paths(&subscript.slice, receiver_path.state, context)?
+        {
+            let Some(index) = index_path.value.take() else {
+                outcomes.push(index_path);
+                continue;
+            };
+            let index_expression = bind_external_index_temporary(
+                "argument",
+                expression,
+                index,
+                &mut index_path.state,
+                context,
+            )?;
+            // Python bracket syntax looks up the special method on the type,
+            // not on the instance. This private registry alias invokes exactly
+            // the resolved native summary, never an application attribute.
+            let method_name = format!(
+                "__maledictus_native_getitem_{}",
+                u32::from(subscript.range.start())
+            );
+            let mut classes = context.classes.clone();
+            let class = classes
+                .get_mut(&class_name)
+                .expect("index receiver class remains resolved");
+            if class.methods.contains_key(&method_name)
+                || class.fields.contains_key(&method_name)
+                || class.properties.contains_key(&method_name)
+                || class.constants.contains_key(&method_name)
+            {
+                return fail(
+                    "frontend.python.heap.external-index-temporary-collision",
+                    "external index dispatch collides with an existing source member",
+                );
+            }
+            class.methods.insert(method_name.clone(), method.clone());
+            let call: ast::Expr = ast::ExprCall {
+                range: subscript.range,
+                func: Box::new(
+                    ast::ExprAttribute {
+                        range: subscript.range,
+                        value: Box::new(receiver_expression.clone()),
+                        attr: method_name.into(),
+                        ctx: ast::ExprContext::Load,
+                    }
+                    .into(),
+                ),
+                args: vec![index_expression],
+                keywords: Vec::new(),
+            }
+            .into();
+            let evaluation_context = HeapBranchContext {
+                classes: &classes,
+                ..*context
+            };
+            outcomes.extend(evaluate_heap_python_value_paths(
+                &call,
+                index_path.state,
+                &evaluation_context,
+            )?);
+        }
+    }
+    Ok(Some(outcomes))
+}
+
 fn native_property_target<'a>(
     expression: &ast::Expr,
     state: &'a HeapFunctionState,
@@ -33232,6 +33577,9 @@ fn evaluate_heap_python_value_paths(
     state: HeapFunctionState,
     context: &HeapBranchContext<'_>,
 ) -> Result<Vec<HeapPythonValuePath>, ContractFailure> {
+    if let Some(paths) = evaluate_external_index_paths(expression, state.clone(), context)? {
+        return Ok(paths);
+    }
     if let Some(paths) = evaluate_heap_float_paths(expression, state.clone(), context)? {
         return Ok(paths);
     }
@@ -34386,9 +34734,15 @@ fn evaluate_heap_effect_value(
             return Ok((state, None));
         };
         let length = match value.sort().map_err(type_error)? {
-            Sort::String => Term::StringLength { value: Box::new(value) },
-            Sort::Bytes => Term::BytesLength { value: Box::new(value) },
-            Sort::VariadicTuple(_) => Term::VariadicTupleLength { value: Box::new(value) },
+            Sort::String => Term::StringLength {
+                value: Box::new(value),
+            },
+            Sort::Bytes => Term::BytesLength {
+                value: Box::new(value),
+            },
+            Sort::VariadicTuple(_) => Term::VariadicTupleLength {
+                value: Box::new(value),
+            },
             Sort::Tuple(elements) => Term::Int {
                 value: i64::try_from(elements.len()).map_err(|_| ContractFailure {
                     code: "frontend.python.heap.collection-length-overflow",
@@ -35464,6 +35818,16 @@ fn lower_heap_function(
             );
         }
         if float_statement_value(statement).is_some()
+            || match heap_statement_value_expression(statement) {
+                Some(expression) => external_index_target(
+                    expression,
+                    &object_classes,
+                    classes,
+                    Some(reference_identity_functions),
+                )?
+                .is_some(),
+                None => false,
+            }
             || matches!(
                 statement,
                 ast::Stmt::Raise(_)
@@ -38344,14 +38708,17 @@ fn closed_record_return_membership(
                 }),
             },
             Term::Or {
-                values: alternatives.iter().map(|name| Term::ClassSubtype {
-                    actual: Box::new(Term::RuntimeClass {
-                        value: Box::new(returned.clone()),
-                    }),
-                    expected: Box::new(Term::ClassLiteral {
-                        name: classes[name].identity.clone(),
-                    }),
-                }).collect(),
+                values: alternatives
+                    .iter()
+                    .map(|name| Term::ClassSubtype {
+                        actual: Box::new(Term::RuntimeClass {
+                            value: Box::new(returned.clone()),
+                        }),
+                        expected: Box::new(Term::ClassLiteral {
+                            name: classes[name].identity.clone(),
+                        }),
+                    })
+                    .collect(),
             },
         ],
     }
@@ -38519,9 +38886,7 @@ fn heap_expression_class(
                 return Ok(None);
             };
             if name.id.as_str() == "Acc"
-                || (name.id.as_str() == "len"
-                    && call.args.len() == 1
-                    && call.keywords.is_empty())
+                || (name.id.as_str() == "len" && call.args.len() == 1 && call.keywords.is_empty())
             {
                 let Some(target) = call.args.first() else {
                     return Ok(None);
@@ -40070,7 +40435,6 @@ fn lower_heap_comprehension_source(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[allow(clippy::too_many_arguments)]
 fn lower_opaque_object_literal(
     expression: &ast::Expr,
     environment: &BTreeMap<String, Term>,
@@ -40132,6 +40496,7 @@ fn lower_opaque_object_literal(
     }))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn lower_finite_collection_expression(
     expression: &ast::Expr,
     expected: Option<&FiniteCollectionExpectation>,
@@ -42454,9 +42819,13 @@ fn lower_contextual_reference_expression(
                 // reads were retained before this point. Keep lowering every
                 // operand above: an inactive branch cannot hide invalid syntax.
                 let evaluated_when = match operation.op {
-                    ast::BoolOp::And => Term::And { values: values.clone() },
+                    ast::BoolOp::And => Term::And {
+                        values: values.clone(),
+                    },
                     ast::BoolOp::Or => Term::Not {
-                        value: Box::new(Term::Or { values: values.clone() }),
+                        value: Box::new(Term::Or {
+                            values: values.clone(),
+                        }),
                     },
                 };
                 for read in &mut operand_reads {
@@ -49375,7 +49744,10 @@ fn typed_result_layout<'a>(
     let Some(Term::ClassLiteral { name: identity }) = environment.get(expected.id.as_str()) else {
         return fail(
             "frontend.python.heap.result-type-argument-unresolved",
-            format!("ResultT({:?}) does not name an available source class", expected.id),
+            format!(
+                "ResultT({:?}) does not name an available source class",
+                expected.id
+            ),
         );
     };
     if let Some(classes) = scalar_calls.and_then(|context| context.classes)
@@ -49389,7 +49761,10 @@ fn typed_result_layout<'a>(
     }
     fail(
         "frontend.python.heap.result-type-argument-unresolved",
-        format!("ResultT({:?}) has no available source field layout", expected.id),
+        format!(
+            "ResultT({:?}) has no available source field layout",
+            expected.id
+        ),
     )
 }
 
@@ -51654,12 +52029,18 @@ fn add_read_obligations(
                 "field-permission".to_owned(),
                 read_permission(mask, receiver.clone(), field),
             ),
-            HeapReadOrigin::ShortCircuit { evaluated_when, origin } => {
+            HeapReadOrigin::ShortCircuit {
+                evaluated_when,
+                origin,
+            } => {
                 let (prefix, required_read) = requirement(origin, receiver, field, mask);
-                (prefix, Term::Implies {
-                    left: Box::new(evaluated_when.clone()),
-                    right: Box::new(required_read),
-                })
+                (
+                    prefix,
+                    Term::Implies {
+                        left: Box::new(evaluated_when.clone()),
+                        right: Box::new(required_read),
+                    },
+                )
             }
             HeapReadOrigin::PropertyApplication { property } => (
                 format!("property-precondition:{property}"),
@@ -52735,16 +53116,34 @@ mod tests {
                 "{declarations}@operation\ndef work(request: Outer) -> Completed:\n    holder = request.holder\n    handle = holder.handle\n{body}"
             );
             let result = verify_closed_operation_assertions(
-                &source, "worker.py", &["work".to_owned()], &imports,
-            ).unwrap();
-            assert!(!result.passed, "Mutable state is not an immutable projection: {result:#?}");
-            assert!(result.obligations.iter().any(|item| {
-                item.id.contains("permission") && !item.satisfied()
-            }), "The missing mutable ownership must cause refusal: {result:#?}");
-            assert!(result.obligations.iter().filter(|item| {
-                item.id.contains("field-permission:holder:")
-                    || item.id.contains("field-permission:handle:")
-            }).all(|item| item.satisfied()), "Frozen container projections remain readable: {result:#?}");
+                &source,
+                "worker.py",
+                &["work".to_owned()],
+                &imports,
+            )
+            .unwrap();
+            assert!(
+                !result.passed,
+                "Mutable state is not an immutable projection: {result:#?}"
+            );
+            assert!(
+                result
+                    .obligations
+                    .iter()
+                    .any(|item| { item.id.contains("permission") && !item.satisfied() }),
+                "The missing mutable ownership must cause refusal: {result:#?}"
+            );
+            assert!(
+                result
+                    .obligations
+                    .iter()
+                    .filter(|item| {
+                        item.id.contains("field-permission:holder:")
+                            || item.id.contains("field-permission:handle:")
+                    })
+                    .all(|item| item.satisfied()),
+                "Frozen container projections remain readable: {result:#?}"
+            );
         }
     }
 
@@ -52753,8 +53152,12 @@ mod tests {
         let imports = frozen_holder_with_external_handle();
         let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\nfrom records import Holder\n\n@dataclass(frozen=True)\nclass Outer:\n    holder: Holder\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n@operation\ndef work(request: Outer) -> Completed:\n    holder = request.holder\n    before = holder.label\n    result = Completed(before + 1)\n    assert result.value == before + 1\n    return result\n";
         let result = verify_closed_operation_assertions(
-            source, "worker.py", &["work".to_owned()], std::slice::from_ref(&imports[1]),
-        ).unwrap();
+            source,
+            "worker.py",
+            &["work".to_owned()],
+            std::slice::from_ref(&imports[1]),
+        )
+        .unwrap();
         assert!(result.passed, "{result:#?}");
         assert!(result.obligations.iter().all(|item| item.satisfied()));
     }
@@ -52764,9 +53167,16 @@ mod tests {
         let imports = frozen_holder_with_external_handle();
         let source = "from dataclasses import dataclass\nfrom dagcert.runtime import operation\nfrom provider import Handle\n\n@dataclass(frozen=True)\nclass Request:\n    value: int\n\n@dataclass(frozen=True)\nclass Completed:\n    value: int\n\n@operation\ndef work(request: Request) -> Completed:\n    before = request.value\n    handle = Handle(before)\n    observed = handle.state\n    assert observed == before\n    return Completed(observed)\n";
         let result = verify_closed_operation_assertions(
-            source, "worker.py", &["work".to_owned()], std::slice::from_ref(&imports[0]),
-        ).unwrap();
-        assert!(result.passed, "An explicit constructor contract still transfers ownership: {result:#?}");
+            source,
+            "worker.py",
+            &["work".to_owned()],
+            std::slice::from_ref(&imports[0]),
+        )
+        .unwrap();
+        assert!(
+            result.passed,
+            "An explicit constructor contract still transfers ownership: {result:#?}"
+        );
         assert!(result.obligations.iter().all(|item| item.satisfied()));
     }
 
@@ -52779,8 +53189,8 @@ mod tests {
         let symbols = ["work".to_owned()];
         crate::dagcert_operations::verify_operation_module(source, "worker.py", &symbols)
             .expect("closed source admission must precede the semantic API");
-        let result = verify_closed_operation_assertions(source, "worker.py", &symbols, &[])
-            .unwrap();
+        let result =
+            verify_closed_operation_assertions(source, "worker.py", &symbols, &[]).unwrap();
         assert!(result.passed, "{result:#?}");
         assert!(result.obligations.iter().all(|item| item.satisfied()));
 
@@ -52790,12 +53200,16 @@ mod tests {
         );
         crate::dagcert_operations::verify_operation_module(&false_source, "worker.py", &symbols)
             .expect("the negative control is also a closed operation");
-        let result = verify_closed_operation_assertions(&false_source, "worker.py", &symbols, &[])
-            .unwrap();
+        let result =
+            verify_closed_operation_assertions(&false_source, "worker.py", &symbols, &[]).unwrap();
         assert!(!result.passed, "{result:#?}");
-        assert!(result.obligations.iter().any(|item| {
-            item.id.contains(":postcondition:") && !item.satisfied()
-        }), "Distinct projection layouts must not create distinct result references: {result:#?}");
+        assert!(
+            result
+                .obligations
+                .iter()
+                .any(|item| { item.id.contains(":postcondition:") && !item.satisfied() }),
+            "Distinct projection layouts must not create distinct result references: {result:#?}"
+        );
     }
 
     #[test]

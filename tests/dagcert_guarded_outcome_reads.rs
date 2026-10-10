@@ -51,19 +51,31 @@ def work(request: Request) -> Completed | Idle:
 }
 
 fn assert_proved(response: &ProofResponse) {
-    assert!(matches!(response.status, ProofStatus::Proved), "{response:#?}");
+    assert!(
+        matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
     assert_eq!(
         response.files[0].fragment.as_deref(),
         Some(DAGCERT_TYPED_OPERATIONS_WITH_SEMANTIC_POSTCONDITIONS),
         "{response:#?}"
     );
-    assert!(response.obligations.iter().all(|item| item.satisfied()), "{response:#?}");
+    assert!(
+        response.obligations.iter().all(|item| item.satisfied()),
+        "{response:#?}"
+    );
 }
 
 fn assert_unowned_read_refuted(response: &ProofResponse) {
-    assert!(!matches!(response.status, ProofStatus::Proved), "{response:#?}");
     assert!(
-        response.obligations.iter().any(|item| item.id.contains("permission") && !item.satisfied()),
+        !matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert!(
+        response
+            .obligations
+            .iter()
+            .any(|item| item.id.contains("permission") && !item.satisfied()),
         "A tautology cannot hide an executed read of an absent/unowned field: {response:#?}"
     );
 }
@@ -91,16 +103,25 @@ fn wrong_outcome_guard_does_not_grant_other_class_field_permission() {
 
 #[test]
 fn false_predicate_on_an_owned_active_outcome_is_refuted() {
-    let response = verify(
-        "not isinstance(ResultT(Completed), Completed) or ResultT(Completed).value == 4",
-    );
-    assert!(!matches!(response.status, ProofStatus::Proved), "{response:#?}");
+    let response =
+        verify("not isinstance(ResultT(Completed), Completed) or ResultT(Completed).value == 4");
     assert!(
-        response.obligations.iter().any(|item| item.id.contains(":postcondition:") && !item.satisfied()),
+        !matches!(response.status, ProofStatus::Proved),
+        "{response:#?}"
+    );
+    assert!(
+        response
+            .obligations
+            .iter()
+            .any(|item| item.id.contains(":postcondition:") && !item.satisfied()),
         "The actual false value predicate must be refuted: {response:#?}"
     );
     assert!(
-        response.obligations.iter().filter(|item| item.id.contains("permission")).all(|item| item.satisfied()),
+        response
+            .obligations
+            .iter()
+            .filter(|item| item.id.contains("permission"))
+            .all(|item| item.satisfied()),
         "An inactive field access must not be diagnosed as executed: {response:#?}"
     );
 }
@@ -119,9 +140,14 @@ fn conditional_expression_outcome_reads_remain_explicitly_refused() {
     let response = verify(
         "ResultT(Completed).value == 3 if isinstance(ResultT(Completed), Completed) else ResultT(Idle).reason == 'idle'",
     );
-    assert!(matches!(response.status, ProofStatus::Refused), "{response:#?}");
     assert!(
-        response.diagnostics.iter().any(|item| item.code == "frontend.python.heap.conditional-expression-reads-unsupported"),
+        matches!(response.status, ProofStatus::Refused),
+        "{response:#?}"
+    );
+    assert!(
+        response.diagnostics.iter().any(
+            |item| item.code == "frontend.python.heap.conditional-expression-reads-unsupported"
+        ),
         "Conditional field reads must retain their explicit unsupported diagnostic: {response:#?}"
     );
 }

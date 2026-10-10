@@ -309,8 +309,10 @@ fn validate_contract_positions_with_source_predicates_and_profile(
         &ambiguous_module_bindings,
         imported_predicates,
     );
-    let mut bindings = Bindings::default();
-    bindings.allow_runtime_float_conversion = allow_runtime_float_conversion;
+    let mut bindings = Bindings {
+        allow_runtime_float_conversion,
+        ..Bindings::default()
+    };
     for builtin in nonextendable_builtin_types() {
         bindings
             .nonextendable_builtin_types

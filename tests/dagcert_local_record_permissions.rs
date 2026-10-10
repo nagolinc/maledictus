@@ -35,7 +35,10 @@ fn local_frozen_input_snapshot_and_result_field_assertion_are_proved() {
     assert!(matches!(result.status, ProofStatus::Proved), "{result:#?}");
     assert!(result.diagnostics.is_empty(), "{result:#?}");
     assert!(
-        result.obligations.iter().any(|item| item.id.contains(":assert:")),
+        result
+            .obligations
+            .iter()
+            .any(|item| item.id.contains(":assert:")),
         "The assertion must be discharged, not erased: {result:#?}"
     );
     assert!(result.obligations.iter().all(|item| item.satisfied()));
@@ -49,11 +52,18 @@ fn false_postcondition_is_refuted_after_input_ownership_is_established() {
     let result = verify(&source);
     assert!(!matches!(result.status, ProofStatus::Proved), "{result:#?}");
     assert!(
-        result.obligations.iter().any(|item| item.id.contains(":assert:") && !item.satisfied()),
+        result
+            .obligations
+            .iter()
+            .any(|item| item.id.contains(":assert:") && !item.satisfied()),
         "The false assertion itself must fail: {result:#?}"
     );
     assert!(
-        result.obligations.iter().filter(|item| item.id.contains("permission")).all(|item| item.satisfied()),
+        result
+            .obligations
+            .iter()
+            .filter(|item| item.id.contains("permission"))
+            .all(|item| item.satisfied()),
         "Input reads must no longer be the failure: {result:#?}"
     );
 }
@@ -79,20 +89,36 @@ fn aliasing_an_immutable_input_preserves_its_read_access() {
 fn ordinary_heap_entry_does_not_invent_local_record_permissions() {
     let source = "from dataclasses import dataclass\n\n@dataclass(frozen=True)\nclass Request:\n    value: int\n\ndef read(request: Request) -> None:\n    value: int = request.value\n    assert value == value\n";
     let result = maledictus::python_heap_contracts::verify_heap_module(
-        source, "ordinary.py", &["read".to_owned()],
-    ).unwrap();
+        source,
+        "ordinary.py",
+        &["read".to_owned()],
+    )
+    .unwrap();
     assert!(!result.passed, "{result:#?}");
-    assert!(result.obligations.iter().any(|item| item.id.contains("permission") && !item.satisfied()));
+    assert!(
+        result
+            .obligations
+            .iter()
+            .any(|item| item.id.contains("permission") && !item.satisfied())
+    );
 }
 
 #[test]
 fn ordinary_mutable_record_does_not_receive_input_ownership() {
     let source = "class Mutable:\n    value: int\n\ndef read(request: Mutable) -> None:\n    value: int = request.value\n    assert value == value\n";
     let result = maledictus::python_heap_contracts::verify_heap_module(
-        source, "mutable.py", &["read".to_owned()],
-    ).unwrap();
+        source,
+        "mutable.py",
+        &["read".to_owned()],
+    )
+    .unwrap();
     assert!(!result.passed, "{result:#?}");
-    assert!(result.obligations.iter().any(|item| item.id.contains("permission") && !item.satisfied()));
+    assert!(
+        result
+            .obligations
+            .iter()
+            .any(|item| item.id.contains("permission") && !item.satisfied())
+    );
 }
 
 #[test]
@@ -112,9 +138,13 @@ fn distinct_projection_annotations_do_not_bypass_strict_python_typechecking() {
     );
     let result = verify(&source);
     assert!(!matches!(result.status, ProofStatus::Proved), "{result:#?}");
-    assert!(result.diagnostics.iter().any(|item| {
-        item.code == "frontend.python.typecheck.comparison-overlap"
-    }), "The full protocol must retain strict mypy's refusal: {result:#?}");
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|item| { item.code == "frontend.python.typecheck.comparison-overlap" }),
+        "The full protocol must retain strict mypy's refusal: {result:#?}"
+    );
 }
 
 #[test]
@@ -146,10 +176,15 @@ fn postcondition_short_circuit_read_guards_match_the_complete_boolean_truth_tabl
                 );
                 let result = verify_absent_completed_field_predicate(&predicate);
                 assert!(!result.obligations.is_empty(), "{predicate}: {result:#?}");
-                let evaluated = if is_and { first && second } else { !first && !second };
-                let read_failed = result.obligations.iter().any(|item| {
-                    item.id.contains("permission:value:") && !item.satisfied()
-                });
+                let evaluated = if is_and {
+                    first && second
+                } else {
+                    !first && !second
+                };
+                let read_failed = result
+                    .obligations
+                    .iter()
+                    .any(|item| item.id.contains("permission:value:") && !item.satisfied());
                 assert_eq!(read_failed, evaluated, "{predicate}: {result:#?}");
                 assert_eq!(
                     matches!(result.status, ProofStatus::Proved),
@@ -163,11 +198,13 @@ fn postcondition_short_circuit_read_guards_match_the_complete_boolean_truth_tabl
 
 #[test]
 fn a_short_circuit_guard_must_itself_have_permission_to_read_its_field() {
-    let result = verify_absent_completed_field_predicate(
-        "ResultT(Completed).value == 0 or True",
-    );
+    let result = verify_absent_completed_field_predicate("ResultT(Completed).value == 0 or True");
     assert!(!matches!(result.status, ProofStatus::Proved), "{result:#?}");
-    assert!(result.obligations.iter().any(|item| {
-        item.id.contains("permission:value:") && !item.satisfied()
-    }), "A later true operand must not hide the guard's unowned read: {result:#?}");
+    assert!(
+        result
+            .obligations
+            .iter()
+            .any(|item| { item.id.contains("permission:value:") && !item.satisfied() }),
+        "A later true operand must not hide the guard's unowned read: {result:#?}"
+    );
 }

@@ -107,6 +107,33 @@ unsupported. The truthiness tests for immutable bytes and tuples instead return
 the actual input length as a scalar alongside the branch result, then prove their
 relationship. This is not general collection snapshot support.
 
+## Native object indexing
+
+Read-only `receiver[index]` on a modeled native object uses its sealed external
+`__getitem__` method contract. It does not turn the object into a Python list or
+assume that indexing succeeds. The receiver is evaluated once, followed by the
+index once, before the method contract is applied. Exceptional receiver, index,
+and method paths remain subject to the enclosing operation's exception closure.
+The same checked preconditions, heap effects, and normal/exceptional summaries
+used for explicit native method calls apply to this syntax.
+
+For example, a runtime-specific contract may model `Path.parents` as returning
+the actual native parent-sequence class, whose integer `__getitem__` returns a
+`Path` or raises. Neither an index-validity guarantee nor a filesystem guarantee
+follows from that return type. The standard-library type checker remains active.
+Native contracts are explicit platform premises, not verified implementations.
+
+This support is for read expressions whose nominal dispatch is supported by the
+existing checked native-method model. It does not add source-defined indexing,
+slices, item assignment/deletion, or arbitrary module initialization. In
+particular, proving an expression inside an operation does not establish that
+the same expression in import-time code has a closed exception boundary.
+The existing canonical native import-name requirement is unchanged. A receiver
+whose runtime class is not known exactly is refused if a source-owned subtype
+can override its native `__getitem__` contract; selecting only the caller must
+not bypass that check. This feature does not prove arbitrary behavioral
+subtyping.
+
 ## Behavioral regressions
 
 From the backend repository with its pinned mypy and solver runtime configured:
@@ -119,6 +146,7 @@ cargo test --release --test heap_future_and_operation_truthiness
 cargo test --release --test heap_record_list_aliases
 cargo test --release --test heap_type_only_admission
 cargo test --release --test heap_old_nested_scalar_paths
+cargo test --release --test external_nominal_index_reads
 ```
 
 For raw Windows test executables, the pinned `libz3.dll` must be discoverable.

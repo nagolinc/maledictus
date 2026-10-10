@@ -653,7 +653,9 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                 Ok(text) => {
                     if let Some(externals) = external_contracts.heap_by_adapter.get(&source.path)
                         && dagcert_operations::has_operation_entry_point(text, &source.path)
-                        && !python_callable_bindings.by_consumer.contains_key(&source.path)
+                        && !python_callable_bindings
+                            .by_consumer
+                            .contains_key(&source.path)
                     {
                         // The provider overlays have already been checked and sealed. Preserve
                         // the complete original source: native heap lowering models actual call,
@@ -663,46 +665,70 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                             Some(Ok(imported)) => imported.as_slice(),
                             Some(Err(error)) => {
                                 response.diagnostics.push(Diagnostic::file_error(
-                                    error.code, error.message.clone(), &source.path,
+                                    error.code,
+                                    error.message.clone(),
+                                    &source.path,
                                 ));
                                 continue;
                             }
                             None => externals.as_slice(),
                         };
-                        let operation_imports = match operation_source_imports.by_path.get(&source.path) {
-                            Some(Ok(imported)) => imported.as_slice(),
-                            Some(Err(error)) => {
-                                response.diagnostics.push(Diagnostic::file_error(
-                                    error.code, error.message.clone(), &source.path,
-                                ));
-                                continue;
-                            }
-                            None => &[],
-                        };
-                        let ordinary_imports = operation_source_imports.ordinary_by_path
-                            .get(&source.path).map_or(&[][..], Vec::as_slice);
-                        let checked_modules = imported.iter()
-                            .map(|module| module.module().to_owned()).collect();
-                        if let Err(error) = dagcert_operations::admit_operation_module_for_heap_proof(
-                            text, &source.path,
-                            &python_module_name(&source.path).unwrap_or_else(|_| source.path.clone()),
-                            &source.symbols, operation_imports, ordinary_imports,
-                            &external_nominal_modules, &checked_modules,
-                        ) {
+                        let operation_imports =
+                            match operation_source_imports.by_path.get(&source.path) {
+                                Some(Ok(imported)) => imported.as_slice(),
+                                Some(Err(error)) => {
+                                    response.diagnostics.push(Diagnostic::file_error(
+                                        error.code,
+                                        error.message.clone(),
+                                        &source.path,
+                                    ));
+                                    continue;
+                                }
+                                None => &[],
+                            };
+                        let ordinary_imports = operation_source_imports
+                            .ordinary_by_path
+                            .get(&source.path)
+                            .map_or(&[][..], Vec::as_slice);
+                        let checked_modules = imported
+                            .iter()
+                            .map(|module| module.module().to_owned())
+                            .collect();
+                        if let Err(error) =
+                            dagcert_operations::admit_operation_module_for_heap_proof(
+                                text,
+                                &source.path,
+                                &python_module_name(&source.path)
+                                    .unwrap_or_else(|_| source.path.clone()),
+                                &source.symbols,
+                                operation_imports,
+                                ordinary_imports,
+                                &external_nominal_modules,
+                                &checked_modules,
+                            )
+                        {
                             response.diagnostics.push(Diagnostic::file_error(
-                                error.code, error.message, &source.path,
+                                error.code,
+                                error.message,
+                                &source.path,
                             ));
                             continue;
                         }
-                        let semantic = match dagcert_operations::operation_module_semantic_obligations(text, &source.path) {
-                            Ok(semantic) => semantic,
-                            Err(error) => {
-                                response.diagnostics.push(Diagnostic::file_error(
-                                    error.code, error.message, &source.path,
-                                ));
-                                continue;
-                            }
-                        };
+                        let semantic =
+                            match dagcert_operations::operation_module_semantic_obligations(
+                                text,
+                                &source.path,
+                            ) {
+                                Ok(semantic) => semantic,
+                                Err(error) => {
+                                    response.diagnostics.push(Diagnostic::file_error(
+                                        error.code,
+                                        error.message,
+                                        &source.path,
+                                    ));
+                                    continue;
+                                }
+                            };
                         let fragment = if semantic.postconditions {
                             fragments::DAGCERT_TYPED_OPERATIONS_WITH_SEMANTIC_POSTCONDITIONS
                         } else if semantic.assertions {
@@ -711,13 +737,21 @@ fn verify_internal(request: &ProofRequest, issuance: bool) -> ProofResponse {
                             fragments::DAGCERT_CLOSED_TYPED_OPERATIONS
                         };
                         match python_heap_contracts::verify_closed_operation_assertions(
-                            text, &source.path, &source.symbols, imported,
+                            text,
+                            &source.path,
+                            &source.symbols,
+                            imported,
                         ) {
                             Ok(verification) => record_heap_verification(
-                                &mut response, &source.path, verification, fragment,
+                                &mut response,
+                                &source.path,
+                                verification,
+                                fragment,
                             ),
                             Err(error) => response.diagnostics.push(Diagnostic::file_error(
-                                error.code, error.message, &source.path,
+                                error.code,
+                                error.message,
+                                &source.path,
                             )),
                         }
                         continue;
@@ -3584,7 +3618,8 @@ fn discharge_operation_assertions(
     >,
     proved_scope: &str,
 ) -> bool {
-    let obligations = match dagcert_operations::operation_module_semantic_obligations(source, path) {
+    let obligations = match dagcert_operations::operation_module_semantic_obligations(source, path)
+    {
         Ok(obligations) if !obligations.assertions && !obligations.postconditions => return false,
         Err(error) => {
             response

@@ -207,7 +207,8 @@ pub(crate) fn operation_module_semantic_obligations(
         }
 
         fn visit_expr_call(&mut self, node: ast::ExprCall) {
-            if matches!(node.func.as_ref(), ast::Expr::Name(name) if name.id.as_str() == "Ensures") {
+            if matches!(node.func.as_ref(), ast::Expr::Name(name) if name.id.as_str() == "Ensures")
+            {
                 self.obligations.postconditions = true;
             }
             self.generic_visit_expr_call(node);
@@ -250,19 +251,33 @@ pub(crate) fn is_operation_module_candidate(source: &str, path: &str) -> bool {
 }
 
 pub(crate) fn has_operation_entry_point(source: &str, path: &str) -> bool {
-    let Ok(suite) = ast::Suite::parse(source, path) else { return false; };
+    let Ok(suite) = ast::Suite::parse(source, path) else {
+        return false;
+    };
     // Recognition is not admission. A forbidden Requires/Exsures import must not hide a
     // declared operation from the stricter route and send it to a generic heap fallback.
-    let names = suite.iter().filter_map(|statement| {
-        let ast::Stmt::ImportFrom(import) = statement else { return None; };
-        (import.level.is_none_or(|level| level == 0_u32)
-            && import.module.as_ref().is_some_and(|module| matches!(module.as_str(), "dagcert" | "dagcert.runtime")))
+    let names = suite
+        .iter()
+        .filter_map(|statement| {
+            let ast::Stmt::ImportFrom(import) = statement else {
+                return None;
+            };
+            (import.level.is_none_or(|level| level == 0_u32)
+                && import
+                    .module
+                    .as_ref()
+                    .is_some_and(|module| matches!(module.as_str(), "dagcert" | "dagcert.runtime")))
             .then_some(import)
-    }).flat_map(|import| import.names.iter()).filter(|alias| alias.name.as_str() == "operation")
-        .map(|alias| alias.asname.as_ref().unwrap_or(&alias.name).as_str()).collect::<BTreeSet<_>>();
-    suite.iter().any(|statement| matches!(statement, ast::Stmt::FunctionDef(function)
+        })
+        .flat_map(|import| import.names.iter())
+        .filter(|alias| alias.name.as_str() == "operation")
+        .map(|alias| alias.asname.as_ref().unwrap_or(&alias.name).as_str())
+        .collect::<BTreeSet<_>>();
+    suite.iter().any(|statement| {
+        matches!(statement, ast::Stmt::FunctionDef(function)
         if function.decorator_list.iter().any(|decorator|
-            matches!(decorator, ast::Expr::Name(name) if names.contains(name.id.as_str())))))
+            matches!(decorator, ast::Expr::Name(name) if names.contains(name.id.as_str()))))
+    })
 }
 
 fn operation_module_candidate(source: &str, path: &str, include_records: bool) -> bool {
@@ -580,6 +595,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn verify_and_export_operation_module_with_imports_and_external_types(
     source: &str,
     path: &str,
@@ -591,8 +607,16 @@ pub(crate) fn verify_and_export_operation_module_with_imports_and_external_types
     external_nominal_modules: &BTreeMap<String, BTreeSet<String>>,
 ) -> Result<(OperationVerification, ImportedOperationModule), OperationFailure> {
     verify_and_export_operation_module_using_body_mode(
-        source, path, module, requested_symbols, callable_bindings, imported_modules,
-        ordinary_source_imports, external_nominal_modules, &BTreeSet::new(), false,
+        source,
+        path,
+        module,
+        requested_symbols,
+        callable_bindings,
+        imported_modules,
+        ordinary_source_imports,
+        external_nominal_modules,
+        &BTreeSet::new(),
+        false,
     )
 }
 
@@ -600,6 +624,7 @@ pub(crate) fn verify_and_export_operation_module_with_imports_and_external_types
 /// verify the same original source with the native heap engine, whose actual normal/exceptional
 /// exit obligations establish closure. Checked provider imports here are the same sealed modules
 /// passed to that engine; this entry cannot independently produce a successful file proof.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn admit_operation_module_for_heap_proof(
     source: &str,
     path: &str,
@@ -611,9 +636,18 @@ pub(crate) fn admit_operation_module_for_heap_proof(
     checked_import_modules: &BTreeSet<String>,
 ) -> Result<OperationVerification, OperationFailure> {
     verify_and_export_operation_module_using_body_mode(
-        source, path, module, requested_symbols, &[], imported_modules,
-        ordinary_source_imports, external_nominal_modules, checked_import_modules, true,
-    ).map(|(verification, _)| verification)
+        source,
+        path,
+        module,
+        requested_symbols,
+        &[],
+        imported_modules,
+        ordinary_source_imports,
+        external_nominal_modules,
+        checked_import_modules,
+        true,
+    )
+    .map(|(verification, _)| verification)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -667,12 +701,14 @@ fn verify_and_export_operation_module_using_body_mode(
     // imported alias, or type alias with the same spelling. Locals and parameters
     // are checked at the call; strict Python checking also rejects use-before-binding.
     if suite.iter().any(|statement| match statement {
-        ast::Stmt::ImportFrom(import) => import.names.iter().any(|alias| {
-            alias.asname.as_ref().unwrap_or(&alias.name).as_str() == "len"
-        }),
-        ast::Stmt::Assign(assignment) => assignment.targets.iter().any(|target| {
-            matches!(target, ast::Expr::Name(name) if name.id.as_str() == "len")
-        }),
+        ast::Stmt::ImportFrom(import) => import
+            .names
+            .iter()
+            .any(|alias| alias.asname.as_ref().unwrap_or(&alias.name).as_str() == "len"),
+        ast::Stmt::Assign(assignment) => assignment
+            .targets
+            .iter()
+            .any(|target| matches!(target, ast::Expr::Name(name) if name.id.as_str() == "len")),
         ast::Stmt::AnnAssign(assignment) => {
             matches!(assignment.target.as_ref(), ast::Expr::Name(name) if name.id.as_str() == "len")
         }
@@ -706,8 +742,10 @@ fn verify_and_export_operation_module_using_body_mode(
         }
         for alias in &import.names {
             let imported_name = alias.name.as_str();
-            if semantic_body && checked_import_modules.contains(imported_module_name)
-                && imported_name != "*" && !allowed_types.contains(imported_name)
+            if semantic_body
+                && checked_import_modules.contains(imported_module_name)
+                && imported_name != "*"
+                && !allowed_types.contains(imported_name)
             {
                 // A checked provider function is not a nominal class annotation. Its real
                 // signature and effects are resolved by strict mypy and native heap lowering.
@@ -918,8 +956,11 @@ fn verify_and_export_operation_module_using_body_mode(
             _ if index == 0 && is_docstring(statement) => {}
             ast::Stmt::ImportFrom(import)
                 if allowed_import(import)
-                    || (semantic_body && import.level.is_none_or(|level| level == 0_u32)
-                        && import.module.as_ref().is_some_and(|name| checked_import_modules.contains(name.as_str()))
+                    || (semantic_body
+                        && import.level.is_none_or(|level| level == 0_u32)
+                        && import.module.as_ref().is_some_and(|name| {
+                            checked_import_modules.contains(name.as_str())
+                        })
                         && import.names.iter().all(|alias| alias.name.as_str() != "*"))
                     || import.module.as_ref().is_some_and(|name| {
                         imported_by_module.contains_key(name.as_str())
@@ -928,8 +969,12 @@ fn verify_and_export_operation_module_using_body_mode(
                                 .any(|source_import| source_import.module == name.as_str())
                             || external_nominal_modules.contains_key(name.as_str())
                     }) => {}
-            ast::Stmt::Import(import) if semantic_body && import.names.iter()
-                .all(|alias| checked_import_modules.contains(alias.name.as_str())) => {}
+            ast::Stmt::Import(import)
+                if semantic_body
+                    && import
+                        .names
+                        .iter()
+                        .all(|alias| checked_import_modules.contains(alias.name.as_str())) => {}
             ast::Stmt::ClassDef(class) => {
                 if records.contains_key(class.name.as_str()) {
                     return failure(
@@ -1034,10 +1079,17 @@ fn verify_and_export_operation_module_using_body_mode(
     for function in functions {
         if semantic_body {
             let shape = operation_shape(
-                function, &markers.operations, &markers.unions, &markers.callables, &records,
+                function,
+                &markers.operations,
+                &markers.unions,
+                &markers.callables,
+                &records,
             )?;
             validate_operation_callable_bindings(
-                function.name.as_str(), &shape.input_record, &records, callable_bindings,
+                function.name.as_str(),
+                &shape.input_record,
+                &records,
+                callable_bindings,
             )?;
             validate_finite_semantic_body(function)?;
             operations.push(function.name.to_string());
@@ -1107,17 +1159,39 @@ fn validate_finite_semantic_body(function: &ast::StmtFunctionDef) -> Result<(), 
         unbounded: bool,
     }
     impl Visitor for FiniteBody {
-        fn visit_stmt_while(&mut self, _node: ast::StmtWhile) { self.unbounded = true; }
-        fn visit_stmt_for(&mut self, _node: ast::StmtFor) { self.unbounded = true; }
-        fn visit_stmt_async_for(&mut self, _node: ast::StmtAsyncFor) { self.unbounded = true; }
-        fn visit_stmt_async_with(&mut self, _node: ast::StmtAsyncWith) { self.unbounded = true; }
-        fn visit_expr_await(&mut self, _node: ast::ExprAwait) { self.unbounded = true; }
-        fn visit_expr_yield(&mut self, _node: ast::ExprYield) { self.unbounded = true; }
-        fn visit_expr_yield_from(&mut self, _node: ast::ExprYieldFrom) { self.unbounded = true; }
-        fn visit_expr_list_comp(&mut self, _node: ast::ExprListComp) { self.unbounded = true; }
-        fn visit_expr_set_comp(&mut self, _node: ast::ExprSetComp) { self.unbounded = true; }
-        fn visit_expr_dict_comp(&mut self, _node: ast::ExprDictComp) { self.unbounded = true; }
-        fn visit_expr_generator_exp(&mut self, _node: ast::ExprGeneratorExp) { self.unbounded = true; }
+        fn visit_stmt_while(&mut self, _node: ast::StmtWhile) {
+            self.unbounded = true;
+        }
+        fn visit_stmt_for(&mut self, _node: ast::StmtFor) {
+            self.unbounded = true;
+        }
+        fn visit_stmt_async_for(&mut self, _node: ast::StmtAsyncFor) {
+            self.unbounded = true;
+        }
+        fn visit_stmt_async_with(&mut self, _node: ast::StmtAsyncWith) {
+            self.unbounded = true;
+        }
+        fn visit_expr_await(&mut self, _node: ast::ExprAwait) {
+            self.unbounded = true;
+        }
+        fn visit_expr_yield(&mut self, _node: ast::ExprYield) {
+            self.unbounded = true;
+        }
+        fn visit_expr_yield_from(&mut self, _node: ast::ExprYieldFrom) {
+            self.unbounded = true;
+        }
+        fn visit_expr_list_comp(&mut self, _node: ast::ExprListComp) {
+            self.unbounded = true;
+        }
+        fn visit_expr_set_comp(&mut self, _node: ast::ExprSetComp) {
+            self.unbounded = true;
+        }
+        fn visit_expr_dict_comp(&mut self, _node: ast::ExprDictComp) {
+            self.unbounded = true;
+        }
+        fn visit_expr_generator_exp(&mut self, _node: ast::ExprGeneratorExp) {
+            self.unbounded = true;
+        }
     }
     let mut visitor = FiniteBody::default();
     for statement in &function.body {
@@ -1279,7 +1353,13 @@ fn validate_semantic_contract_bindings(
             self.bind(node.name.as_str());
             // RustPython's generic visitor does not necessarily descend ArgWithDefault.
             // Inspect every parameter explicitly so a local parameter cannot shadow a marker.
-            for parameter in node.args.posonlyargs.iter().chain(&node.args.args).chain(&node.args.kwonlyargs) {
+            for parameter in node
+                .args
+                .posonlyargs
+                .iter()
+                .chain(&node.args.args)
+                .chain(&node.args.kwonlyargs)
+            {
                 self.bind(parameter.def.arg.as_str());
             }
             if let Some(parameter) = &node.args.vararg {
@@ -1318,9 +1398,14 @@ fn validate_semantic_contract_bindings(
 
         fn visit_stmt_import_from(&mut self, node: ast::StmtImportFrom) {
             if node.level.is_none_or(|level| level == 0_u32)
-                && node.module.as_ref().is_some_and(|module| module.as_str() == "nagini_contracts.contracts")
-                && node.names.iter().all(|alias| alias.asname.is_none()
-                    && matches!(alias.name.as_str(), "Ensures" | "Old" | "ResultT"))
+                && node
+                    .module
+                    .as_ref()
+                    .is_some_and(|module| module.as_str() == "nagini_contracts.contracts")
+                && node.names.iter().all(|alias| {
+                    alias.asname.is_none()
+                        && matches!(alias.name.as_str(), "Ensures" | "Old" | "ResultT")
+                })
             {
                 return;
             }
@@ -1340,13 +1425,19 @@ fn validate_semantic_contract_bindings(
     if !collector.shadowed.is_empty() {
         return failure(
             "frontend.python.dagcert.semantic-contract-binding-shadowed",
-            format!("source binds canonical contract names: {:?}", collector.shadowed),
+            format!(
+                "source binds canonical contract names: {:?}",
+                collector.shadowed
+            ),
         );
     }
     if !collector.unbound.is_empty() {
         return failure(
             "frontend.python.dagcert.semantic-contract-binding-missing",
-            format!("contract calls require canonical imports: {:?}", collector.unbound),
+            format!(
+                "contract calls require canonical imports: {:?}",
+                collector.unbound
+            ),
         );
     }
     Ok(())
@@ -1373,8 +1464,7 @@ fn allowed_import(import: &ast::StmtImportFrom) -> bool {
     }
     if module == "nagini_contracts.contracts" {
         return import.names.iter().all(|alias| {
-            alias.asname.is_none()
-                && matches!(alias.name.as_str(), "Ensures" | "Old" | "ResultT")
+            alias.asname.is_none() && matches!(alias.name.as_str(), "Ensures" | "Old" | "ResultT")
         });
     }
     if module == "dagcert" || module == "dagcert.runtime" {
@@ -3755,10 +3845,7 @@ fn infer_expression(
                 locals,
             )?;
             match operation.op {
-                ast::UnaryOp::Not if operation_truthiness_is_total(&operand) =>
-                {
-                    Ok(ValueType::Bool)
-                }
+                ast::UnaryOp::Not if operation_truthiness_is_total(&operand) => Ok(ValueType::Bool),
                 ast::UnaryOp::UAdd | ast::UnaryOp::USub
                     if matches!(operand, ValueType::Int | ValueType::Float) =>
                 {
@@ -3975,8 +4062,12 @@ mod tests {
             &[],
             &BTreeMap::new(),
             &BTreeSet::new(),
-        ).unwrap_err();
-        assert_eq!(error.code, "frontend.python.dagcert.callable-binding-missing");
+        )
+        .unwrap_err();
+        assert_eq!(
+            error.code,
+            "frontend.python.dagcert.callable-binding-missing"
+        );
     }
 
     #[test]
